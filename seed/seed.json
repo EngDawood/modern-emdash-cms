@@ -2,8 +2,8 @@
 	"$schema": "https://emdashcms.com/seed.schema.json",
 	"version": "1",
 	"meta": {
-		"name": "Portfolio Starter",
-		"description": "A portfolio for showcasing creative work",
+		"name": "Portfolio + Blog",
+		"description": "A portfolio for showcasing creative work and a blog for writing",
 		"author": "EmDash"
 	},
 
@@ -67,6 +67,38 @@
 			]
 		},
 		{
+			"slug": "posts",
+			"label": "Posts",
+			"labelSingular": "Post",
+			"supports": ["drafts", "revisions", "search", "seo"],
+			"commentsEnabled": true,
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Title",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{
+					"slug": "featured_image",
+					"label": "Featured Image",
+					"type": "image"
+				},
+				{
+					"slug": "content",
+					"label": "Content",
+					"type": "portableText",
+					"searchable": true
+				},
+				{
+					"slug": "excerpt",
+					"label": "Excerpt",
+					"type": "text"
+				}
+			]
+		},
+		{
 			"slug": "pages",
 			"label": "Pages",
 			"labelSingular": "Page",
@@ -95,12 +127,15 @@
 			"label": "Categories",
 			"labelSingular": "Category",
 			"hierarchical": false,
-			"collections": ["projects"],
+			"collections": ["projects", "posts"],
 			"terms": [
 				{ "slug": "branding", "label": "Branding" },
 				{ "slug": "web", "label": "Web Design" },
 				{ "slug": "print", "label": "Print" },
-				{ "slug": "photography", "label": "Photography" }
+				{ "slug": "photography", "label": "Photography" },
+				{ "slug": "development", "label": "Development" },
+				{ "slug": "design", "label": "Design" },
+				{ "slug": "notes", "label": "Notes" }
 			]
 		},
 		{
@@ -108,16 +143,34 @@
 			"label": "Tags",
 			"labelSingular": "Tag",
 			"hierarchical": false,
-			"collections": ["projects"],
+			"collections": ["projects", "posts"],
 			"terms": [
 				{ "slug": "identity", "label": "Identity" },
 				{ "slug": "ui-ux", "label": "UI/UX" },
-				{ "slug": "development", "label": "Development" },
+				{ "slug": "dev", "label": "Development" },
 				{ "slug": "art-direction", "label": "Art Direction" },
 				{ "slug": "packaging", "label": "Packaging" },
 				{ "slug": "ecommerce", "label": "E-commerce" },
-				{ "slug": "editorial", "label": "Editorial" }
+				{ "slug": "editorial", "label": "Editorial" },
+				{ "slug": "webdev", "label": "Web Development" },
+				{ "slug": "opinion", "label": "Opinion" },
+				{ "slug": "tools", "label": "Tools" },
+				{ "slug": "creativity", "label": "Creativity" }
 			]
+		}
+	],
+
+	"bylines": [
+		{
+			"id": "byline-editorial",
+			"slug": "editorial",
+			"displayName": "Editorial"
+		},
+		{
+			"id": "byline-guest",
+			"slug": "guest-contributor",
+			"displayName": "Guest Contributor",
+			"isGuest": true
 		}
 	],
 
@@ -127,7 +180,101 @@
 			"label": "Primary Navigation",
 			"items": [
 				{ "type": "custom", "label": "Work", "url": "/work" },
+				{ "type": "custom", "label": "Blog", "url": "/posts" },
 				{ "type": "custom", "label": "Contact", "url": "/contact" }
+			]
+		}
+	],
+
+	"widgetAreas": [
+		{
+			"name": "sidebar",
+			"label": "Sidebar",
+			"description": "Widget area displayed on single post pages",
+			"widgets": [
+				{
+					"type": "component",
+					"componentId": "core:search",
+					"title": "Search"
+				},
+				{
+					"type": "component",
+					"componentId": "core:categories",
+					"title": "Categories"
+				},
+				{
+					"type": "component",
+					"componentId": "core:tags",
+					"title": "Tags"
+				},
+				{
+					"type": "component",
+					"componentId": "core:recent-posts",
+					"title": "Recent Posts",
+					"settings": {
+						"count": 5,
+						"showDate": true
+					}
+				},
+				{
+					"type": "component",
+					"componentId": "core:archives",
+					"title": "Archives",
+					"settings": {
+						"type": "monthly",
+						"limit": 6
+					}
+				}
+			]
+		},
+		{
+			"name": "footer",
+			"label": "Footer",
+			"description": "Widget area displayed in the site footer",
+			"widgets": [
+				{
+					"type": "content",
+					"title": "About",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "A small design studio focused on meaningful work and writing about the craft."
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	],
+
+	"sections": [
+		{
+			"slug": "newsletter-signup",
+			"title": "Newsletter Signup",
+			"description": "A call-to-action block for newsletter subscriptions",
+			"keywords": ["newsletter", "subscribe", "email", "cta"],
+			"source": "theme",
+			"content": [
+				{
+					"_type": "block",
+					"style": "h3",
+					"children": [{ "_type": "span", "text": "Stay in the loop" }]
+				},
+				{
+					"_type": "block",
+					"style": "normal",
+					"children": [
+						{
+							"_type": "span",
+							"text": "Get notified when new posts are published. No spam, unsubscribe anytime."
+						}
+					]
+				}
 			]
 		}
 	],
@@ -190,7 +337,13 @@
 					"client": "Meridian Collective",
 					"year": "2024",
 					"summary": "A complete brand identity for a creative collective bringing together artists and technologists.",
-					"featured_image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=900&fit=crop",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=900&fit=crop",
+							"alt": "Meridian brand identity",
+							"filename": "meridian-brand.jpg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -248,7 +401,13 @@
 					"client": "Volta Energy",
 					"year": "2024",
 					"summary": "Website design for a renewable energy startup making clean power accessible to everyone.",
-					"featured_image": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=900&fit=crop",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=900&fit=crop",
+							"alt": "Volta Energy website",
+							"filename": "volta-web.jpg"
+						}
+					},
 					"url": "https://volta.example.com",
 					"content": [
 						{
@@ -280,7 +439,7 @@
 				},
 				"taxonomies": {
 					"category": ["web"],
-					"tag": ["ui-ux", "development"]
+					"tag": ["ui-ux", "dev"]
 				}
 			},
 			{
@@ -292,7 +451,13 @@
 					"client": "City Museum",
 					"year": "2023",
 					"summary": "Exhibition catalog and print materials for a retrospective on modernist architecture.",
-					"featured_image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=900&fit=crop",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=900&fit=crop",
+							"alt": "The Archive exhibition catalog",
+							"filename": "archive-print.jpg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -335,7 +500,13 @@
 					"client": "Personal Project",
 					"year": "2023",
 					"summary": "A photographic study of the Pacific coastline, exploring the intersection of land, sea, and sky.",
-					"featured_image": "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1200&h=900&fit=crop",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1200&h=900&fit=crop",
+							"alt": "Coastal photography",
+							"filename": "coastal-photo.jpg"
+						}
+					},
 					"content": [
 						{
 							"_type": "block",
@@ -367,6 +538,267 @@
 				"taxonomies": {
 					"category": ["photography"],
 					"tag": ["art-direction", "editorial"]
+				}
+			}
+		],
+		"posts": [
+			{
+				"id": "post-1",
+				"slug": "building-for-the-long-term",
+				"status": "published",
+				"data": {
+					"title": "Building for the Long Term",
+					"excerpt": "The frameworks will change. The databases will change. What survives is the clarity of your thinking.",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200&h=800&fit=crop",
+							"alt": "Code on a monitor in a dark room",
+							"filename": "building-long-term.jpg"
+						}
+					},
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Every few years the industry collectively decides that everything we've been doing is wrong and there's a better way. New frameworks, new paradigms, new build tools. The churn is relentless, and if you're not careful, you spend more time migrating than building."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "I've been writing software long enough to have seen several of these cycles. jQuery to Backbone to Angular to React to whatever comes next. Each transition felt urgent at the time. Looking back, the things that actually mattered were rarely about the framework."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "What survives" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Clean data models survive. Clear boundaries between systems survive. Good naming survives. The decision to keep things simple when you could have made them clever - that definitely survives."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "The best code I've written is boring. It reads like prose, does one thing well, and doesn't require a PhD in category theory to understand. The worst code I've written was technically impressive at the time."
+								}
+							]
+						}
+					]
+				},
+				"bylines": [
+					{ "byline": "byline-editorial" }
+				],
+				"taxonomies": {
+					"category": ["development"],
+					"tag": ["opinion"]
+				}
+			},
+			{
+				"id": "post-2",
+				"slug": "the-case-for-static",
+				"status": "published",
+				"data": {
+					"title": "The Case for Static",
+					"excerpt": "Static sites aren't a step backwards. They're what you get when you take performance and simplicity seriously.",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&h=800&fit=crop",
+							"alt": "Laptop and coffee on a wooden table",
+							"filename": "case-for-static.jpg"
+						}
+					},
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "There's a certain irony in the fact that the web started static, went dynamic, and is now swinging back toward static again. But the static sites of today aren't the hand-coded HTML pages of 1998. They're generated, optimized, and deployed to edge networks that serve them in milliseconds."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "The performance argument" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "A static file served from a CDN is as fast as the web gets. No cold starts, no database queries, no server-side rendering overhead. The Time to First Byte is essentially the network latency to your nearest edge node. You can't beat physics."
+								}
+							]
+						}
+					]
+				},
+				"bylines": [{ "byline": "byline-editorial" }],
+				"taxonomies": {
+					"category": ["development"],
+					"tag": ["webdev", "opinion"]
+				}
+			},
+			{
+				"id": "post-3",
+				"slug": "designing-with-constraints",
+				"status": "published",
+				"data": {
+					"title": "Designing with Constraints",
+					"excerpt": "Limitations aren't obstacles to creativity. They're the structure that makes creativity possible.",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=1200&h=800&fit=crop",
+							"alt": "Pencils and design tools on a desk",
+							"filename": "designing-with-constraints.jpg"
+						}
+					},
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Give a designer a blank canvas and unlimited time, and they'll often produce something mediocre. Give them a tight brief, a small screen, and a deadline, and they'll surprise you. This isn't a paradox - it's how creativity actually works."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Embracing the box" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "The web itself is a constraint. HTML flows in one direction. CSS has a box model. Browsers have viewport sizes and font rendering quirks. You can fight these constraints or you can work with them, and the results are dramatically different."
+								}
+							]
+						}
+					]
+				},
+				"taxonomies": {
+					"category": ["design"],
+					"tag": ["creativity"]
+				}
+			},
+			{
+				"id": "post-4",
+				"slug": "small-tools-big-impact",
+				"status": "published",
+				"data": {
+					"title": "Small Tools, Big Impact",
+					"excerpt": "The best developer tools do one thing well and get out of your way. A love letter to focused software.",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1575026615908-666710ae5e47?w=1200&h=800&fit=crop",
+							"alt": "Wrenches and hand tools on a workshop wall",
+							"filename": "small-tools.jpg"
+						}
+					},
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "There's a class of software that doesn't get enough appreciation. Not the frameworks or the platforms or the IDEs, but the small, sharp tools that solve one problem so well you stop thinking about them. They become invisible, which is the highest compliment you can pay a tool."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "The Unix philosophy, revisited" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Do one thing well. The advice is old enough to be a cliche, but the best modern tools still follow it. They don't try to be platforms. They don't have plugin ecosystems or configuration languages or startup wizards. They do their job and they compose with other tools that do theirs."
+								}
+							]
+						}
+					]
+				},
+				"taxonomies": {
+					"category": ["development"],
+					"tag": ["tools"]
+				}
+			},
+			{
+				"id": "post-5",
+				"slug": "notes-on-simplicity",
+				"status": "published",
+				"data": {
+					"title": "Notes on Simplicity",
+					"excerpt": "Simplicity isn't the absence of complexity. It's the result of understanding a problem well enough to solve it cleanly.",
+					"featured_image": {
+						"$media": {
+							"url": "https://images.unsplash.com/photo-1559051668-e1fa58f25786?w=1200&h=800&fit=crop",
+							"alt": "Geometric pattern carved into white paper",
+							"filename": "notes-on-simplicity.jpg"
+						}
+					},
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Every piece of software starts simple. A few files, a clear purpose, a small surface area. Then features get added, edge cases get handled, and before long you're looking at something that requires a diagram to understand. This isn't inevitable, but it takes discipline to prevent."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "h2",
+							"children": [{ "_type": "span", "text": "Removing as a feature" }]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "The best version of a product often has fewer features than the previous one. Not because features were missing, but because someone had the courage to remove things that weren't earning their keep."
+								}
+							]
+						}
+					]
+				},
+				"taxonomies": {
+					"category": ["notes"],
+					"tag": ["opinion"]
 				}
 			}
 		]

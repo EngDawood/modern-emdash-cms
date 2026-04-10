@@ -1,32 +1,56 @@
 ---
-import { getMenu, getSiteSettings } from "emdash";
-import { EmDashHead } from "emdash/ui";
+import { getMenu, getSiteSettings, getEmDashCollection } from "emdash";
+import { EmDashHead, EmDashBodyStart, EmDashBodyEnd, WidgetArea } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
+import LiveSearch from "emdash/ui/search";
 
 interface Props {
 	title?: string;
-	description?: string;
-	image?: string;
+	description?: string | null;
+	image?: string | null;
+	canonical?: string | null;
+	robots?: string | null;
 	type?: "website" | "article";
+	publishedTime?: string | null;
+	modifiedTime?: string | null;
+	author?: string | null;
+	/** Pass content reference for plugin page contributions on content pages */
+	content?: { collection: string; id: string; slug?: string | null };
 }
 
-const { title, description, image, type = "website" } = Astro.props;
+const {
+	title,
+	description,
+	image,
+	canonical,
+	robots,
+	type = "website",
+	publishedTime,
+	modifiedTime,
+	author,
+	content,
+} = Astro.props;
 const settings = await getSiteSettings();
 const siteTitle = settings?.title || "Studio";
-const fullTitle = title ? `${title} — ${siteTitle}` : siteTitle;
 const siteDescription = settings?.tagline || "Design & Development";
+const fullTitle = title ? `${title} — ${siteTitle}` : siteTitle;
 
 const menu = await getMenu("primary");
+const { entries: pages } = await getEmDashCollection("pages");
+
+const isLoggedIn = !!Astro.locals.user;
 
 const pageCtx = createPublicPageContext({
 	Astro,
-	kind: "custom",
+	kind: content ? "content" : "custom",
 	pageType: type,
 	title: fullTitle,
 	description: description || siteDescription,
-	canonical: Astro.url.href,
+	canonical: canonical ?? Astro.url.href,
 	image,
-	seo: { ogImage: image },
+	content,
+	seo: { ogImage: image, robots },
+	articleMeta: { publishedTime, modifiedTime, author },
 	siteName: siteTitle,
 });
 ---
@@ -65,18 +89,31 @@ const pageCtx = createPublicPageContext({
 		</script>
 	</head>
 	<body>
+		<EmDashBodyStart page={pageCtx} />
 		<header class="site-header">
 			<nav class="nav">
 				<a href="/" class="site-title">{siteTitle}</a>
-				<div class="nav-links">
-					{
-						menu?.items.map((item) => (
-							<a href={item.url} target={item.target}>
-								{item.label}
-							</a>
-						))
-					}
-					<a href="/_emdash/admin" class="nav-admin">Admin</a>
+				<div class="nav-right">
+					<LiveSearch
+						placeholder="Search..."
+						class="site-search"
+						inputClass="site-search-input"
+						resultsClass="site-search-results"
+						resultClass="site-search-result"
+						collections={["projects", "posts", "pages"]}
+					/>
+					<div class="nav-links">
+						{
+							menu?.items.map((item) => (
+								<a href={item.url} target={item.target}>
+									{item.label}
+								</a>
+							))
+						}
+					</div>
+					{isLoggedIn && (
+						<a href="/_emdash/admin" class="nav-admin">Admin</a>
+					)}
 				</div>
 			</nav>
 		</header>
@@ -86,14 +123,44 @@ const pageCtx = createPublicPageContext({
 		</main>
 
 		<footer class="site-footer">
-			<div class="footer-content">
-				<div class="footer-brand">
-					<span class="footer-logo">{siteTitle}</span>
-					<p class="footer-tagline">
-						{settings?.tagline || "Design & Development"}
-					</p>
+			<div class="footer-inner">
+				<div class="footer-grid">
+					<div class="footer-brand">
+						<a href="/" class="footer-logo">{siteTitle}</a>
+						<p class="footer-tagline">{siteDescription}</p>
+					</div>
+					<div class="footer-nav">
+						<h4 class="footer-heading">Navigate</h4>
+						<ul class="footer-links">
+							<li><a href="/">Home</a></li>
+							<li><a href="/work">Work</a></li>
+							<li><a href="/posts">Blog</a></li>
+							{
+								pages.slice(0, 2).map((page) => (
+									<li>
+										<a href={`/pages/${page.data.slug || page.id}`}>
+											{page.data.title}
+										</a>
+									</li>
+								))
+							}
+						</ul>
+					</div>
+					<div class="footer-nav">
+						<h4 class="footer-heading">Connect</h4>
+						<ul class="footer-links">
+							<li><a href="/contact">Contact</a></li>
+							<li><a href="/rss.xml">RSS Feed</a></li>
+						</ul>
+					</div>
+					<div class="footer-widgets-section">
+						<WidgetArea name="footer" />
+					</div>
 				</div>
-				<div class="footer-right">
+				<div class="footer-bottom">
+					<p class="footer-copyright">
+						Powered by <a href="https://emdashcms.com">EmDash</a>
+					</p>
 					<div class="theme-switcher">
 						<button
 							type="button"
@@ -114,9 +181,6 @@ const pageCtx = createPublicPageContext({
 							aria-label="System theme">System</button
 						>
 					</div>
-					<p class="footer-powered">
-						Powered by <a href="https://emdashcms.com">EmDash</a>
-					</p>
 				</div>
 			</div>
 		</footer>
@@ -187,18 +251,33 @@ const pageCtx = createPublicPageContext({
 			:root {
 				/* Colors - Elegant/Minimal palette */
 				--color-bg: #fafafa;
+				--color-bg-subtle: #f5f5f5;
 				--color-text: #1a1a1a;
+				--color-text-secondary: #4b5563;
 				--color-muted: #6b7280;
 				--color-border: #e5e7eb;
+				--color-border-subtle: #f3f4f6;
 				--color-surface: #ffffff;
 				--color-accent: #7c3aed;
+				--color-accent-hover: #6d28d9;
 				--color-accent-muted: #a78bfa;
+				--color-on-accent: #ffffff;
+				--color-accent-ring: color-mix(in srgb, var(--color-accent) 25%, transparent);
+
+				/* EmDash search theming */
+				--emdash-search-bg: var(--color-bg);
+				--emdash-search-text: var(--color-text);
+				--emdash-search-muted: var(--color-muted);
+				--emdash-search-border: var(--color-border);
+				--emdash-search-hover: var(--color-surface);
+				--emdash-search-highlight: var(--color-text);
 
 				/* Typography */
 				--font-serif: "Playfair Display", Georgia, serif;
 				--font-sans: system-ui, -apple-system, sans-serif;
 				--font-mono: ui-monospace, monospace;
 
+				--font-size-xs: 0.75rem;
 				--font-size-sm: 0.875rem;
 				--font-size-base: 1.0625rem;
 				--font-size-lg: 1.25rem;
@@ -206,21 +285,69 @@ const pageCtx = createPublicPageContext({
 				--font-size-2xl: 2rem;
 				--font-size-3xl: 2.75rem;
 				--font-size-4xl: 3.5rem;
+				--font-size-5xl: 4.5rem;
+
+				/* Line heights */
+				--leading-tight: 1.15;
+				--leading-snug: 1.3;
+				--leading-normal: 1.5;
+				--leading-relaxed: 1.7;
 
 				/* Spacing */
-				--spacing-xs: 0.25rem;
-				--spacing-sm: 0.5rem;
-				--spacing-md: 1rem;
-				--spacing-lg: 1.5rem;
-				--spacing-xl: 2rem;
-				--spacing-2xl: 3rem;
-				--spacing-3xl: 4rem;
-				--spacing-4xl: 6rem;
+				--spacing-1: 0.25rem;
+				--spacing-2: 0.5rem;
+				--spacing-3: 0.75rem;
+				--spacing-4: 1rem;
+				--spacing-5: 1.25rem;
+				--spacing-6: 1.5rem;
+				--spacing-8: 2rem;
+				--spacing-10: 2.5rem;
+				--spacing-12: 3rem;
+				--spacing-16: 4rem;
+				--spacing-20: 5rem;
+				--spacing-24: 6rem;
+
+				/* Legacy spacing aliases */
+				--spacing-xs: var(--spacing-1);
+				--spacing-sm: var(--spacing-2);
+				--spacing-md: var(--spacing-4);
+				--spacing-lg: var(--spacing-6);
+				--spacing-xl: var(--spacing-8);
+				--spacing-2xl: var(--spacing-12);
+				--spacing-3xl: var(--spacing-16);
+				--spacing-4xl: var(--spacing-24);
 
 				/* Layout */
+				--content-width: 680px;
 				--max-width: 720px;
 				--wide-width: 1200px;
+				--gutter-width: 200px;
+				--meta-col-width: 180px;
 				--radius: 4px;
+				--radius-lg: 8px;
+
+				/* Nav */
+				--nav-height: 64px;
+				--search-input-width: 180px;
+
+				/* Letter spacing */
+				--tracking-tight: -0.03em;
+				--tracking-snug: -0.02em;
+				--tracking-wide: 0.06em;
+				--tracking-wider: 0.08em;
+
+				/* Tag pill */
+				--tag-padding-y: 2px;
+
+				/* Avatars */
+				--avatar-size-xs: 18px;
+				--avatar-size-sm: 20px;
+				--avatar-size-md: 24px;
+				--avatar-size-lg: 32px;
+
+				/* Shadows */
+				--shadow-dropdown: 0 8px 30px rgba(0, 0, 0, 0.12);
+				--shadow-btn-active: 0 1px 2px rgba(0, 0, 0, 0.05);
 
 				/* Transitions */
 				--transition-fast: 150ms ease;
@@ -232,11 +359,15 @@ const pageCtx = createPublicPageContext({
 			@media (prefers-color-scheme: dark) {
 				:root:not(.light) {
 					--color-bg: #0a0a0a;
+					--color-bg-subtle: #141414;
 					--color-text: #f5f5f5;
-					--color-muted: #a1a1aa;
+					--color-text-secondary: #a1a1aa;
+					--color-muted: #71717a;
 					--color-border: #27272a;
+					--color-border-subtle: #1f1f1f;
 					--color-surface: #18181b;
 					--color-accent: #a78bfa;
+					--color-accent-hover: #c4b5fd;
 					--color-accent-muted: #7c3aed;
 				}
 			}
@@ -244,11 +375,15 @@ const pageCtx = createPublicPageContext({
 			/* Explicit dark mode */
 			:root.dark {
 				--color-bg: #0a0a0a;
+				--color-bg-subtle: #141414;
 				--color-text: #f5f5f5;
-				--color-muted: #a1a1aa;
+				--color-text-secondary: #a1a1aa;
+				--color-muted: #71717a;
 				--color-border: #27272a;
+				--color-border-subtle: #1f1f1f;
 				--color-surface: #18181b;
 				--color-accent: #a78bfa;
+				--color-accent-hover: #c4b5fd;
 				--color-accent-muted: #7c3aed;
 			}
 
@@ -300,15 +435,23 @@ const pageCtx = createPublicPageContext({
 
 		<style>
 			.site-header {
-				max-width: var(--wide-width);
-				margin: 0 auto;
-				padding: var(--spacing-xl) var(--spacing-lg);
+				position: sticky;
+				top: 0;
+				z-index: 100;
+				background: color-mix(in srgb, var(--color-bg) 80%, transparent);
+				backdrop-filter: blur(12px);
+				-webkit-backdrop-filter: blur(12px);
+				border-bottom: 1px solid var(--color-border);
 			}
 
 			.nav {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
+				max-width: var(--wide-width);
+				margin: 0 auto;
+				padding: var(--spacing-4) var(--spacing-6);
+				height: var(--nav-height);
 			}
 
 			.site-title {
@@ -317,11 +460,18 @@ const pageCtx = createPublicPageContext({
 				font-weight: 600;
 				text-decoration: none;
 				letter-spacing: -0.02em;
+				color: var(--color-text);
+			}
+
+			.nav-right {
+				display: flex;
+				align-items: center;
+				gap: var(--spacing-6);
 			}
 
 			.nav-links {
 				display: flex;
-				gap: var(--spacing-xl);
+				gap: var(--spacing-6);
 				font-size: var(--font-size-sm);
 			}
 
@@ -335,50 +485,216 @@ const pageCtx = createPublicPageContext({
 				color: var(--color-text);
 			}
 
-			.nav-links a:empty {
-				display: none;
+			.nav-admin {
+				font-size: var(--font-size-sm);
+				color: var(--color-muted);
+				text-decoration: none;
+				opacity: 0.5;
+				transition: opacity var(--transition-fast);
 			}
 
-			.nav-admin {
-				opacity: 0.5;
+			.nav-admin:hover {
+				opacity: 1;
+			}
+
+			/* Search */
+			.site-search {
+				position: relative;
+				width: var(--search-input-width);
+				--emdash-search-border-focus: var(--color-accent);
+			}
+
+			:global(.site-search-input) {
+				width: var(--search-input-width);
+				padding: var(--spacing-2) var(--spacing-3);
+				font-family: var(--font-sans);
+				font-size: var(--font-size-sm);
+				border: 1px solid var(--color-border);
+				border-radius: var(--radius);
+				background: var(--color-bg);
+				color: var(--color-text);
+				transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+			}
+
+			:global(.site-search-input)::placeholder {
+				color: var(--color-muted);
+			}
+
+			:global(.site-search-input):focus,
+			:global(.site-search-input):focus-visible {
+				outline: none;
+				border-color: var(--color-accent) !important;
+				box-shadow: 0 0 0 3px var(--color-accent-ring);
+			}
+
+			:global(.site-search-results) {
+				position: absolute;
+				top: 100%;
+				left: 0;
+				right: 0;
+				margin-top: var(--spacing-2);
+				background: var(--color-bg);
+				border: 1px solid var(--color-border);
+				border-radius: var(--radius-lg);
+				box-shadow: var(--shadow-dropdown);
+				max-height: 400px;
+				overflow-y: auto;
+				z-index: 1000;
+			}
+
+			:global(.site-search-result) {
+				display: block;
+				padding: var(--spacing-3) var(--spacing-4);
+				text-decoration: none;
+				color: var(--color-text);
+				border-bottom: 1px solid var(--color-border-subtle);
+				transition: background var(--transition-fast);
+			}
+
+			:global(.site-search-result):last-child {
+				border-bottom: none;
+			}
+
+			:global(.site-search-result):hover,
+			:global(.site-search-result.focused) {
+				background: var(--color-surface);
+			}
+
+			:global(.site-search-result .emdash-live-search-result-title) {
+				display: block;
+				font-weight: 500;
+				font-size: var(--font-size-sm);
+			}
+
+			:global(.site-search-result .emdash-live-search-result-collection) {
+				display: block;
+				font-size: var(--font-size-xs);
+				color: var(--color-muted);
+				text-transform: uppercase;
+				letter-spacing: var(--tracking-wide);
+				margin-top: 2px;
+			}
+
+			:global(.site-search-result .emdash-live-search-result-snippet) {
+				display: block;
+				font-size: var(--font-size-sm);
+				color: var(--color-muted);
+				margin-top: var(--spacing-1);
 			}
 
 			main {
-				min-height: calc(100vh - 200px);
+				min-height: calc(100vh - var(--nav-height) - 300px);
 			}
 
+			/* Footer */
 			.site-footer {
-				max-width: var(--wide-width);
-				margin: 0 auto;
-				padding: var(--spacing-3xl) var(--spacing-lg);
+				background: var(--color-bg-subtle);
 				border-top: 1px solid var(--color-border);
 			}
 
-			.footer-content {
-				display: flex;
-				justify-content: space-between;
-				align-items: flex-start;
+			.footer-inner {
+				max-width: var(--wide-width);
+				margin: 0 auto;
+				padding: var(--spacing-16) var(--spacing-6) var(--spacing-8);
+			}
+
+			.footer-grid {
+				display: grid;
+				grid-template-columns: 2fr 1fr 1fr 1fr;
+				gap: var(--spacing-12);
+				margin-bottom: var(--spacing-12);
+			}
+
+			.footer-brand {
+				max-width: 280px;
 			}
 
 			.footer-logo {
 				font-family: var(--font-serif);
 				font-size: var(--font-size-lg);
 				font-weight: 600;
+				color: var(--color-text);
+				text-decoration: none;
+				letter-spacing: -0.02em;
 			}
 
 			.footer-tagline {
+				margin-top: var(--spacing-3);
 				font-family: var(--font-serif);
 				font-style: italic;
 				font-size: var(--font-size-sm);
 				color: var(--color-muted);
-				margin-top: var(--spacing-xs);
 			}
 
-			.footer-right {
+			.footer-nav {
+				min-width: 0;
+			}
+
+			.footer-heading {
+				font-size: var(--font-size-xs);
+				font-weight: 500;
+				text-transform: uppercase;
+				letter-spacing: var(--tracking-wider);
+				color: var(--color-muted);
+				margin-bottom: var(--spacing-4);
+			}
+
+			.footer-links {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+
+			.footer-links li {
+				margin-bottom: var(--spacing-2);
+			}
+
+			.footer-links a {
+				color: var(--color-text-secondary);
+				text-decoration: none;
+				font-size: var(--font-size-sm);
+				transition: color var(--transition-fast);
+			}
+
+			.footer-links a:hover {
+				color: var(--color-text);
+			}
+
+			.footer-widgets-section :global(.widget-area) {
+				display: block;
+			}
+
+			.footer-widgets-section :global(.widget__title) {
+				font-size: var(--font-size-xs);
+				font-weight: 500;
+				text-transform: uppercase;
+				letter-spacing: var(--tracking-wider);
+				color: var(--color-muted);
+				margin-bottom: var(--spacing-4);
+			}
+
+			.footer-widgets-section :global(.widget__content) {
+				color: var(--color-text-secondary);
+				font-size: var(--font-size-sm);
+				line-height: var(--leading-relaxed);
+			}
+
+			.footer-bottom {
 				display: flex;
-				flex-direction: column;
-				align-items: flex-end;
-				gap: var(--spacing-md);
+				justify-content: space-between;
+				align-items: center;
+				padding-top: var(--spacing-6);
+				border-top: 1px solid var(--color-border);
+			}
+
+			.footer-copyright {
+				font-size: var(--font-size-sm);
+				color: var(--color-muted);
+			}
+
+			.footer-copyright a {
+				color: var(--color-text-secondary);
+				text-decoration: none;
 			}
 
 			.theme-switcher {
@@ -409,41 +725,62 @@ const pageCtx = createPublicPageContext({
 				border-color: var(--color-accent);
 			}
 
-			.footer-powered {
-				font-size: var(--font-size-sm);
-				color: var(--color-muted);
-			}
+			@media (max-width: 900px) {
+				.footer-grid {
+					grid-template-columns: 1fr 1fr;
+					gap: var(--spacing-8);
+				}
 
-			.footer-powered a {
-				color: var(--color-text);
-				text-decoration: none;
-			}
-
-			.footer-powered a:hover {
-				text-decoration: underline;
+				.footer-brand {
+					grid-column: span 2;
+					max-width: none;
+				}
 			}
 
 			@media (max-width: 640px) {
 				.nav {
-					flex-direction: column;
-					gap: var(--spacing-md);
-					align-items: center;
+					height: auto;
+					flex-wrap: wrap;
+					gap: var(--spacing-2);
+					padding: var(--spacing-3) var(--spacing-4);
+				}
+
+				.nav-right {
+					display: contents;
+				}
+
+				.site-search {
+					order: 0;
+					max-width: 130px;
+				}
+
+				:global(.site-search-input) {
+					width: 130px !important;
 				}
 
 				.nav-links {
+					order: 1;
+					width: 100%;
 					flex-wrap: wrap;
-					justify-content: center;
+					gap: var(--spacing-3);
 				}
 
-				.footer-content {
+				.nav-admin {
+					order: 2;
+				}
+
+				.footer-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.footer-brand {
+					grid-column: span 1;
+				}
+
+				.footer-bottom {
 					flex-direction: column;
-					gap: var(--spacing-xl);
-					align-items: center;
+					gap: var(--spacing-4);
 					text-align: center;
-				}
-
-				.footer-right {
-					align-items: center;
 				}
 
 				h1 {
@@ -451,5 +788,18 @@ const pageCtx = createPublicPageContext({
 				}
 			}
 		</style>
+		<script>
+			// ⌘K / Ctrl+K to focus search
+			document.addEventListener("keydown", (e) => {
+				if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+					e.preventDefault();
+					const searchInput = document.querySelector(
+						".site-search-input"
+					) as HTMLInputElement;
+					if (searchInput) searchInput.focus();
+				}
+			});
+		</script>
+		<EmDashBodyEnd page={pageCtx} />
 	</body>
 </html>
