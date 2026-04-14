@@ -1,0 +1,107 @@
+{
+	"meta": {
+		"title": "Dawood Saleh | Software Engineer",
+		"description": "Software engineer building serverless backends, AI tooling, and infrastructure that runs without maintenance."
+	},
+	"nav": {
+		"home": "Home",
+		"about": "About",
+		"projects": "Projects",
+		"skills": "Skills",
+		"blog": "Blog",
+		"contact": "Contact"
+	},
+	"hero": {
+		"firstName": "Dawood",
+		"lastName": "Saleh",
+		"available": "Available for work",
+		"subtitle": "Software engineer building serverless backends, AI tooling, and infrastructure that runs without maintenance.",
+		"stack": "Node.js · TypeScript · Cloudflare Workers · MCP",
+		"cta": "Get in touch",
+		"viewProjects": "View projects"
+	},
+	"about": {
+		"section": "About",
+		"heading1": "Backend engineer.",
+		"heading2": "AI tools. No fluff.",
+		"info": {
+			"location": "Location",
+			"locationVal": "Sana'a, Yemen",
+			"focus": "Focus",
+			"focusVal": "Backend · AI Tooling · Serverless",
+			"email": "Email",
+			"status": "Status",
+			"statusVal": "Open to work"
+		},
+		"bio1": "I got into programming because I liked understanding how things work — that's still what drives most of what I build. Over the past few years I've been working independently, building backend systems, Telegram bots, and tools that connect AI models to real data.",
+		"bio2": "One project I kept coming back to was MCP — a protocol that lets AI models use external tools and live data sources. I built an MCP server for Arabic academic research because the gap was obvious: millions of Arabic research records with almost no AI-accessible tooling around them.",
+		"bio3": "Before going independent I taught OOP at Hajjah University for about seven months. Teaching is useful that way — you can't hide behind vague code when someone's waiting for an explanation."
+	},
+	"projects": {
+		"section": "Projects",
+		"heading": "Selected work",
+		"viewAll": "View all work",
+		"items": [
+			{
+				"title": "Arabic Academic Research MCP Server",
+				"description": "MCP server integrating 4M+ records from Mandumah, ASJP, and SHAMAA — the first AI-accessible tooling for Arabic academic research. Published as an open tool for the Arabic research community.",
+				"tags": ["Node.js", "MCP", "TypeScript", "Arabic NLP"],
+				"year": "2024"
+			},
+			{
+				"title": "Multi-Platform Telegram Media Bot",
+				"description": "Telegram media downloader supporting 9+ platforms, deployed on Cloudflare Workers. Built with Node.js and Hono, featuring analytics tracking and cron-based automation.",
+				"tags": ["Node.js", "Hono", "Cloudflare Workers", "Telegram API"],
+				"year": "2024"
+			},
+			{
+				"title": "Serverless Backend Systems",
+				"description": "Architected serverless backends on Cloudflare Workers with KV storage, webhook automation, and scheduled tasks. Designed to be API-driven and maintenance-free.",
+				"tags": ["Cloudflare Workers", "KV", "Webhooks", "Cron"],
+				"year": "2023"
+			}
+		]
+	},
+	"skills": {
+		"section": "Skills",
+		"heading": "Tech stack",
+		"categories": {
+			"languages": "Languages",
+			"backend": "Backend & Runtime",
+			"infra": "Infrastructure",
+			"ai": "AI & Tooling",
+			"data": "Data",
+			"tools": "Tools"
+		}
+	},
+	"contact": {
+		"section": "Contact",
+		"heading1": "Have a project?",
+		"heading2": "Let's talk.",
+		"description": "Open to backend engineering roles and serious freelance work. If the project involves AI tooling or serverless, that's my territory.",
+		"cta": "Send me an email",
+		"form": {
+			"heading": "Send a message",
+			"name": "Your name",
+			"email": "Your email",
+			"message": "Message",
+			"submit": "Send message",
+			"sending": "Sending...",
+			"success": "Message sent! I'll get back to you soon.",
+			"error": "Something went wrong. Please try again."
+		},
+		"links": {
+			"email": "Email",
+			"github": "GitHub",
+			"linkedin": "LinkedIn",
+			"telegram": "Telegram",
+			"twitter": "X / Twitter"
+		}
+	},
+	"footer": {
+		"copyright": "All rights reserved",
+		"nav": "Links",
+		"connect": "Connect",
+		"rss": "RSS Feed"
+	}
+}

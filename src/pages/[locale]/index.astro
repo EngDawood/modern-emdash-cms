@@ -1,0 +1,863 @@
+---
+import { getEmDashCollection, getSiteSettings } from "emdash";
+import Base from "../../layouts/Base.astro";
+import { t, locales, type Locale, defaultLocale } from "../../i18n/utils";
+import { skillsData } from "../../data/skills";
+
+// In server mode, validate locale from params
+const { locale: localeParam } = Astro.params;
+const locale: Locale = locales.includes(localeParam as Locale)
+	? (localeParam as Locale)
+	: defaultLocale;
+
+// Redirect if invalid locale
+if (!locales.includes(localeParam as Locale)) {
+	return Astro.redirect(`/${defaultLocale}/`, 302);
+}
+
+const settings = await getSiteSettings();
+const { entries: projects, cacheHint } = await getEmDashCollection("projects");
+Astro.cache.set(cacheHint);
+
+// Get the 3 most recent projects for the homepage
+const featuredProjects = projects
+	.toSorted((a, b) => {
+		const dateA = a.data.publishedAt?.getTime() ?? 0;
+		const dateB = b.data.publishedAt?.getTime() ?? 0;
+		return dateB - dateA;
+	})
+	.slice(0, 3);
+
+const email = "eng.dawoodsaleh@gmail.com";
+const github = "https://github.com/EngDawood";
+const linkedin = "https://www.linkedin.com/in/dawood3";
+const telegram = "https://t.me/Daw5d";
+const twitter = "https://x.com/dawo5d";
+
+// Contact form state
+let formStatus: "idle" | "success" | "error" = "idle";
+let formMessage = "";
+
+if (Astro.request.method === "POST") {
+	try {
+		const formData = await Astro.request.formData();
+		const name = formData.get("name")?.toString() || "";
+		const emailVal = formData.get("email")?.toString() || "";
+		const message = formData.get("message")?.toString() || "";
+
+		if (!name || !emailVal || !message) {
+			formStatus = "error";
+			formMessage = t("contact.form.error", locale);
+		} else if (!emailVal.includes("@")) {
+			formStatus = "error";
+			formMessage = t("contact.form.error", locale);
+		} else {
+			// TODO: Wire to formsPlugin or email service
+			console.log("Contact form submission:", { name, email: emailVal, message });
+			formStatus = "success";
+			formMessage = t("contact.form.success", locale);
+		}
+	} catch {
+		formStatus = "error";
+		formMessage = t("contact.form.error", locale);
+	}
+}
+---
+
+<Base
+	title={t("meta.title", locale)}
+	description={t("meta.description", locale)}
+	locale={locale}
+>
+	<!-- Hero Section -->
+	<section id="hero" class="hero reveal">
+		<div class="hero-badge reveal-child">
+			<span class="badge-dot"></span>
+			{t("hero.available", locale)}
+		</div>
+		<h1 class="hero-name reveal-child">
+			<span class="first-name">{t("hero.firstName", locale)}</span>
+			<span class="last-name">{t("hero.lastName", locale)}</span>
+		</h1>
+		<p class="hero-subtitle reveal-child">{t("hero.subtitle", locale)}</p>
+		<p class="hero-stack reveal-child">{t("hero.stack", locale)}</p>
+		<div class="hero-cta reveal-child">
+			<a href={`mailto:${email}`} class="btn btn-primary">
+				{t("hero.cta", locale)}
+			</a>
+			<a href="#projects" class="btn btn-secondary">
+				{t("hero.viewProjects", locale)}
+			</a>
+		</div>
+		<div class="hero-social">
+			<a href={github} target="_blank" rel="noopener noreferrer">GitHub</a>
+			<a href={linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+			<a href={telegram} target="_blank" rel="noopener noreferrer">Telegram</a>
+		</div>
+	</section>
+
+	<!-- About Section -->
+	<section id="about" class="about reveal">
+		<div class="about-grid">
+			<div class="about-info reveal-child">
+				<h2 class="section-label">{t("about.section", locale)}</h2>
+				<h3 class="about-heading">
+					{t("about.heading1", locale)}
+					<span class="accent">{t("about.heading2", locale)}</span>
+				</h3>
+				<dl class="info-list">
+					<div class="info-row">
+						<dt>{t("about.info.location", locale)}</dt>
+						<dd>{t("about.info.locationVal", locale)}</dd>
+					</div>
+					<div class="info-row">
+						<dt>{t("about.info.focus", locale)}</dt>
+						<dd>{t("about.info.focusVal", locale)}</dd>
+					</div>
+					<div class="info-row">
+						<dt>{t("about.info.email", locale)}</dt>
+						<dd><a href={`mailto:${email}`}>{email}</a></dd>
+					</div>
+					<div class="info-row">
+						<dt>{t("about.info.status", locale)}</dt>
+						<dd class="status-available">{t("about.info.statusVal", locale)}</dd>
+					</div>
+				</dl>
+			</div>
+			<div class="about-bio">
+				<p>{t("about.bio1", locale)}</p>
+				<p>{t("about.bio2", locale)}</p>
+				<p>{t("about.bio3", locale)}</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Projects Section -->
+	<section id="projects" class="projects reveal">
+		<header class="section-header reveal-child">
+			<h2 class="section-label">{t("projects.section", locale)}</h2>
+			<h3 class="section-title">{t("projects.heading", locale)}</h3>
+		</header>
+		<div class="projects-grid">
+			{featuredProjects.map((project, index) => (
+				<a href={`/${locale}/work/${project.id}`} class="project-card reveal-item" style={`--delay: ${index}`}>
+					{project.data.featured_image && (
+						<div class="project-image">
+							<img
+								src={typeof project.data.featured_image === 'string'
+									? project.data.featured_image
+									: project.data.featured_image.src}
+								alt={project.data.title ?? ''}
+							/>
+						</div>
+					)}
+					<div class="project-content">
+						<div class="project-header">
+							<h4 class="project-title">{project.data.title}</h4>
+							<span class="project-arrow">↗</span>
+						</div>
+						<p class="project-summary">{project.data.summary}</p>
+						<div class="project-meta">
+							<span class="project-year">{project.data.year}</span>
+						</div>
+					</div>
+				</a>
+			))}
+		</div>
+		<div class="projects-cta">
+			<a href={`/${locale}/work`} class="btn btn-secondary">
+				{t("projects.viewAll", locale)} →
+			</a>
+		</div>
+	</section>
+
+	<!-- Skills Section -->
+	<section id="skills" class="skills reveal">
+		<header class="section-header reveal-child">
+			<h2 class="section-label">{t("skills.section", locale)}</h2>
+			<h3 class="section-title">{t("skills.heading", locale)}</h3>
+		</header>
+		<div class="skills-grid">
+			{Object.entries(skillsData).map(([key, category], index) => (
+				<div class="skill-group reveal-item" style={`--delay: ${index}`}>
+					<h4 class="skill-group-title">{t(`skills.categories.${key}`, locale)}</h4>
+					<div class="skill-badges">
+						{category.skills.map((skill) => (
+							<span class:list={[
+								"skill-badge",
+								skill.level >= 90 ? "badge-filled" : skill.level >= 80 ? "badge-secondary" : "badge-outline"
+							]}>
+								{skill.name}
+							</span>
+						))}
+					</div>
+				</div>
+			))}
+		</div>
+	</section>
+
+	<!-- Contact Section -->
+	<section id="contact" class="contact reveal">
+		<div class="contact-grid">
+			<div class="contact-info reveal-child">
+				<h2 class="section-label">{t("contact.section", locale)}</h2>
+				<h3 class="contact-heading">
+					{t("contact.heading1", locale)}
+					<span class="accent">{t("contact.heading2", locale)}</span>
+				</h3>
+				<p class="contact-description">{t("contact.description", locale)}</p>
+				<div class="contact-links">
+					<a href={`mailto:${email}`} class="contact-link">
+						<span class="link-label">{t("contact.links.email", locale)}</span>
+						<span class="link-value">{email}</span>
+					</a>
+					<a href={github} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.github", locale)}</span>
+						<span class="link-value">EngDawood</span>
+					</a>
+					<a href={linkedin} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.linkedin", locale)}</span>
+						<span class="link-value">dawood3</span>
+					</a>
+					<a href={telegram} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.telegram", locale)}</span>
+						<span class="link-value">Daw5d</span>
+					</a>
+					<a href={twitter} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.twitter", locale)}</span>
+						<span class="link-value">dawo5d</span>
+					</a>
+				</div>
+			</div>
+			<div class="contact-form-wrapper reveal-child">
+				<h4 class="form-heading">{t("contact.form.heading", locale)}</h4>
+				{formStatus === "success" ? (
+					<div class="form-success">
+						<p>{formMessage}</p>
+						<a href={`/${locale}#contact`} class="btn btn-secondary">{t("contact.cta", locale)}</a>
+					</div>
+				) : (
+					<form method="POST" class="contact-form">
+						{formStatus === "error" && (
+							<div class="form-error">{formMessage}</div>
+						)}
+						<div class="form-field">
+							<label for="name">{t("contact.form.name", locale)}</label>
+							<input type="text" id="name" name="name" required autocomplete="name" />
+						</div>
+						<div class="form-field">
+							<label for="email">{t("contact.form.email", locale)}</label>
+							<input type="email" id="email" name="email" required autocomplete="email" />
+						</div>
+						<div class="form-field">
+							<label for="message">{t("contact.form.message", locale)}</label>
+							<textarea id="message" name="message" rows="5" required></textarea>
+						</div>
+						<button type="submit" class="btn btn-primary">
+							{t("contact.form.submit", locale)}
+						</button>
+					</form>
+				)}
+			</div>
+		</div>
+	</section>
+</Base>
+
+<style>
+	/* Hero Section */
+	.hero {
+		min-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		padding: var(--spacing-2xl) var(--spacing-lg);
+		max-width: var(--wide-width);
+		margin: 0 auto;
+	}
+
+	.hero-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.375rem 0.875rem;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 9999px;
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-lg);
+	}
+
+	.badge-dot {
+		width: 8px;
+		height: 8px;
+		background: #22c55e;
+		border-radius: 50%;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
+	}
+
+	.hero-name {
+		font-family: var(--font-serif);
+		font-size: clamp(3rem, 10vw, var(--font-size-5xl));
+		font-weight: 500;
+		line-height: 1.1;
+		letter-spacing: var(--tracking-tight);
+		margin-bottom: var(--spacing-lg);
+	}
+
+	.last-name {
+		color: var(--color-accent);
+	}
+
+	.hero-subtitle {
+		font-size: var(--font-size-lg);
+		color: var(--color-muted);
+		max-width: 600px;
+		line-height: 1.6;
+		margin-bottom: var(--spacing-md);
+	}
+
+	.hero-stack {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		font-family: var(--font-mono);
+		margin-bottom: var(--spacing-xl);
+	}
+
+	.hero-cta {
+		display: flex;
+		gap: var(--spacing-md);
+		margin-bottom: var(--spacing-xl);
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		border-radius: var(--radius);
+		text-decoration: none;
+		transition: all var(--transition-fast);
+		cursor: pointer;
+		border: none;
+	}
+
+	.btn-primary {
+		background: var(--color-text);
+		color: var(--color-bg);
+	}
+
+	.btn-primary:hover {
+		background: var(--color-accent);
+	}
+
+	.btn-secondary {
+		background: var(--color-surface);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+	}
+
+	.btn-secondary:hover {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
+	.hero-social {
+		display: flex;
+		gap: var(--spacing-lg);
+	}
+
+	.hero-social a {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		text-decoration: none;
+		transition: color var(--transition-fast);
+	}
+
+	.hero-social a:hover {
+		color: var(--color-accent);
+	}
+
+	/* Section Labels & Headers */
+	.section-label {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		color: var(--color-accent);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wider);
+		margin-bottom: var(--spacing-sm);
+	}
+
+	.section-title {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-3xl);
+		font-weight: 500;
+		letter-spacing: var(--tracking-tight);
+	}
+
+	.section-header {
+		margin-bottom: var(--spacing-2xl);
+	}
+
+	/* About Section */
+	.about {
+		padding: var(--spacing-4xl) var(--spacing-lg);
+		max-width: var(--wide-width);
+		margin: 0 auto;
+	}
+
+	.about-grid {
+		display: grid;
+		grid-template-columns: 1fr 1.5fr;
+		gap: var(--spacing-4xl);
+	}
+
+	.about-heading {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-2xl);
+		font-weight: 500;
+		line-height: 1.2;
+		margin-bottom: var(--spacing-xl);
+	}
+
+	.accent {
+		color: var(--color-accent);
+	}
+
+	.info-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.info-row {
+		display: flex;
+		justify-content: space-between;
+		padding: var(--spacing-md) 0;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.info-row dt {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+	}
+
+	.info-row dd {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+	}
+
+	.info-row dd a {
+		text-decoration: none;
+		color: var(--color-text);
+	}
+
+	.info-row dd a:hover {
+		color: var(--color-accent);
+	}
+
+	.status-available {
+		color: #22c55e;
+	}
+
+	.about-bio p {
+		font-size: var(--font-size-base);
+		color: var(--color-muted);
+		line-height: 1.7;
+		margin-bottom: var(--spacing-lg);
+	}
+
+	/* Projects Section */
+	.projects {
+		padding: var(--spacing-4xl) var(--spacing-lg);
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		background: var(--color-bg-subtle);
+	}
+
+	.projects-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--spacing-xl);
+	}
+
+	.project-card {
+		display: block;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		text-decoration: none;
+		transition: all var(--transition-base);
+	}
+
+	.project-card:hover {
+		border-color: var(--color-accent);
+		box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+		transform: translateY(-4px);
+	}
+
+	.project-image {
+		aspect-ratio: 16/10;
+		overflow: hidden;
+	}
+
+	.project-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform var(--transition-slow);
+	}
+
+	.project-card:hover .project-image img {
+		transform: scale(1.05);
+	}
+
+	.project-content {
+		padding: var(--spacing-lg);
+	}
+
+	.project-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: var(--spacing-sm);
+	}
+
+	.project-title {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-lg);
+		font-weight: 500;
+	}
+
+	.project-arrow {
+		color: var(--color-muted);
+		transition: all var(--transition-fast);
+	}
+
+	.project-card:hover .project-arrow {
+		color: var(--color-accent);
+		transform: translate(2px, -2px);
+	}
+
+	.project-summary {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		line-height: 1.6;
+		margin-bottom: var(--spacing-md);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.project-meta {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.project-year {
+		font-size: var(--font-size-xs);
+		color: var(--color-muted);
+		font-family: var(--font-mono);
+	}
+
+	.projects-cta {
+		margin-top: var(--spacing-2xl);
+		text-align: center;
+	}
+
+	/* Skills Section */
+	.skills {
+		padding: var(--spacing-4xl) var(--spacing-lg);
+		max-width: var(--wide-width);
+		margin: 0 auto;
+	}
+
+	.skills-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--spacing-xl);
+	}
+
+	.skill-group {
+		padding: var(--spacing-lg);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+	}
+
+	.skill-group-title {
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		margin-bottom: var(--spacing-md);
+		color: var(--color-text);
+	}
+
+	.skill-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.skill-badge {
+		padding: 0.25rem 0.75rem;
+		font-size: var(--font-size-xs);
+		border-radius: 9999px;
+		font-weight: 500;
+	}
+
+	.badge-filled {
+		background: var(--color-text);
+		color: var(--color-bg);
+	}
+
+	.badge-secondary {
+		background: var(--color-bg-subtle);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+	}
+
+	.badge-outline {
+		background: transparent;
+		color: var(--color-muted);
+		border: 1px solid var(--color-border);
+	}
+
+	/* Contact Section */
+	.contact {
+		padding: var(--spacing-4xl) var(--spacing-lg);
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		background: var(--color-bg-subtle);
+	}
+
+	.contact-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--spacing-4xl);
+	}
+
+	.contact-heading {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-3xl);
+		font-weight: 500;
+		line-height: 1.2;
+		margin-bottom: var(--spacing-lg);
+	}
+
+	.contact-description {
+		font-size: var(--font-size-base);
+		color: var(--color-muted);
+		line-height: 1.7;
+		margin-bottom: var(--spacing-xl);
+	}
+
+	.contact-links {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-md);
+	}
+
+	.contact-link {
+		display: flex;
+		flex-direction: column;
+		padding: var(--spacing-md) 0;
+		border-bottom: 1px solid var(--color-border);
+		text-decoration: none;
+		transition: all var(--transition-fast);
+	}
+
+	.contact-link:hover {
+		border-color: var(--color-accent);
+	}
+
+	.link-label {
+		font-size: var(--font-size-xs);
+		color: var(--color-muted);
+		margin-bottom: 0.25rem;
+	}
+
+	.link-value {
+		font-size: var(--font-size-sm);
+		color: var(--color-text);
+		font-weight: 500;
+	}
+
+	.contact-link:hover .link-value {
+		color: var(--color-accent);
+	}
+
+	/* Contact Form */
+	.form-heading {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-xl);
+		font-weight: 500;
+		margin-bottom: var(--spacing-lg);
+	}
+
+	.contact-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-lg);
+	}
+
+	.form-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.form-field label {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+	}
+
+	.form-field input,
+	.form-field textarea {
+		padding: var(--spacing-md);
+		font-family: inherit;
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		transition: border-color var(--transition-fast);
+	}
+
+	.form-field input:focus,
+	.form-field textarea:focus {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+
+	.form-field textarea {
+		resize: vertical;
+		min-height: 120px;
+	}
+
+	.form-error {
+		padding: var(--spacing-md);
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: var(--radius);
+		color: #dc2626;
+		font-size: var(--font-size-sm);
+	}
+
+	.form-success {
+		padding: var(--spacing-2xl);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		text-align: center;
+	}
+
+	.form-success p {
+		color: #22c55e;
+		margin-bottom: var(--spacing-lg);
+	}
+
+	/* Responsive */
+	@media (max-width: 1024px) {
+		.projects-grid,
+		.skills-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.about-grid,
+		.contact-grid {
+			grid-template-columns: 1fr;
+			gap: var(--spacing-2xl);
+		}
+
+		.projects-grid,
+		.skills-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.hero-name {
+			font-size: var(--font-size-3xl);
+		}
+
+		.info-row {
+			flex-direction: column;
+			gap: 0.25rem;
+		}
+	}
+
+	/* Scroll Reveal Animations */
+	.reveal {
+		opacity: 0;
+	}
+
+	.reveal.visible {
+		opacity: 1;
+	}
+
+	.reveal-child,
+	.reveal-item {
+		opacity: 0;
+		transform: translateY(20px);
+		transition: opacity 0.6s ease, transform 0.6s ease;
+	}
+
+	.reveal.visible .reveal-child {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	/* Staggered animation for grid items */
+	.reveal.visible .reveal-item {
+		opacity: 1;
+		transform: translateY(0);
+		transition-delay: calc(var(--delay, 0) * 0.1s);
+	}
+
+	/* Respect reduced motion preference */
+	@media (prefers-reduced-motion: reduce) {
+		.reveal,
+		.reveal-child,
+		.reveal-item {
+			opacity: 1;
+			transform: none;
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	// Intersection Observer for scroll reveal animations
+	const observerOptions = {
+		root: null,
+		rootMargin: '0px',
+		threshold: 0.1
+	};
+
+	const observer = new IntersectionObserver((entries) => {
+		entries.forEach((entry) => {
+			if (entry.isIntersecting) {
+				entry.target.classList.add('visible');
+				// Optionally unobserve after reveal
+				// observer.unobserve(entry.target);
+			}
+		});
+	}, observerOptions);
+
+	// Observe all reveal sections
+	document.querySelectorAll('.reveal').forEach((el) => {
+		observer.observe(el);
+	});
+</script>

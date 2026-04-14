@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "portfolio",
+	"name": "dawood-emdash",
 	"main": "./src/worker.ts",
 	"compatibility_date": "2026-03-29",
 	"compatibility_flags": [
@@ -29,20 +29,36 @@
 			"binding": "MEDIA",
 			"bucket_name": "my-emdash-media",
 			"preview_bucket_name": "my-emdash-media",
-		},
+		}
 	],
-	"observability": {
-		"enabled": true,
-	},
+	
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  
+},
 	"kv_namespaces": [
 		{
 			"binding": "SESSION",
 			"id": "1670a159f70a440c8e7982743d867dfa"
 		}
-	],
-	"worker_loaders": [
+	]
+	/*
+	,
+	 "worker_loaders": [
 		{
 			"binding": "LOADER",
 		},
-	],
+	],*/
 }

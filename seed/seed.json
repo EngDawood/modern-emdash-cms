@@ -181,6 +181,7 @@
 			"items": [
 				{ "type": "custom", "label": "Work", "url": "/work" },
 				{ "type": "custom", "label": "Blog", "url": "/posts" },
+				{ "type": "custom", "label": "About", "url": "/about" },
 				{ "type": "custom", "label": "Contact", "url": "/contact" }
 			]
 		}
