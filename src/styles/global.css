@@ -8,7 +8,13 @@
 
 @font-face {
 	font-family: "Al Jazeera";
-	src: url("/fonts/Al-Jazeera-Bold.3301c4f5.woff2") format("woff2");
+	src: url("https://db.onlinewebfonts.com/t/c42eb56b5b7e3a1238d61dca44501a07.eot");
+	src:
+		url("https://db.onlinewebfonts.com/t/c42eb56b5b7e3a1238d61dca44501a07.eot?#iefix") format("embedded-opentype"),
+		url("https://db.onlinewebfonts.com/t/c42eb56b5b7e3a1238d61dca44501a07.woff2") format("woff2"),
+		url("https://db.onlinewebfonts.com/t/c42eb56b5b7e3a1238d61dca44501a07.woff") format("woff"),
+		url("https://db.onlinewebfonts.com/t/c42eb56b5b7e3a1238d61dca44501a07.ttf") format("truetype"),
+		url("https://db.onlinewebfonts.com/t/c42eb56b5b7e3a1238d61dca44501a07.svg#Al-Jazeera-Arabic-Bold") format("svg");
 	font-weight: 700;
 	font-style: normal;
 	font-display: swap;
