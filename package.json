@@ -13,9 +13,7 @@
     "preview": "astro preview",
     "deploy": "astro build && wrangler deploy",
     "bootstrap": "npx emdash init && npx emdash seed seed/seed.json",
-    "typecheck": "astro check",
-    "build:mcp": "tsc --project tsconfig.mcp.json",
-    "mcp": "node mcp/dist/server.js"
+    "typecheck": "astro check"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.6",
@@ -34,7 +32,6 @@
     "@astrojs/check": "^0.9.7",
     "@cloudflare/workers-types": "^4.20260401.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@types/node": "^25.6.0",
     "wrangler": "^4.81.1"
   }
 }

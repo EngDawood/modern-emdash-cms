@@ -316,5 +316,50 @@ export class EmDashMCP extends McpAgent<Env> {
 				return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
 			},
 		);
+
+		// -----------------------------------------------------------------------
+		// Site
+		// -----------------------------------------------------------------------
+
+		this.server.tool(
+			"get_site_settings",
+			"Get site-wide settings (title, tagline, logo, favicon, etc.)",
+			{},
+			async () => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const result = await (client as any).request("GET", "/settings");
+				return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+			},
+		);
+
+		this.server.tool(
+			"get_menu",
+			"Get a navigation menu and its items by name",
+			{
+				name: z.string().describe("Menu name, e.g. 'primary'"),
+			},
+			async ({ name }) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const result = await (client as any).request("GET", `/menus/${encodeURIComponent(name)}`);
+				return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+			},
+		);
+
+		this.server.tool(
+			"get_term",
+			"Get a single taxonomy term by slug (includes entry count and child terms)",
+			{
+				taxonomy: z.string().describe("Taxonomy name: category or tag"),
+				slug: z.string().describe("Term slug"),
+			},
+			async ({ taxonomy, slug }) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const result = await (client as any).request(
+					"GET",
+					`/taxonomies/${encodeURIComponent(taxonomy)}/terms/${encodeURIComponent(slug)}`,
+				);
+				return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+			},
+		);
 	}
 }
