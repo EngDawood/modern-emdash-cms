@@ -1,0 +1,3 @@
+Contact: mailto:davidhormos@gmail.com
+Expires: 2027-05-03T00:00:00.000Z
+Preferred-Languages: ar, en
