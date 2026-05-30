@@ -1,13 +1,42 @@
-import { useEffect } from 'react';
-
 function TrackerPage() {
-  useEffect(() => {
-    window.location.href = '/tracker';
-  }, []);
   return (
-    <p style={{ padding: 24, fontFamily: 'system-ui', color: '#6b7280' }}>
-      Opening Tracker…
-    </p>
+    <>
+      <iframe
+        src="/tracker"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          display: 'block',
+        }}
+        title="Tracker"
+      />
+      <a
+        href="/_emdash/admin"
+        style={{
+          position: 'fixed',
+          top: 12,
+          right: 16,
+          zIndex: 9999,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 12px',
+          borderRadius: 6,
+          background: 'rgba(0,0,0,0.75)',
+          color: '#fff',
+          fontSize: 12,
+          fontFamily: 'system-ui',
+          fontWeight: 500,
+          textDecoration: 'none',
+          backdropFilter: 'blur(4px)',
+        }}
+      >
+        ← Admin
+      </a>
+    </>
   );
 }
 
