@@ -1,55 +1,16 @@
 /**
- * EmDash MCP Agent (Cloudflare Workers)
+ * EmDash MCP Proxy (Cloudflare Workers)
  *
- * Remote MCP server deployed at /mcp on the existing EmDash worker.
- * Exposes EmDash content management as MCP tools over HTTP (SSE).
+ * Single MCP endpoint at /mcp that:
+ *  • Handles 10 tracker_* tools locally (TRACKER_DB + R2)
+ *  • Proxies everything else to the built-in EmDash MCP at /_emdash/api/mcp
+ *
+ * Auth: Bearer token via Authorization header OR ?token= query param.
+ * The same token is forwarded upstream as `Authorization: Bearer <token>`,
+ * so a valid EmDash PAT (ec_pat_*) authenticates against the built-in.
  */
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { McpAgent } from "agents/mcp";
-import { EmDashClient, portableTextToMarkdown } from "emdash/client";
-import { z } from "zod";
-
-const jsonText = (data: unknown) => ({
-	content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-});
-
-/** Convert portableText array fields to markdown strings (duck-typed: any array whose items have _type). */
-function applyMarkdownFormat(data: Record<string, unknown>): Record<string, unknown> {
-	const result = { ...data };
-	for (const [key, value] of Object.entries(result)) {
-		if (Array.isArray(value) && value.length > 0 && typeof value[0] === "object" && value[0] !== null && "_type" in (value[0] as object)) {
-			result[key] = portableTextToMarkdown(value as Parameters<typeof portableTextToMarkdown>[0]);
-		}
-	}
-	return result;
-}
-
-/** Regex-based HTML → Markdown (no DOM required, works in CF Workers). */
-function htmlToMarkdown(html: string): string {
-	let md = html;
-	md = md.replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, (_, c) => "```\n" + c.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").trim() + "\n```\n\n");
-	md = md.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, (_, c) => "# " + c.replace(/<[^>]+>/g, "").trim() + "\n\n");
-	md = md.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, (_, c) => "## " + c.replace(/<[^>]+>/g, "").trim() + "\n\n");
-	md = md.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, (_, c) => "### " + c.replace(/<[^>]+>/g, "").trim() + "\n\n");
-	md = md.replace(/<h4[^>]*>([\s\S]*?)<\/h4>/gi, (_, c) => "#### " + c.replace(/<[^>]+>/g, "").trim() + "\n\n");
-	md = md.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, c) => "> " + c.replace(/<[^>]+>/g, "").trim() + "\n\n");
-	md = md.replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, "**$1**");
-	md = md.replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, "**$1**");
-	md = md.replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, "_$1_");
-	md = md.replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, "_$1_");
-	md = md.replace(/<del[^>]*>([\s\S]*?)<\/del>/gi, "~~$1~~");
-	md = md.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, "`$1`");
-	md = md.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)");
-	md = md.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_, c) => "- " + c.replace(/<[^>]+>/g, "").trim() + "\n");
-	md = md.replace(/<\/[uo]l>/gi, "\n").replace(/<[uo]l[^>]*>/gi, "");
-	md = md.replace(/<hr[^>]*\/?>/gi, "\n---\n");
-	md = md.replace(/<br[^>]*\/?>/gi, "\n");
-	md = md.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, (_, c) => c.replace(/<[^>]+>/g, "").trim() + "\n\n");
-	md = md.replace(/<[^>]+>/g, "");
-	md = md.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ");
-	return md.replace(/\n{3,}/g, "\n\n").trim();
-}
+import { EmDashClient } from "emdash/client";
 
 interface Env extends Cloudflare.Env {
 	MCP_OBJECT: DurableObjectNamespace;
@@ -57,639 +18,409 @@ interface Env extends Cloudflare.Env {
 	EMDASH_TOKEN?: string;
 	TRACKER_DB: D1Database;
 	MEDIA: R2Bucket;
+	SELF: Fetcher;
 }
 
-export class EmDashMCP extends McpAgent<Env> {
-	server = new McpServer({ name: "emdash", version: "1.0.0" });
+const UPSTREAM_PATH = "/_emdash/api/mcp";
 
-	async init() {
-		const baseUrl = this.env.EMDASH_URL ?? "https://engdawood.com";
-		const client = new EmDashClient({ baseUrl, token: this.env.EMDASH_TOKEN });
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const req = (method: string, path: string, body?: unknown): Promise<unknown> => (client as any).request(method, path, body);
+interface JsonRpcRequest {
+	jsonrpc: "2.0";
+	id?: string | number;
+	method: string;
+	params?: { name?: string; arguments?: Record<string, unknown> } & Record<string, unknown>;
+}
 
-		// -----------------------------------------------------------------------
-		// Collections
-		// -----------------------------------------------------------------------
+const CORS_HEADERS: Record<string, string> = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+	"Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, mcp-session-id, mcp-protocol-version",
+	"Access-Control-Expose-Headers": "mcp-session-id",
+	"Access-Control-Max-Age": "86400",
+};
 
-		this.server.tool(
-			"list_collections",
-			"List all content collections defined in the CMS (e.g. projects, posts, pages). Returns each collection's slug, label, and field schema — use the slug with list_content, create_content, etc.",
-			{},
-			async () => {
-				const collections = await client.collections();
-				return jsonText(collections);
+const jsonText = (data: unknown) => ({
+	content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+});
+
+async function parseSseOrJson(res: Response): Promise<{ result?: { tools?: unknown[] } }> {
+	const ct = res.headers.get("Content-Type") ?? "";
+	if (ct.includes("application/json")) return res.json();
+	const text = await res.text();
+	const match = text.match(/^data: (.+)$/m);
+	if (!match) throw new Error(`No data event in SSE response: ${text.slice(0, 200)}`);
+	return JSON.parse(match[1]);
+}
+
+// ── Tracker tool definitions (JSON Schema) ───────────────────────────────────
+
+const TRACKER_TOOLS = [
+	{
+		name: "tracker_list_tasks",
+		description: "List tracker tasks. Optionally filter by status, priority, or payment. Ordered by deadline (soonest first).",
+		inputSchema: {
+			type: "object",
+			properties: {
+				status: { type: "string", enum: ["new", "progress", "done", "cancel"], description: "Filter by status" },
+				priority: { type: "string", enum: ["hi", "med", "lo"], description: "Filter by priority" },
+				payment: { type: "string", enum: ["paid", "half", "unpaid"], description: "Filter by payment status" },
+				limit: { type: "integer", minimum: 1, maximum: 500, description: "Max tasks to return (default: all)" },
 			},
+		},
+	},
+	{
+		name: "tracker_get_task",
+		description: "Get a single tracker task by its numeric ID",
+		inputSchema: {
+			type: "object",
+			properties: { id: { type: "integer", description: "Task ID" } },
+			required: ["id"],
+		},
+	},
+	{
+		name: "tracker_create_task",
+		description: "Create a new tracker task. Returns the new task ID.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				client: { type: "string", description: "Client name" },
+				title_en: { type: "string", description: "Task title in English" },
+				title_ar: { type: "string", description: "Task title in Arabic" },
+				university: { type: "string", description: "University name" },
+				course: { type: "string", description: "Course name" },
+				type: { type: "string", description: "Task type, e.g. Assignment, Project, Exam" },
+				deadline: { type: "string", description: "Deadline date in YYYY-MM-DD format" },
+				priority: { type: "string", enum: ["hi", "med", "lo"], description: "Priority (default: med)" },
+				status: { type: "string", enum: ["new", "progress", "in_progress", "done", "cancel"], description: "Status" },
+				price: { type: "number", description: "Price amount" },
+				payment: { type: "string", enum: ["paid", "half", "unpaid"], description: "Payment status (default: unpaid)" },
+				claude: { type: "string", description: "Claude account tier: Pro, Max, API, Team" },
+				fatora: { type: "string", description: "Fatora invoice status" },
+				fatora_link: { type: "string", description: "Fatora invoice URL" },
+				notes: { type: "string", description: "Internal notes" },
+				instructions: { type: "string", description: "Task instructions" },
+			},
+			required: ["client", "title_en"],
+		},
+	},
+	{
+		name: "tracker_update_task",
+		description: "Update fields on an existing tracker task. Only provide fields you want to change.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				id: { type: "integer", description: "Task ID" },
+				client: { type: "string" },
+				university: { type: "string" },
+				course: { type: "string" },
+				title_en: { type: "string" },
+				title_ar: { type: "string" },
+				type: { type: "string" },
+				deadline: { type: "string", description: "YYYY-MM-DD" },
+				priority: { type: "string", enum: ["hi", "med", "lo"] },
+				status: { type: "string", enum: ["new", "progress", "in_progress", "done", "cancel"] },
+				price: { type: "number" },
+				payment: { type: "string", enum: ["paid", "half", "unpaid"] },
+				claude: { type: "string" },
+				fatora: { type: "string" },
+				fatora_link: { type: "string" },
+				notes: { type: "string" },
+				instructions: { type: "string" },
+				log: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: { when: { type: "string" }, who: { type: "string" }, what: { type: "string" } },
+						required: ["when", "who", "what"],
+					},
+					description: "Full activity log array (replaces existing)",
+				},
+			},
+			required: ["id"],
+		},
+	},
+	{
+		name: "tracker_delete_task",
+		description: "Permanently delete a tracker task by ID",
+		inputSchema: { type: "object", properties: { id: { type: "integer" } }, required: ["id"] },
+	},
+	{
+		name: "tracker_list_universities",
+		description: "List all universities in the tracker reference table",
+		inputSchema: { type: "object", properties: {} },
+	},
+	{
+		name: "tracker_list_task_files",
+		description: "List files attached to a tracker task. Returns file IDs, names, sizes, and download URLs.",
+		inputSchema: { type: "object", properties: { task_id: { type: "integer" } }, required: ["task_id"] },
+	},
+	{
+		name: "tracker_upload_file",
+		description: "Upload a file attachment to a tracker task from base64-encoded content. For local files, prefer curl on /api/tracker/upload to avoid context size limits.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				task_id: { type: "integer" },
+				base64: { type: "string", description: "Base64-encoded file content" },
+				filename: { type: "string" },
+				mimeType: { type: "string" },
+			},
+			required: ["task_id", "base64", "filename"],
+		},
+	},
+	{
+		name: "tracker_upload_file_from_url",
+		description: "Fetch a file from a URL and attach it to a tracker task.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				task_id: { type: "integer" },
+				url: { type: "string", format: "uri" },
+				filename: { type: "string" },
+			},
+			required: ["task_id", "url"],
+		},
+	},
+	{
+		name: "tracker_delete_file",
+		description: "Delete a file attachment from a tracker task. Removes it from the task and the EmDash media library.",
+		inputSchema: {
+			type: "object",
+			properties: { task_id: { type: "integer" }, fileId: { type: "string" } },
+			required: ["task_id", "fileId"],
+		},
+	},
+] as const;
+
+// ── Tracker tool handlers ────────────────────────────────────────────────────
+
+type Handler = (args: Record<string, unknown>, env: Env, baseUrl: string, token: string) => Promise<unknown>;
+
+const trackerHandlers: Record<string, Handler> = {
+	tracker_list_tasks: async (args, env) => {
+		const { status, priority, payment, limit } = args as { status?: string; priority?: string; payment?: string; limit?: number };
+		const conditions: string[] = [];
+		const params: unknown[] = [];
+		if (status) { conditions.push("status = ?"); params.push(status); }
+		if (priority) { conditions.push("priority = ?"); params.push(priority); }
+		if (payment) { conditions.push("payment = ?"); params.push(payment); }
+		const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+		const limitClause = limit ? `LIMIT ${limit}` : "";
+		const sql = `SELECT * FROM tasks ${where} ORDER BY deadline ASC NULLS LAST, id DESC ${limitClause}`.trim();
+		const stmt = env.TRACKER_DB.prepare(sql);
+		const { results } = params.length ? await stmt.bind(...params).all() : await stmt.all();
+		return jsonText(results);
+	},
+
+	tracker_get_task: async (args, env) => {
+		const { id } = args as { id: number };
+		const row = await env.TRACKER_DB.prepare("SELECT * FROM tasks WHERE id = ?").bind(id).first();
+		if (!row) throw new Error(`Task ${id} not found`);
+		return jsonText(row);
+	},
+
+	tracker_create_task: async (args, env) => {
+		const f = args as Record<string, string | number | undefined>;
+		const status = f.status === "in_progress" ? "progress" : f.status;
+		const now = new Date().toISOString();
+		const { meta } = await env.TRACKER_DB.prepare(
+			`INSERT INTO tasks (client, university, course, task, title_ar, type, deadline, priority, status, price, payment, claude_account, fatora_status, fatora_link, notes, instructions, log, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?)`,
+		).bind(
+			f.client, f.university ?? null, f.course ?? null, f.title_en,
+			f.title_ar ?? null, f.type ?? "Assignment", f.deadline ?? null,
+			f.priority ?? "med", status ?? "new", f.price ?? null,
+			f.payment ?? "unpaid", f.claude ?? null, f.fatora ?? null,
+			f.fatora_link ?? null, f.notes ?? null, f.instructions ?? null,
+			now, now,
+		).run();
+		return jsonText({ id: meta.last_row_id });
+	},
+
+	tracker_update_task: async (args, env) => {
+		const { id, log, status: rawStatus, title_en, claude, fatora, ...rest } = args as Record<string, unknown> & { id: number; log?: unknown[]; status?: string; title_en?: string; claude?: string; fatora?: string };
+		const status = rawStatus === "in_progress" ? "progress" : rawStatus;
+		const map: Record<string, unknown> = {
+			...rest,
+			task: title_en,
+			status,
+			claude_account: claude,
+			fatora_status: fatora,
+		};
+		const setClauses: string[] = [];
+		const params: unknown[] = [];
+		for (const [col, val] of Object.entries(map)) {
+			if (val !== undefined) { setClauses.push(`${col} = ?`); params.push(val); }
+		}
+		if (log !== undefined) { setClauses.push("log = ?"); params.push(JSON.stringify(log)); }
+		if (setClauses.length === 0) throw new Error("No fields to update");
+		setClauses.push("updated_at = datetime('now')");
+		params.push(id);
+		await env.TRACKER_DB.prepare(`UPDATE tasks SET ${setClauses.join(", ")} WHERE id = ?`).bind(...params).run();
+		return { content: [{ type: "text" as const, text: `Updated task ${id}` }] };
+	},
+
+	tracker_delete_task: async (args, env) => {
+		const { id } = args as { id: number };
+		await env.TRACKER_DB.prepare("DELETE FROM tasks WHERE id = ?").bind(id).run();
+		return { content: [{ type: "text" as const, text: `Deleted task ${id}` }] };
+	},
+
+	tracker_list_universities: async (_args, env) => {
+		const { results } = await env.TRACKER_DB.prepare("SELECT * FROM universities ORDER BY name ASC").all();
+		return jsonText(results);
+	},
+
+	tracker_list_task_files: async (args, env) => {
+		const { task_id } = args as { task_id: number };
+		const row = await env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?").bind(task_id).first<{ files: string | null }>();
+		return jsonText(JSON.parse(row?.files ?? "[]"));
+	},
+
+	tracker_upload_file: async (args, env, baseUrl, token) => {
+		const { task_id, base64, filename, mimeType } = args as { task_id: number; base64: string; filename: string; mimeType?: string };
+		const client = new EmDashClient({ baseUrl, token });
+		const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+		const blob = new Blob([binary], { type: mimeType ?? "application/octet-stream" });
+		const item = await client.mediaUpload(blob, filename, { contentType: mimeType });
+		const fileRef = { id: item.id, key: item.key, name: filename, size: item.size, url: `${baseUrl}/api/tracker/file/${item.key}` };
+
+		const row = await env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?").bind(task_id).first<{ files: string | null }>();
+		const files = JSON.parse(row?.files ?? "[]");
+		files.push(fileRef);
+		await env.TRACKER_DB.prepare("UPDATE tasks SET files = ? WHERE id = ?").bind(JSON.stringify(files), task_id).run();
+		return jsonText(fileRef);
+	},
+
+	tracker_upload_file_from_url: async (args, env, baseUrl, token) => {
+		const { task_id, url: fileUrl, filename } = args as { task_id: number; url: string; filename?: string };
+		const client = new EmDashClient({ baseUrl, token });
+		const response = await fetch(fileUrl);
+		if (!response.ok) throw new Error(`Failed to fetch ${fileUrl}: HTTP ${response.status}`);
+		const blob = await response.blob();
+		const name = filename ?? fileUrl.split("/").pop()?.split("?")[0] ?? "file";
+		const item = await client.mediaUpload(blob, name);
+		const fileRef = { id: item.id, key: item.key, name, size: item.size, url: `${baseUrl}/api/tracker/file/${item.key}` };
+
+		const row = await env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?").bind(task_id).first<{ files: string | null }>();
+		const files = JSON.parse(row?.files ?? "[]");
+		files.push(fileRef);
+		await env.TRACKER_DB.prepare("UPDATE tasks SET files = ? WHERE id = ?").bind(JSON.stringify(files), task_id).run();
+		return jsonText(fileRef);
+	},
+
+	tracker_delete_file: async (args, env, baseUrl, token) => {
+		const { task_id, fileId } = args as { task_id: number; fileId: string };
+		const row = await env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?").bind(task_id).first<{ files: string | null }>();
+		const files = (JSON.parse(row?.files ?? "[]") as Array<{ id: string }>).filter((f) => f.id !== fileId);
+		await env.TRACKER_DB.prepare("UPDATE tasks SET files = ? WHERE id = ?").bind(JSON.stringify(files), task_id).run();
+		await fetch(`${baseUrl}/_emdash/api/media/${fileId}`, {
+			method: "DELETE",
+			headers: { Authorization: `Bearer ${token}` },
+		}).catch(() => {});
+		return jsonText({ ok: true });
+	},
+};
+
+// ── Proxy handler ────────────────────────────────────────────────────────────
+
+export async function handleMcp(request: Request, env: Env): Promise<Response> {
+	const url = new URL(request.url);
+
+	if (request.method === "OPTIONS") {
+		return new Response(null, { headers: CORS_HEADERS });
+	}
+
+	const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "")
+		?? url.searchParams.get("token");
+
+	if (!token) {
+		return new Response("Unauthorized", {
+			status: 401,
+			headers: { ...CORS_HEADERS, "WWW-Authenticate": "Bearer" },
+		});
+	}
+
+	if (request.method !== "POST") {
+		return new Response("Method not allowed", { status: 405, headers: CORS_HEADERS });
+	}
+
+	const baseUrl = env.EMDASH_URL ?? url.origin;
+	// Use Service Binding for same-worker calls to avoid 522 subrequest errors.
+	const upstreamUrl = `${baseUrl}${UPSTREAM_PATH}`;
+	const upstreamFetch = (req: RequestInit & { url?: string }) =>
+		env.SELF.fetch(new Request(upstreamUrl, req));
+
+	let rpc: JsonRpcRequest;
+	try {
+		rpc = await request.json();
+	} catch {
+		return Response.json(
+			{ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } },
+			{ headers: CORS_HEADERS },
 		);
+	}
 
-		// -----------------------------------------------------------------------
-		// Content
-		// -----------------------------------------------------------------------
+	const upstreamHeaders = {
+		"Content-Type": "application/json",
+		Accept: "application/json, text/event-stream",
+		Authorization: `Bearer ${token}`,
+	};
 
-		this.server.tool(
-			"list_content",
-			"List entries in a content collection. Returns an array of entries with their ID, slug, status, and all field values. Use list_collections first to discover available collections and their fields.",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				status: z.enum(["published", "draft", "all"]).optional().describe("Filter by status (default: all)"),
-				limit: z.number().int().min(1).max(100).optional().describe("Max entries to return (default: 50)"),
-				format: z.enum(["portableText", "markdown"]).optional().describe("Output format for rich-text fields: 'portableText' returns raw JSON blocks (default), 'markdown' converts them to readable markdown strings"),
-			},
-			async ({ collection, status, limit, format }) => {
-				const result = await client.list(collection, {
-					status: status === "all" ? undefined : status,
-					limit,
-				});
-				if (format === "markdown") {
-					result.items = result.items.map((item) => ({ ...item, data: applyMarkdownFormat(item.data) }));
-				}
-				return jsonText(result);
-			},
+	// Notification (no id) — fire-and-forget
+	if (rpc.id === undefined) {
+		void upstreamFetch({ method: "POST", headers: upstreamHeaders, body: JSON.stringify(rpc) }).catch(() => {});
+		return new Response(null, { status: 202, headers: CORS_HEADERS });
+	}
+
+	// tools/list — merge upstream tools with tracker tools
+	if (rpc.method === "tools/list") {
+		let upstreamTools: unknown[] = [];
+		try {
+			const res = await upstreamFetch({ method: "POST", headers: upstreamHeaders, body: JSON.stringify(rpc) });
+			const upstreamData = await parseSseOrJson(res);
+			upstreamTools = (upstreamData.result?.tools as unknown[]) ?? [];
+		} catch {
+			// upstream unavailable — return tracker tools only
+		}
+		return Response.json(
+			{ jsonrpc: "2.0", id: rpc.id, result: { tools: [...upstreamTools, ...TRACKER_TOOLS] } },
+			{ headers: CORS_HEADERS },
 		);
+	}
 
-		this.server.tool(
-			"get_content",
-			"Get a single content entry by ID or slug",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID (ULID) or slug"),
-				format: z.enum(["portableText", "markdown"]).optional().describe("Output format for rich-text fields: 'portableText' returns raw JSON blocks (default), 'markdown' converts them to readable markdown strings"),
-			},
-			async ({ collection, id, format }) => {
-				const item = await client.get(collection, id);
-				if (format === "markdown") {
-					return jsonText({ ...item, data: applyMarkdownFormat(item.data) });
-				}
-				return jsonText(item);
-			},
-		);
+	// tools/call for tracker_*
+	if (rpc.method === "tools/call" && typeof rpc.params?.name === "string" && rpc.params.name.startsWith("tracker_")) {
+		const handler = trackerHandlers[rpc.params.name];
+		if (!handler) {
+			return Response.json(
+				{ jsonrpc: "2.0", id: rpc.id, error: { code: -32601, message: `Unknown tool: ${rpc.params.name}` } },
+				{ headers: CORS_HEADERS },
+			);
+		}
+		try {
+			const result = await handler((rpc.params.arguments as Record<string, unknown>) ?? {}, env, baseUrl, token);
+			return Response.json({ jsonrpc: "2.0", id: rpc.id, result }, { headers: CORS_HEADERS });
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e);
+			return Response.json(
+				{ jsonrpc: "2.0", id: rpc.id, result: { content: [{ type: "text", text: message }], isError: true } },
+				{ headers: CORS_HEADERS },
+			);
+		}
+	}
 
-		this.server.tool(
-			"create_content",
-			"Create a new entry in a collection. Auto-publishes by default. Rich-text (portableText) fields accept markdown strings by default; pass content_format: 'html' to send raw HTML instead.",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				data: z.record(z.string(), z.unknown()).describe(
-					"Field values. For posts: title, excerpt, content (markdown string). For projects: title, client, year, summary, content (markdown string), url. Image fields accept a media ID from upload_media_from_url. portableText fields that receive a string are auto-converted to structured blocks.",
-				),
-				slug: z.string().optional().describe("URL slug — use this to set a custom path (e.g. 'my-post'). Auto-generated from title if omitted."),
-				draft: z.boolean().optional().describe("Save as draft instead of publishing (default: false)"),
-				content_format: z.enum(["markdown", "html"]).optional().describe("Input format for string-valued rich-text fields: 'markdown' (default) or 'html'. Use 'html' when passing raw HTML with dir attributes for Arabic/mixed-direction content."),
-			},
-			async ({ collection, data, slug, draft, content_format }) => {
-				let processedData = data;
-				if (content_format === "html") {
-					processedData = Object.fromEntries(
-						Object.entries(data).map(([k, v]) => [k, typeof v === "string" ? htmlToMarkdown(v) : v]),
-					);
-				}
-				const item = await client.create(collection, {
-					data: processedData,
-					slug,
-					status: draft ? "draft" : "published",
-				});
-				return jsonText(item);
-			},
-		);
+	// Everything else (initialize, ping, content_*, schema_*, media_*, etc.) → forward
+	const res = await upstreamFetch({ method: "POST", headers: upstreamHeaders, body: JSON.stringify(rpc) });
+	const headers = new Headers(res.headers);
+	for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
+	return new Response(res.body, { status: res.status, headers });
+}
 
-		this.server.tool(
-			"update_content",
-			"Update an existing entry. Fetch the entry first with get_content to get its _rev token. Rich-text (portableText) fields accept markdown strings by default; pass content_format: 'html' to send raw HTML instead.",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID"),
-				data: z.record(z.string(), z.unknown()).describe("Fields to update (only include changed fields). portableText fields that receive a string are auto-converted to structured blocks."),
-				rev: z.string().optional().describe("Revision token from get_content (prevents overwriting concurrent edits)"),
-				draft: z.boolean().optional().describe("Save as draft instead of publishing (default: false)"),
-				content_format: z.enum(["markdown", "html"]).optional().describe("Input format for string-valued rich-text fields: 'markdown' (default) or 'html'. Use 'html' when passing raw HTML with dir attributes for Arabic/mixed-direction content."),
-			},
-			async ({ collection, id, data, rev, draft, content_format }) => {
-				let processedData = data;
-				if (content_format === "html") {
-					processedData = Object.fromEntries(
-						Object.entries(data).map(([k, v]) => [k, typeof v === "string" ? htmlToMarkdown(v) : v]),
-					);
-				}
-				const item = await client.update(collection, id, {
-					data: processedData,
-					_rev: rev,
-					status: draft ? "draft" : "published",
-				});
-				return jsonText(item);
-			},
-		);
+// ── Durable Object stub (kept for wrangler binding compatibility) ────────────
 
-		this.server.tool(
-			"delete_content",
-			"Move a content entry to trash (sets deleted_at — reversible from the admin panel)",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID"),
-			},
-			async ({ collection, id }) => {
-				await client.delete(collection, id);
-				return { content: [{ type: "text", text: `Deleted ${collection}/${id}` }] };
-			},
-		);
-
-		this.server.tool(
-			"publish_content",
-			"Publish a draft entry, making it publicly visible on the site. Has no effect if the entry is already published.",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID"),
-			},
-			async ({ collection, id }) => {
-				await client.publish(collection, id);
-				return { content: [{ type: "text", text: `Published ${collection}/${id}` }] };
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Search
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"search_content",
-			"Full-text search across all CMS content. Returns matching entries with their collection, slug, title, and a text excerpt around the match. Useful for finding existing posts or projects before creating duplicates.",
-			{
-				query: z.string().describe("Search query"),
-				collection: z.string().optional().describe("Limit to a specific collection (projects, posts, etc.)"),
-				limit: z.number().int().min(1).max(50).optional().describe("Max results (default: 10)"),
-			},
-			async ({ query, collection, limit }) => {
-				const results = await client.search(query, { collection, limit: limit ?? 10 });
-				return jsonText(results);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Media
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"list_media",
-			"List uploaded media files in the library. Returns each item's ID, filename, MIME type, size, and dimensions (for images). Use the ID to reference media in content fields.",
-			{
-				limit: z.number().int().min(1).max(100).optional().describe("Max items (default: 50)"),
-				mimeType: z.string().optional().describe("Filter by MIME type, e.g. image/jpeg"),
-			},
-			async ({ limit, mimeType }) => {
-				const result = await client.mediaList({ limit, mimeType });
-				return jsonText(result);
-			},
-		);
-
-		this.server.tool(
-			"upload_media_from_url",
-			"Fetch an image or file from a URL and upload it to the media library. Returns the media item including its ID, which can be referenced in content fields.",
-			{
-				url: z.string().url().describe("Public URL of the file to fetch and upload"),
-				filename: z.string().optional().describe("Override filename (default: derived from URL)"),
-				alt: z.string().optional().describe("Alt text for accessibility"),
-				caption: z.string().optional().describe("Optional caption"),
-			},
-			async ({ url, filename, alt, caption }) => {
-				const response = await fetch(url);
-				if (!response.ok) {
-					throw new Error(`Failed to fetch ${url}: HTTP ${response.status}`);
-				}
-				const blob = await response.blob();
-				const name = filename ?? url.split("/").pop()?.split("?")[0] ?? "upload";
-				const item = await client.mediaUpload(blob, name, { alt, caption });
-				return jsonText(item);
-			},
-		);
-
-		this.server.tool(
-			"upload_media_from_base64",
-			"Upload a file directly from base64-encoded data to the media library. Returns the media item including its ID.",
-			{
-				base64: z.string().describe("Base64-encoded file content"),
-				filename: z.string().describe("Filename including extension, e.g. photo.jpg"),
-				mimeType: z.string().optional().describe("MIME type, e.g. image/jpeg. Inferred from filename if omitted."),
-				alt: z.string().optional().describe("Alt text for accessibility"),
-				caption: z.string().optional().describe("Optional caption"),
-			},
-			async ({ base64, filename, mimeType, alt, caption }) => {
-				const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-				const blob = new Blob([binary], { type: mimeType });
-				const item = await client.mediaUpload(blob, filename, { alt, caption, contentType: mimeType });
-				return jsonText(item);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Taxonomies
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"list_taxonomy_terms",
-			"List terms for a taxonomy (category or tag)",
-			{
-				taxonomy: z.string().describe("Taxonomy name: category or tag"),
-			},
-			async ({ taxonomy }) => {
-				const result = await client.terms(taxonomy);
-				return jsonText(result);
-			},
-		);
-
-		this.server.tool(
-			"get_content_terms",
-			"Get the taxonomy terms (categories, tags, etc.) currently assigned to a content entry",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID or slug"),
-				taxonomy: z.string().describe("Taxonomy name: category or tag"),
-			},
-			async ({ collection, id, taxonomy }) => {
-				const result = await req("GET", `/content/${encodeURIComponent(collection)}/${encodeURIComponent(id)}/terms/${encodeURIComponent(taxonomy)}`);
-				return jsonText(result);
-			},
-		);
-
-		this.server.tool(
-			"set_content_terms",
-			"Assign taxonomy terms (categories or tags) to a content entry. Replaces all existing terms for that taxonomy.",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID or slug"),
-				taxonomy: z.string().describe("Taxonomy name: category or tag"),
-				termIds: z.array(z.string()).describe("Array of term IDs to assign. Use list_taxonomy_terms to get IDs."),
-			},
-			async ({ collection, id, taxonomy, termIds }) => {
-				const result = await req("POST", `/content/${encodeURIComponent(collection)}/${encodeURIComponent(id)}/terms/${encodeURIComponent(taxonomy)}`, { termIds });
-				return jsonText(result);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Bylines
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"list_bylines",
-			"List author/contributor byline profiles. Use the returned IDs with set_content_bylines.",
-			{
-				search: z.string().optional().describe("Filter by name"),
-				limit: z.number().int().min(1).max(100).optional().describe("Max results (default: 50)"),
-			},
-			async ({ search, limit }) => {
-				const params = new URLSearchParams();
-				if (search) params.set("search", search);
-				if (limit) params.set("limit", String(limit));
-				const qs = params.toString();
-				const result = await req("GET", `/admin/bylines${qs ? `?${qs}` : ""}`);
-				return jsonText(result);
-			},
-		);
-
-		this.server.tool(
-			"set_content_bylines",
-			"Assign author credits (bylines) to a content entry. Replaces all existing byline assignments.",
-			{
-				collection: z.string().describe("Collection slug: projects, posts, or pages"),
-				id: z.string().describe("Entry ID"),
-				bylines: z.array(
-					z.object({
-						bylineId: z.string().describe("Byline profile ID from list_bylines"),
-						roleLabel: z.string().optional().describe("Optional role label, e.g. 'Photographer'"),
-					}),
-				).describe("Ordered list of byline credits"),
-			},
-			async ({ collection, id, bylines }) => {
-				const result = await req("PUT", `/content/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`, { bylines });
-				return jsonText(result);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Sections
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"list_sections",
-			"List reusable page sections (content blocks) available on the site",
-			{
-				limit: z.number().int().min(1).max(100).optional().describe("Max results (default: 50)"),
-				search: z.string().optional().describe("Filter by title or slug"),
-			},
-			async ({ limit, search }) => {
-				const params = new URLSearchParams();
-				if (limit) params.set("limit", String(limit));
-				if (search) params.set("search", search);
-				const qs = params.toString();
-				const result = await req("GET", `/sections${qs ? `?${qs}` : ""}`);
-				return jsonText(result);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Site
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"get_site_settings",
-			"Get site-wide settings (title, tagline, logo, favicon, etc.)",
-			{},
-			async () => {
-				const result = await req("GET", "/settings");
-				return jsonText(result);
-			},
-		);
-
-		this.server.tool(
-			"get_menu",
-			"Get a navigation menu and its items by name",
-			{
-				name: z.string().describe("Menu name, e.g. 'primary'"),
-			},
-			async ({ name }) => {
-				const result = await req("GET", `/menus/${encodeURIComponent(name)}`);
-				return jsonText(result);
-			},
-		);
-
-		this.server.tool(
-			"get_term",
-			"Get a single taxonomy term by slug (includes entry count and child terms)",
-			{
-				taxonomy: z.string().describe("Taxonomy name: category or tag"),
-				slug: z.string().describe("Term slug"),
-			},
-			async ({ taxonomy, slug }) => {
-				const result = await req("GET", `/taxonomies/${encodeURIComponent(taxonomy)}/terms/${encodeURIComponent(slug)}`);
-				return jsonText(result);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Tracker
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"tracker_list_tasks",
-			"List tracker tasks. Optionally filter by status, priority, or payment. Ordered by deadline (soonest first).",
-			{
-				status: z.enum(["new", "progress", "done", "cancel"]).optional().describe("Filter by status"),
-				priority: z.enum(["hi", "med", "lo"]).optional().describe("Filter by priority"),
-				payment: z.enum(["paid", "half", "unpaid"]).optional().describe("Filter by payment status"),
-				limit: z.number().int().min(1).max(500).optional().describe("Max tasks to return (default: all)"),
-			},
-			async ({ status, priority, payment, limit }) => {
-				const conditions: string[] = [];
-				const params: unknown[] = [];
-				if (status) { conditions.push("status = ?"); params.push(status); }
-				if (priority) { conditions.push("priority = ?"); params.push(priority); }
-				if (payment) { conditions.push("payment = ?"); params.push(payment); }
-				const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-				const limitClause = limit ? `LIMIT ${limit}` : "";
-				const sql = `SELECT * FROM tasks ${where} ORDER BY deadline ASC NULLS LAST, id DESC ${limitClause}`.trim();
-				const stmt = this.env.TRACKER_DB.prepare(sql);
-				const { results } = params.length ? await stmt.bind(...params).all() : await stmt.all();
-				return jsonText(results);
-			},
-		);
-
-		this.server.tool(
-			"tracker_get_task",
-			"Get a single tracker task by its numeric ID",
-			{
-				id: z.number().int().describe("Task ID"),
-			},
-			async ({ id }) => {
-				const row = await this.env.TRACKER_DB.prepare("SELECT * FROM tasks WHERE id = ?").bind(id).first();
-				if (!row) throw new Error(`Task ${id} not found`);
-				return jsonText(row);
-			},
-		);
-
-		this.server.tool(
-			"tracker_create_task",
-			"Create a new tracker task. Returns the new task ID.",
-			{
-				client: z.string().describe("Client name"),
-				title_en: z.string().describe("Task title in English"),
-				title_ar: z.string().optional().describe("Task title in Arabic"),
-				university: z.string().optional().describe("University name"),
-				course: z.string().optional().describe("Course name"),
-				type: z.string().optional().describe("Task type, e.g. Assignment, Project, Exam"),
-				deadline: z.string().optional().describe("Deadline date in YYYY-MM-DD format"),
-				priority: z.enum(["hi", "med", "lo"]).optional().describe("Priority (default: med)"),
-				status: z.enum(["new", "progress", "in_progress", "done", "cancel"]).transform(s => s === "in_progress" ? "progress" : s).optional().describe("Status: new, progress, done, cancel (in_progress also accepted)"),
-				price: z.number().optional().describe("Price amount"),
-				payment: z.enum(["paid", "half", "unpaid"]).optional().describe("Payment status (default: unpaid)"),
-				claude: z.string().optional().describe("Claude account tier: Pro, Max, API, Team"),
-				fatora: z.string().optional().describe("Fatora invoice status"),
-				fatora_link: z.string().optional().describe("Fatora invoice URL"),
-				notes: z.string().optional().describe("Internal notes"),
-				instructions: z.string().optional().describe("Task instructions"),
-			},
-			async (f) => {
-				const now = new Date().toISOString();
-				const { meta } = await this.env.TRACKER_DB.prepare(
-					`INSERT INTO tasks (client, university, course, task, title_ar, type, deadline, priority, status, price, payment, claude_account, fatora_status, fatora_link, notes, instructions, log, created_at, updated_at)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?)`,
-				).bind(
-					f.client, f.university ?? null, f.course ?? null, f.title_en,
-					f.title_ar ?? null, f.type ?? "Assignment", f.deadline ?? null,
-					f.priority ?? "med", f.status ?? "new", f.price ?? null,
-					f.payment ?? "unpaid", f.claude ?? null, f.fatora ?? null,
-					f.fatora_link ?? null, f.notes ?? null, f.instructions ?? null,
-					now, now,
-				).run();
-				return jsonText({ id: meta.last_row_id });
-			},
-		);
-
-		this.server.tool(
-			"tracker_update_task",
-			"Update fields on an existing tracker task. Only provide fields you want to change.",
-			{
-				id: z.number().int().describe("Task ID"),
-				client: z.string().optional().describe("Client name"),
-				university: z.string().optional().describe("University or institution name"),
-				course: z.string().optional().describe("Course name"),
-				title_en: z.string().optional().describe("Task title in English"),
-				title_ar: z.string().optional().describe("Task title in Arabic"),
-				type: z.string().optional().describe("Task type: Assignment, Project, Exam Prep, Thesis, Report, Lab"),
-				deadline: z.string().optional().describe("Deadline date in YYYY-MM-DD format"),
-				priority: z.enum(["hi", "med", "lo"]).optional().describe("Priority: hi=high, med=medium, lo=low"),
-				status: z.enum(["new", "progress", "in_progress", "done", "cancel"]).transform(s => s === "in_progress" ? "progress" : s).optional().describe("Status: new, progress, done, cancel (in_progress also accepted)"),
-				price: z.number().optional().describe("Price amount"),
-				payment: z.enum(["paid", "half", "unpaid"]).optional().describe("Payment status: paid, half, unpaid"),
-				claude: z.string().optional().describe("Claude account tier: Pro, Max, API, Team"),
-				fatora: z.string().optional().describe("Fatora invoice status: paid, active, unknown"),
-				fatora_link: z.string().optional().describe("Fatora invoice URL (https://fato.me/v/...)"),
-				notes: z.string().optional().describe("Private internal notes"),
-				instructions: z.string().optional().describe("Client requirements and instructions"),
-				log: z.array(z.object({ when: z.string(), who: z.string(), what: z.string() })).optional().describe("Full activity log array (replaces existing)"),
-			},
-			async ({ id, client, university, course, title_en, title_ar, type, deadline, priority, status, price, payment, claude, fatora, fatora_link, notes, instructions, log }) => {
-				const setClauses: string[] = [];
-				const params: unknown[] = [];
-				const add = (col: string, val: unknown) => {
-					if (val !== undefined) { setClauses.push(`${col} = ?`); params.push(val); }
-				};
-				add("client", client);
-				add("university", university);
-				add("course", course);
-				add("task", title_en);
-				add("title_ar", title_ar);
-				add("type", type);
-				add("deadline", deadline);
-				add("priority", priority);
-				add("status", status);
-				add("price", price);
-				add("payment", payment);
-				add("claude_account", claude);
-				add("fatora_status", fatora);
-				add("fatora_link", fatora_link);
-				add("notes", notes);
-				add("instructions", instructions);
-				if (log !== undefined) { setClauses.push("log = ?"); params.push(JSON.stringify(log)); }
-				if (setClauses.length === 0) throw new Error("No fields to update");
-				setClauses.push("updated_at = datetime('now')");
-				params.push(id);
-				await this.env.TRACKER_DB.prepare(
-					`UPDATE tasks SET ${setClauses.join(", ")} WHERE id = ?`,
-				).bind(...params).run();
-				return { content: [{ type: "text" as const, text: `Updated task ${id}` }] };
-			},
-		);
-
-		this.server.tool(
-			"tracker_delete_task",
-			"Permanently delete a tracker task by ID",
-			{
-				id: z.number().int().describe("Task ID"),
-			},
-			async ({ id }) => {
-				await this.env.TRACKER_DB.prepare("DELETE FROM tasks WHERE id = ?").bind(id).run();
-				return { content: [{ type: "text" as const, text: `Deleted task ${id}` }] };
-			},
-		);
-
-		this.server.tool(
-			"tracker_list_universities",
-			"List all universities in the tracker reference table",
-			{},
-			async () => {
-				const { results } = await this.env.TRACKER_DB.prepare("SELECT * FROM universities ORDER BY name ASC").all();
-				return jsonText(results);
-			},
-		);
-
-		// -----------------------------------------------------------------------
-		// Tracker — Files
-		// -----------------------------------------------------------------------
-
-		this.server.tool(
-			"tracker_list_task_files",
-			"List files attached to a tracker task. Returns file IDs, names, sizes, and download URLs.",
-			{
-				task_id: z.number().int().describe("Task ID"),
-			},
-			async ({ task_id }) => {
-				const row = await this.env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?")
-					.bind(task_id)
-					.first<{ files: string | null }>();
-				return jsonText(JSON.parse(row?.files ?? "[]"));
-			},
-		);
-
-		this.server.tool(
-			"tracker_upload_file",
-			`Upload a file attachment to a tracker task from base64-encoded content.
-NOTE: For local files on disk, prefer using curl via Bash instead of base64 — it avoids context size limits:
-  curl -X POST ${baseUrl}/api/tracker/upload \\
-    -H "Authorization: Bearer <EMDASH_TOKEN>" \\
-    -F "file=@/absolute/path/to/file.pdf" \\
-    -F "taskId=<task_id>"
-Only use this base64 tool for small files or when Bash is unavailable.`,
-			{
-				task_id: z.number().int().describe("Task ID to attach the file to"),
-				base64: z.string().describe("Base64-encoded file content"),
-				filename: z.string().describe("Filename including extension, e.g. brief.pdf"),
-				mimeType: z.string().optional().describe("MIME type, e.g. application/pdf"),
-			},
-			async ({ task_id, base64, filename, mimeType }) => {
-				const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-				const blob = new Blob([binary], { type: mimeType ?? "application/octet-stream" });
-				const item = await client.mediaUpload(blob, filename, { contentType: mimeType });
-
-				const fileRef = { id: item.id, key: item.key, name: filename, size: item.size, url: `${baseUrl}/api/tracker/file/${item.key}` };
-
-				const row = await this.env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?")
-					.bind(task_id)
-					.first<{ files: string | null }>();
-				const files = JSON.parse(row?.files ?? "[]");
-				files.push(fileRef);
-				await this.env.TRACKER_DB.prepare("UPDATE tasks SET files = ? WHERE id = ?")
-					.bind(JSON.stringify(files), task_id)
-					.run();
-
-				return jsonText(fileRef);
-			},
-		);
-
-		this.server.tool(
-			"tracker_upload_file_from_url",
-			"Fetch a file from a URL and attach it to a tracker task. The file is registered in the EmDash media library.",
-			{
-				task_id: z.number().int().describe("Task ID to attach the file to"),
-				url: z.string().url().describe("Public URL of the file to fetch"),
-				filename: z.string().optional().describe("Override filename (default: derived from URL)"),
-			},
-			async ({ task_id, url: fileUrl, filename }) => {
-				const response = await fetch(fileUrl);
-				if (!response.ok) throw new Error(`Failed to fetch ${fileUrl}: HTTP ${response.status}`);
-				const blob = await response.blob();
-				const name = filename ?? fileUrl.split("/").pop()?.split("?")[0] ?? "file";
-				const item = await client.mediaUpload(blob, name);
-
-				const fileRef = { id: item.id, key: item.key, name, size: item.size, url: `${baseUrl}/api/tracker/file/${item.key}` };
-
-				const row = await this.env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?")
-					.bind(task_id)
-					.first<{ files: string | null }>();
-				const files = JSON.parse(row?.files ?? "[]");
-				files.push(fileRef);
-				await this.env.TRACKER_DB.prepare("UPDATE tasks SET files = ? WHERE id = ?")
-					.bind(JSON.stringify(files), task_id)
-					.run();
-
-				return jsonText(fileRef);
-			},
-		);
-
-		this.server.tool(
-			"tracker_delete_file",
-			"Delete a file attachment from a tracker task. Removes it from the task and the EmDash media library.",
-			{
-				task_id: z.number().int().describe("Task ID the file belongs to"),
-				fileId: z.string().describe("File ID from tracker_list_task_files"),
-			},
-			async ({ task_id, fileId }) => {
-				const row = await this.env.TRACKER_DB.prepare("SELECT files FROM tasks WHERE id = ?")
-					.bind(task_id)
-					.first<{ files: string | null }>();
-				const files = (JSON.parse(row?.files ?? "[]") as Array<{ id: string; key: string }>).filter(
-					(f) => f.id !== fileId,
-				);
-				await this.env.TRACKER_DB.prepare("UPDATE tasks SET files = ? WHERE id = ?")
-					.bind(JSON.stringify(files), task_id)
-					.run();
-
-				try {
-					await req("DELETE", `/media/${fileId}`);
-				} catch {
-					// EmDash delete failed — file may still appear in dashboard but is detached from task
-				}
-
-				return jsonText({ ok: true });
-			},
-		);
+export class EmDashMCP {
+	constructor(private state: DurableObjectState, private env: Env) {}
+	async fetch(request: Request): Promise<Response> {
+		return handleMcp(request, this.env);
 	}
 }

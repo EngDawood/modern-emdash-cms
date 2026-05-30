@@ -1,6 +1,6 @@
 import handler from "@astrojs/cloudflare/entrypoints/server";
 import { EmDashClient } from "emdash/client";
-import { EmDashMCP } from "./mcp";
+import { EmDashMCP, handleMcp } from "./mcp";
 
 interface WorkerEnv extends Cloudflare.Env {
 	MCP_OBJECT: DurableObjectNamespace;
@@ -8,6 +8,7 @@ interface WorkerEnv extends Cloudflare.Env {
 	TRACKER_DB: D1Database;
 	SESSION: KVNamespace;
 	MEDIA: R2Bucket;
+	SELF: Fetcher;
 }
 
 export { PluginBridge } from "@emdash-cms/cloudflare/sandbox";
@@ -158,17 +159,10 @@ export default {
 		const url = new URL(request.url);
 
 		// ── MCP endpoint ──────────────────────────────────────────────────────
-		if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
-			// Auth only on GET (SSE handshake). POST /mcp/* are session-keyed by the DO.
-			if (request.method !== "POST") {
-				const headerToken = request.headers.get("Authorization")?.replace("Bearer ", "");
-				const queryToken = url.searchParams.get("token");
-				const token = headerToken ?? queryToken;
-				if (!env.EMDASH_TOKEN || token !== env.EMDASH_TOKEN) {
-					return new Response("Unauthorized", { status: 401 });
-				}
-			}
-			return EmDashMCP.serve("/mcp").fetch(request, env, ctx);
+		// Stateless proxy: tracker_* tools handled locally; everything else
+		// forwarded to /_emdash/api/mcp with the caller's bearer token.
+		if (url.pathname === "/mcp") {
+			return handleMcp(request, env);
 		}
 
 		// ── Tracker API — intercepted before Astro to avoid body consumption ──
