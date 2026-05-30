@@ -532,7 +532,8 @@ if (Astro.request.method === "POST") {
 	.bilingual-lockup {
 		display: flex;
 		align-items: center;
-		gap: clamp(24px, 4vw, 56px);
+		justify-content: center;
+		gap: clamp(32px, 5vw, 72px);
 		margin-bottom: var(--spacing-8);
 	}
 
@@ -605,13 +606,15 @@ if (Astro.request.method === "POST") {
 	.pivot-line {
 		display: block;
 		width: 1px;
-		height: clamp(32px, 5vw, 60px);
-		background: var(--color-border);
+		height: clamp(40px, 5vw, 64px);
+		background: var(--color-text);
+		opacity: 0.18;
 	}
 
 	.pivot-diamond {
 		color: var(--color-accent);
-		font-size: 12px;
+		font-size: 18px;
+		line-height: 1;
 	}
 
 	.masthead-rule {

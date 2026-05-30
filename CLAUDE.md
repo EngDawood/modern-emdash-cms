@@ -24,7 +24,7 @@ Cloudflare Worker (src/worker.ts)
   └── /*    → Astro SSR handler (@astrojs/cloudflare)
 ```
 
-`src/worker.ts` is the Worker entry point. It intercepts `/mcp` requests (auth via `EMDASH_TOKEN` Bearer token), routing them to the `EmDashMCP` Durable Object. All other requests fall through to Astro's server handler.
+`src/worker.ts` is the Worker entry point. It routes `/mcp` requests to `handleMcp(request, env)` (stateless proxy in `src/mcp/index.ts`). All other requests fall through to Astro's server handler.
 
 ### i18n Routing
 
@@ -51,7 +51,16 @@ Key EmDash bindings (declared in `wrangler.jsonc`):
 
 ### MCP Server
 
-`src/mcp/index.ts` exports `EmDashMCP`, a `McpAgent` (Cloudflare Agents SDK) backed by a Durable Object. It wraps `EmDashClient` and exposes tools for CRUD on collections, media, taxonomies, bylines, sections, and site settings. The server is reachable at `/mcp` on the deployed worker (also `wp.engdawood.com/mcp`).
+A single public endpoint at `/mcp` acts as a **stateless proxy** that merges both tool sets:
+
+- **Tracker tools (10)** — handled locally: TRACKER_DB (D1) + R2 file attachments. Tool names start with `tracker_`.
+- **EmDash content tools (36)** — forwarded internally to `/_emdash/api/mcp` via `env.SELF` Service Binding. Covers content, schema, media, search, taxonomies, menus, revisions.
+
+Auth: `?token=<ec_pat_*>` query param OR `Authorization: Bearer <token>` header. The token is forwarded upstream as a Bearer to authenticate against the built-in.
+
+`src/mcp/index.ts` exports `handleMcp(request, env)` (the proxy) and a stub `EmDashMCP` class kept only for the wrangler DO binding (`MCP_OBJECT`). `McpAgent` is no longer used.
+
+`wrangler.jsonc` / `wrangler.prod.jsonc` both declare a `SELF` service binding (`dawood-emdash`) to allow same-worker subrequests without 522 errors.
 
 ### Plugins
 
@@ -74,6 +83,7 @@ Header uses an Editorial Monogram mark (`Ds·` SVG) + wordmark. Footer includes 
 Local dev uses `.dev.vars` (not committed). Required vars:
 - `EMDASH_TOKEN` — Bearer token for MCP endpoint auth
 - `EMDASH_URL` — (optional) override base URL for EmDashClient (defaults to `https://engdawood.com`)
+- `JOBS_API_URL` — Base URL for the external jobs Worker API (e.g. `https://yemen-hr-worker.engdawood.workers.dev`)
 
 
 ## Reference Files (`.claude/`)
@@ -94,7 +104,7 @@ See @CLAUDE.EMDASH.md for collections, plugins, patches, page structure, and com
 
 ## MCP Server
 
-See @CLAUDE-mcp.md for tool structure, runtime constraints, current tool inventory, and how to add new tools.
+See @CLAUDE-mcp.md for tool structure, runtime constraints, tracker tool inventory, and how to add tools. For content management tools, use the built-in EmDash MCP (`emdash-admin` in `.mcp.json`).
 
 ## Cloudflare / Wrangler
 

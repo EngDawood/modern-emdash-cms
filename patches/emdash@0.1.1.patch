@@ -37,6 +37,34 @@ index ade9bbb3d89555ee2c21bcaf23d8764e3792e46a..214aeff8cad1557b5125efe857783383
  		}
  		throw new EmDashDatabaseError(`Unsupported database URL scheme: ${config.url}`);
  	} catch (error) {
+diff --git a/src/astro/routes/api/auth/me.ts b/src/astro/routes/api/auth/me.ts
+--- a/src/astro/routes/api/auth/me.ts
++++ b/src/astro/routes/api/auth/me.ts
+@@ -16,22 +16,17 @@
+-export const GET: APIRoute = async ({ locals, session }) => {
++export const GET: APIRoute = async ({ locals }) => {
+ 	const { user } = locals;
+
+ 	if (!user) {
+ 		return apiError("NOT_AUTHENTICATED", "Not authenticated", 401);
+ 	}
+
+-	// Check if this is the user's first login (for welcome modal)
+-	// We track this in the session to show the modal only once
+-	const hasSeenWelcome = await session?.get("hasSeenWelcome");
+-	const isFirstLogin = !hasSeenWelcome;
+-
+ 	// Return safe user info (no sensitive data)
+ 	return apiSuccess({
+ 		id: user.id,
+ 		email: user.email,
+ 		name: user.name,
+ 		role: user.role,
+ 		avatarUrl: user.avatarUrl,
+-		isFirstLogin,
++		isFirstLogin: false,
+ 	});
+ };
 diff --git a/src/astro/routes/api/auth/oauth/[provider]/callback.ts b/src/astro/routes/api/auth/oauth/[provider]/callback.ts
 index 7c69cd61340b9ba0fe5d467dfe99fe7117b549d9..e30f0b7ecc4202f72286818adeded3fc469864eb 100644
 --- a/src/astro/routes/api/auth/oauth/[provider]/callback.ts

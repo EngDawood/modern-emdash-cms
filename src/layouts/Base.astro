@@ -110,14 +110,7 @@ const articleSchema =
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
-			rel="preload"
-			href="/fonts/Al-Jazeera-Regular.0112de0f.woff2"
-			as="font"
-			type="font/woff2"
-			crossorigin
-		/>
-		<link
-			href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=JetBrains+Mono:wght@400&family=Amiri:wght@400;700&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=JetBrains+Mono:wght@400&family=Amiri:wght@400;700&family=Cairo:wght@400;500;600&display=swap"
 			rel="stylesheet"
 		/>
 		<link
@@ -144,7 +137,7 @@ const articleSchema =
 		<EmDashBodyStart page={pageCtx} />
 		<header class="site-header">
 			<nav class="nav">
-				<a href={`/${locale}`} class="site-logo" aria-label="Home">
+				<a href={`/${locale}`} class="site-logo" dir="ltr" aria-label="Home">
 					<svg width="44" height="34" viewBox="0 0 44 34" class="logo-mark" aria-hidden="true">
 						<text x="0" y="30" font-family="'Playfair Display', serif" font-size="40" font-weight="400" fill="var(--color-text)" letter-spacing="-0.06em">D</text>
 						<text x="17" y="30" font-family="'Playfair Display', serif" font-size="40" font-weight="400" font-style="italic" fill="var(--color-accent)" letter-spacing="-0.06em">s</text>
@@ -198,7 +191,7 @@ const articleSchema =
 			<div class="footer-inner">
 				<div class="footer-grid">
 					<div class="footer-brand">
-						<a href={`/${locale}`} class="footer-logo-wrap">
+						<a href={`/${locale}`} class="footer-logo-wrap" dir="ltr">
 							<svg width="52" height="40" viewBox="0 0 52 40" class="footer-logo-mark" aria-hidden="true">
 								<text x="0" y="35" font-family="'Playfair Display', serif" font-size="46" font-weight="400" fill="var(--color-text)" letter-spacing="-0.06em">D</text>
 								<text x="19" y="35" font-family="'Playfair Display', serif" font-size="46" font-weight="400" font-style="italic" fill="var(--color-accent)" letter-spacing="-0.06em">s</text>
@@ -247,19 +240,19 @@ const articleSchema =
 							type="button"
 							class="theme-btn"
 							data-theme="light"
-							aria-label="Light mode">Light</button
+							aria-label="Light mode">{t("theme.light", locale)}</button
 						>
 						<button
 							type="button"
 							class="theme-btn"
 							data-theme="dark"
-							aria-label="Dark mode">Dark</button
+							aria-label="Dark mode">{t("theme.dark", locale)}</button
 						>
 						<button
 							type="button"
 							class="theme-btn"
 							data-theme="system"
-							aria-label="System theme">System</button
+							aria-label="System theme">{t("theme.system", locale)}</button
 						>
 					</div>
 				</div>
@@ -330,31 +323,7 @@ const articleSchema =
 		</script>
 
 		<style is:global>
-			@font-face {
-				font-family: "Al Jazeera";
-				src: url("/fonts/Al-Jazeera-Regular.0112de0f.woff2") format("woff2");
-				font-weight: 400;
-				font-style: normal;
-				font-display: swap;
-			}
-
-			@font-face {
-				font-family: "Al Jazeera";
-				src: url("/fonts/Al-Jazeera-Bold.3301c4f5.woff2") format("woff2");
-				font-weight: 700;
-				font-style: normal;
-				font-display: swap;
-			}
-
-			@font-face {
-				font-family: "Al Jazeera";
-				src: url("/fonts/Al-Jazeera-Light.b09a8096.woff2") format("woff2");
-				font-weight: 300;
-				font-style: normal;
-				font-display: swap;
-			}
-
-			*,
+*,
 			*::before,
 			*::after {
 				box-sizing: border-box;
@@ -389,7 +358,7 @@ const articleSchema =
 				/* Typography */
 				--font-serif: "Playfair Display", Georgia, serif;
 				--font-sans: system-ui, -apple-system, sans-serif;
-				--font-arabic: "Al Jazeera", "Segoe UI", Tahoma, sans-serif;
+				--font-arabic: "Cairo", "Segoe UI", Tahoma, sans-serif;
 				--font-mono: "JetBrains Mono", ui-monospace, monospace;
 
 				--font-size-xs: 0.75rem;
@@ -546,6 +515,12 @@ const articleSchema =
 				direction: rtl;
 			}
 
+			html[dir="rtl"] .footer-logo-sub,
+			html[dir="rtl"] .logo-sub {
+				font-family: var(--font-arabic);
+				font-style: normal;
+			}
+
 			a {
 				color: currentColor;
 			}
@@ -601,6 +576,7 @@ const articleSchema =
 
 			.site-logo {
 				display: flex;
+				flex-direction: row;
 				align-items: center;
 				gap: 12px;
 				text-decoration: none;
@@ -785,6 +761,7 @@ const articleSchema =
 
 			.footer-logo-wrap {
 				display: flex;
+				flex-direction: row;
 				align-items: center;
 				gap: 14px;
 				text-decoration: none;
