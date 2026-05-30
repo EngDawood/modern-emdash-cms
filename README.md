@@ -1,62 +1,96 @@
-# EmDash Portfolio Template
+# Eng. Dawood Saleh - Portfolio & EmDash CMS Project
 
-A visual portfolio for showcasing creative work, built with [EmDash](https://github.com/emdash-cms/emdash). Runs on any Node.js server with SQLite and local file storage. Project pages with tag filtering, case study layouts, and an RSS feed for new work.
+A modern, multilingual personal portfolio website and CMS built with [Astro](https://astro.build/) and [EmDash](https://github.com/emdash-cms/emdash), deployed on Cloudflare Workers. It features an integrated Model Context Protocol (MCP) server, allowing AI agents to interact directly with the CMS content.
 
-![Portfolio template work page](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/portfolio/latest/work-light-desktop.jpg)
+## Features
 
-## What's Included
+- **Multilingual (i18n):** Native support for Arabic (default/RTL) and English (LTR) routing and content.
+- **EmDash CMS Integration:** Content is managed via EmDash and fetched dynamically using the `emdashLoader`.
+- **Model Context Protocol (MCP) Server:** A built-in MCP server (`/mcp` endpoint) running on Cloudflare Workers, exposing tools for AI agents to list, create, search, and manage CMS content.
+- **Cloudflare Edge Infrastructure:** Deployed using Cloudflare Workers, leveraging Durable Objects, D1, and R2 for storage and database needs.
+- **Responsive & Accessible Design:** Built with modern CSS (Vanilla CSS preferred), featuring smooth scroll-reveal animations and a polished UI.
+- **Capabilities/Skills Section:** Dynamic display of technical proficiencies across languages, backend, infra, AI, and more.
 
-- Project grid with hover effects
-- Tag-based filtering on the work page
-- Individual project pages with galleries
-- About and contact pages
-- RSS feed for new projects
-- SEO metadata and JSON-LD
-- Dark/light mode
+## Tech Stack
 
-## Pages
+- **Framework:** Astro
+- **CMS:** EmDash (Cloudflare Variant)
+- **Runtime:** Cloudflare Workers (Node.js compatibility layer)
+- **Styling:** Vanilla CSS
+- **Languages:** TypeScript, HTML, Astro
+- **Integration:** Model Context Protocol (MCP) SDK
 
-| Page | Route |
-|---|---|
-| Homepage | `/` |
-| Work listing | `/work` |
-| Single project | `/work/:slug` |
-| About | `/about` |
-| Contact | `/contact` |
-| RSS | `/rss.xml` |
-| 404 | fallback |
+## 📚 Internal Codebase Documentation
 
-## Screenshots
+For developers working on this project, comprehensive API and architectural documentation is available in the `docs/` directory:
 
-| | Desktop | Mobile |
-|---|---|---|
-| Light | ![work light desktop](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/portfolio/latest/work-light-desktop.jpg) | ![work light mobile](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/portfolio/latest/work-light-mobile.jpg) |
-| Dark | ![work dark desktop](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/portfolio/latest/work-dark-desktop.jpg) | ![work dark mobile](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/portfolio/latest/work-dark-mobile.jpg) |
-
-## Infrastructure
-
-- **Runtime:** Node.js
-- **Database:** SQLite (local file)
-- **Storage:** Local filesystem
-- **Framework:** Astro with `@astrojs/node`
+- [Documentation Index](./docs/README.md)
+  - [Components API](./docs/components.md)
+  - [Routing & Pages Architecture](./docs/routing_and_pages.md)
+  - [Utilities](./docs/utilities.md)
+  - [Data & State](./docs/data.md)
+  - [MCP & Worker Architecture](./docs/mcp_worker.md)
+  - [MCP API Reference](./docs/mcp_api_reference.md)
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js (v18+)
+- `pnpm` package manager
+- Wrangler CLI (for Cloudflare deployment)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd portfolio
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+### Development
+
+Start the local development server:
+
 ```bash
-pnpm install
-pnpm bootstrap
 pnpm dev
 ```
 
-Open http://localhost:4321 for the site and http://localhost:4321/_emdash/admin for the CMS.
+The site will be available at `http://localhost:4321`.
 
-## Want Cloudflare Instead?
+### MCP Server Access
 
-See the [Cloudflare variant](../portfolio-cloudflare) for a version that deploys to Cloudflare Workers with D1 and R2.
+The MCP server is exposed at the `/mcp` endpoint. It requires an authorization token defined in your environment variables (`EMDASH_TOKEN`).
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/emdash-cms/templates/tree/main/portfolio-cloudflare)
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:4321/mcp
+```
+
+## Project Structure
+
+```text
+├── src/
+│   ├── components/      # Reusable Astro UI components (e.g., PostCard, LanguageSwitcher)
+│   ├── data/            # Static data structures (e.g., skills.ts)
+│   ├── i18n/            # Translation files and localization utilities
+│   ├── layouts/         # Base page layouts
+│   ├── mcp/             # Model Context Protocol server implementation
+│   ├── pages/           # Astro file-based routing ([locale] structure)
+│   ├── utils/           # Helper functions (e.g., reading-time)
+│   ├── live.config.ts   # EmDash live collection configuration
+│   └── worker.ts        # Cloudflare Worker entry point
+├── docs/                # Generated internal technical documentation
+├── public/              # Static assets (fonts, etc.)
+└── astro.config.mjs     # Astro configuration
+```
 
 ## See Also
 
-- [All templates](../)
 - [EmDash documentation](https://github.com/emdash-cms/emdash/tree/main/docs)
+- [Astro documentation](https://docs.astro.build)
+- [Model Context Protocol](https://modelcontextprotocol.io/)

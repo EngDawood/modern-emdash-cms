@@ -1,0 +1,2 @@
+ALTER TABLE tasks ADD COLUMN title_ar TEXT;
+ALTER TABLE tasks ADD COLUMN log TEXT DEFAULT '[]';

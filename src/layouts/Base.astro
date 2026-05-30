@@ -3,6 +3,8 @@ import { getMenu, getSiteSettings, getEmDashCollection } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd, WidgetArea } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
+import LanguageSwitcher from "../components/LanguageSwitcher.astro";
+import { getDir, getLocaleFromPath, t, type Locale, defaultLocale } from "../i18n/utils";
 
 interface Props {
 	title?: string;
@@ -16,6 +18,8 @@ interface Props {
 	author?: string | null;
 	/** Pass content reference for plugin page contributions on content pages */
 	content?: { collection: string; id: string; slug?: string | null };
+	/** Current locale */
+	locale?: Locale;
 }
 
 const {
@@ -29,13 +33,19 @@ const {
 	modifiedTime,
 	author,
 	content,
+	locale: localeProp,
 } = Astro.props;
+
+// Determine locale from prop or URL
+const locale: Locale = localeProp || getLocaleFromPath(Astro.url.pathname) || defaultLocale;
+const dir = getDir(locale);
+const isRTL = dir === "rtl";
 const settings = await getSiteSettings();
 const siteTitle = settings?.title || "Studio";
 const siteDescription = settings?.tagline || "Design & Development";
 const fullTitle = title ? `${title} — ${siteTitle}` : siteTitle;
 
-const menu = await getMenu("primary");
+const _menu = await getMenu("primary"); // Reserved for future navigation
 const { entries: pages } = await getEmDashCollection("pages");
 
 const isLoggedIn = !!Astro.locals.user;
@@ -53,19 +63,61 @@ const pageCtx = createPublicPageContext({
 	articleMeta: { publishedTime, modifiedTime, author },
 	siteName: siteTitle,
 });
+
+// hreflang: strip locale prefix then build per-locale hrefs
+const pathWithoutLocale = Astro.url.pathname.replace(/^\/(ar|en)/, "") || "/";
+const hrefAr = `${Astro.url.origin}/ar${pathWithoutLocale === "/" ? "" : pathWithoutLocale}`;
+const hrefEn = `${Astro.url.origin}/en${pathWithoutLocale === "/" ? "" : pathWithoutLocale}`;
+
+// JSON-LD
+const websiteSchema = {
+	"@context": "https://schema.org",
+	"@type": "WebSite",
+	name: siteTitle,
+	url: Astro.url.origin,
+};
+const articleSchema =
+	type === "article" && publishedTime
+		? {
+				"@context": "https://schema.org",
+				"@type": "BlogPosting",
+				headline: title ?? fullTitle,
+				url: canonical ?? Astro.url.href,
+				datePublished: publishedTime,
+				dateModified: modifiedTime ?? publishedTime,
+				description: description ?? siteDescription,
+				...(image ? { image } : {}),
+				author: {
+					"@type": "Person",
+					name: author ?? siteTitle,
+				},
+			}
+		: null;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale} dir={dir}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{fullTitle}</title>
 		<EmDashHead page={pageCtx} />
+		<link rel="alternate" hreflang="ar" href={hrefAr} />
+		<link rel="alternate" hreflang="en" href={hrefEn} />
+		<link rel="alternate" hreflang="x-default" href={hrefAr} />
+		<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+		{articleSchema && <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />}
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
-			href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap"
+			rel="preload"
+			href="/fonts/Al-Jazeera-Regular.0112de0f.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..700&display=swap"
 			rel="stylesheet"
 		/>
 		<link
@@ -92,7 +144,7 @@ const pageCtx = createPublicPageContext({
 		<EmDashBodyStart page={pageCtx} />
 		<header class="site-header">
 			<nav class="nav">
-				<a href="/" class="site-title">{siteTitle}</a>
+				<a href={`/${locale}`} class="site-title">{siteTitle}</a>
 				<div class="nav-right">
 					<LiveSearch
 						placeholder="Search..."
@@ -103,16 +155,27 @@ const pageCtx = createPublicPageContext({
 						collections={["projects", "posts", "pages"]}
 					/>
 					<div class="nav-links">
-						{
-							menu?.items.map((item) => (
-								<a href={item.url} target={item.target}>
-									{item.label}
-								</a>
-							))
-						}
+						<a href={`/${locale}/work`}>{t("nav.projects", locale)}</a>
+						<span class="nav-divider" aria-hidden="true">/</span>
+						<a href={`/${locale}/posts`}>{t("nav.blog", locale)}</a>
+						<a href={`/${locale}#about`}>{t("nav.about", locale)}</a>
+						<a href={`/${locale}#contact`}>{t("nav.contact", locale)}</a>
 					</div>
-					{isLoggedIn && (
+					<button
+						type="button"
+						id="theme-toggle"
+						class="theme-toggle-btn"
+						aria-label="Toggle dark mode"
+					>
+						<svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+						<svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+					</button>
+					<LanguageSwitcher locale={locale} />
+					{isLoggedIn && <a href="/tracker" class="nav-admin">Tracker</a>}
+					{isLoggedIn ? (
 						<a href="/_emdash/admin" class="nav-admin">Admin</a>
+					) : (
+						<a href="/_emdash/admin" class="nav-admin">Login</a>
 					)}
 				</div>
 			</nav>
@@ -126,19 +189,19 @@ const pageCtx = createPublicPageContext({
 			<div class="footer-inner">
 				<div class="footer-grid">
 					<div class="footer-brand">
-						<a href="/" class="footer-logo">{siteTitle}</a>
+						<a href={`/${locale}`} class="footer-logo">{siteTitle}</a>
 						<p class="footer-tagline">{siteDescription}</p>
 					</div>
 					<div class="footer-nav">
-						<h4 class="footer-heading">Navigate</h4>
+						<h4 class="footer-heading">{t("footer.nav", locale)}</h4>
 						<ul class="footer-links">
-							<li><a href="/">Home</a></li>
-							<li><a href="/work">Work</a></li>
-							<li><a href="/posts">Blog</a></li>
+							<li><a href={`/${locale}`}>{t("nav.home", locale)}</a></li>
+							<li><a href={`/${locale}/work`}>{t("nav.projects", locale)}</a></li>
+							<li><a href={`/${locale}/posts`}>{t("nav.blog", locale)}</a></li>
 							{
 								pages.slice(0, 2).map((page) => (
 									<li>
-										<a href={`/pages/${page.data.slug || page.id}`}>
+										<a href={`/${locale}/pages/${page.data.slug || page.id}`}>
 											{page.data.title}
 										</a>
 									</li>
@@ -147,10 +210,10 @@ const pageCtx = createPublicPageContext({
 						</ul>
 					</div>
 					<div class="footer-nav">
-						<h4 class="footer-heading">Connect</h4>
+						<h4 class="footer-heading">{t("footer.connect", locale)}</h4>
 						<ul class="footer-links">
-							<li><a href="/contact">Contact</a></li>
-							<li><a href="/rss.xml">RSS Feed</a></li>
+							<li><a href={`/${locale}#contact`}>{t("nav.contact", locale)}</a></li>
+							<li><a href="/rss.xml">{t("footer.rss", locale)}</a></li>
 						</ul>
 					</div>
 					<div class="footer-widgets-section">
@@ -159,7 +222,7 @@ const pageCtx = createPublicPageContext({
 				</div>
 				<div class="footer-bottom">
 					<p class="footer-copyright">
-						Powered by <a href="https://emdashcms.com">EmDash</a>
+						&copy; {new Date().getFullYear()}
 					</p>
 					<div class="theme-switcher">
 						<button
@@ -229,6 +292,15 @@ const pageCtx = createPublicPageContext({
 				});
 			});
 
+			// Nav toggle button
+			const toggleBtn = document.getElementById("theme-toggle");
+			if (toggleBtn) {
+				toggleBtn.addEventListener("click", () => {
+					const isDark = document.documentElement.classList.contains("dark");
+					setTheme(isDark ? "light" : "dark");
+				});
+			}
+
 			// Listen for system preference changes
 			window
 				.matchMedia("(prefers-color-scheme: dark)")
@@ -240,6 +312,30 @@ const pageCtx = createPublicPageContext({
 		</script>
 
 		<style is:global>
+			@font-face {
+				font-family: "Al Jazeera";
+				src: url("/fonts/Al-Jazeera-Regular.0112de0f.woff2") format("woff2");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Al Jazeera";
+				src: url("/fonts/Al-Jazeera-Bold.3301c4f5.woff2") format("woff2");
+				font-weight: 700;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Al Jazeera";
+				src: url("/fonts/Al-Jazeera-Light.b09a8096.woff2") format("woff2");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+
 			*,
 			*::before,
 			*::after {
@@ -275,6 +371,7 @@ const pageCtx = createPublicPageContext({
 				/* Typography */
 				--font-serif: "Playfair Display", Georgia, serif;
 				--font-sans: system-ui, -apple-system, sans-serif;
+				--font-arabic: "Al Jazeera", "Segoe UI", Tahoma, sans-serif;
 				--font-mono: ui-monospace, monospace;
 
 				--font-size-xs: 0.75rem;
@@ -401,6 +498,36 @@ const pageCtx = createPublicPageContext({
 				min-height: 100vh;
 			}
 
+			/* RTL (Arabic) styles */
+			html[dir="rtl"] {
+				font-family: var(--font-arabic);
+			}
+
+			html[dir="rtl"] body {
+				font-family: var(--font-arabic);
+				font-size: calc(var(--font-size-base) * 1.02);
+				line-height: 1.7;
+			}
+
+			html[dir="rtl"] h1,
+			html[dir="rtl"] h2,
+			html[dir="rtl"] h3,
+			html[dir="rtl"] h4 {
+				font-family: var(--font-arabic);
+				letter-spacing: 0;
+			}
+
+			/* Flip flex direction for RTL */
+			html[dir="rtl"] .nav,
+			html[dir="rtl"] .nav-right,
+			html[dir="rtl"] .nav-links {
+				flex-direction: row-reverse;
+			}
+
+			html[dir="rtl"] .footer-grid {
+				direction: rtl;
+			}
+
 			a {
 				color: currentColor;
 			}
@@ -483,6 +610,11 @@ const pageCtx = createPublicPageContext({
 
 			.nav-links a:hover {
 				color: var(--color-text);
+			}
+
+			.nav-divider {
+				color: var(--color-border);
+				user-select: none;
 			}
 
 			.nav-admin {
@@ -696,6 +828,31 @@ const pageCtx = createPublicPageContext({
 				color: var(--color-text-secondary);
 				text-decoration: none;
 			}
+
+			.theme-toggle-btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 36px;
+				height: 36px;
+				background: var(--color-surface);
+				border: 1px solid var(--color-border);
+				border-radius: var(--radius);
+				color: var(--color-muted);
+				cursor: pointer;
+				transition: all var(--transition-fast);
+				flex-shrink: 0;
+			}
+
+			.theme-toggle-btn:hover {
+				color: var(--color-text);
+				border-color: var(--color-accent);
+			}
+
+			/* Show/hide sun and moon based on current theme */
+			#icon-moon { display: none; }
+			:root.dark #icon-sun { display: none; }
+			:root.dark #icon-moon { display: block; }
 
 			.theme-switcher {
 				display: flex;
