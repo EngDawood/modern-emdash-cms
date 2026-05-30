@@ -109,6 +109,7 @@ const articleSchema =
 		{articleSchema && <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />}
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link rel="preconnect" href="https://cdn.engdawood.com" crossorigin />
 		<link
 			href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=JetBrains+Mono:wght@400&family=Amiri:wght@400;700&family=Cairo:wght@400;500;600&display=swap"
 			rel="stylesheet"
@@ -323,7 +324,139 @@ const articleSchema =
 		</script>
 
 		<style is:global>
-*,
+@font-face {
+				font-family: "Thmanyah Sans";
+				src: local("Thmanyah Sans"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-sans/woff2/thmanyah-sans-Light.woff2") format("woff2");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Sans";
+				src: local("Thmanyah Sans"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-sans/woff2/thmanyah-sans-Regular.woff2") format("woff2");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Sans";
+				src: local("Thmanyah Sans"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-sans/woff2/thmanyah-sans-Medium.woff2") format("woff2");
+				font-weight: 500;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Sans";
+				src: local("Thmanyah Sans"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-sans/woff2/thmanyah-sans-Bold.woff2") format("woff2");
+				font-weight: 700;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Sans";
+				src: local("Thmanyah Sans"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-sans/woff2/thmanyah-sans-Black.woff2") format("woff2");
+				font-weight: 900;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Al Jazeera";
+				src: local("Al Jazeera"),
+					url("https://cdn.engdawood.com/fonts/Al-Jazeera/Al-Jazeera-Light.b09a8096.woff2") format("woff2");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Al Jazeera";
+				src: local("Al Jazeera"),
+					url("https://cdn.engdawood.com/fonts/Al-Jazeera/Al-Jazeera-Regular.0112de0f.woff2") format("woff2");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Al Jazeera";
+				src: local("Al Jazeera"),
+					url("https://cdn.engdawood.com/fonts/Al-Jazeera/Al-Jazeera-Bold.3301c4f5.woff2") format("woff2");
+				font-weight: 700;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Thmanyah Serif Display";
+				src: local("Thmanyah Serif Display"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-display/woff2/thmanyah-serif-display-Light.woff2") format("woff2");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Serif Display";
+				src: local("Thmanyah Serif Display"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-display/woff2/thmanyah-serif-display-Regular.woff2") format("woff2");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Serif Display";
+				src: local("Thmanyah Serif Display"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-display/woff2/thmanyah-serif-display-Medium.woff2") format("woff2");
+				font-weight: 500;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Serif Display";
+				src: local("Thmanyah Serif Display"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-display/woff2/thmanyah-serif-display-Bold.woff2") format("woff2");
+				font-weight: 700;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			@font-face {
+				font-family: "Thmanyah Serif Text";
+				src: local("Thmanyah Serif Text"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-text/woff2/thmanyah-serif-text-Light.woff2") format("woff2");
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Serif Text";
+				src: local("Thmanyah Serif Text"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-text/woff2/thmanyah-serif-text-Regular.woff2") format("woff2");
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Serif Text";
+				src: local("Thmanyah Serif Text"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-text/woff2/thmanyah-serif-text-Medium.woff2") format("woff2");
+				font-weight: 500;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: "Thmanyah Serif Text";
+				src: local("Thmanyah Serif Text"),
+					url("https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-text/woff2/thmanyah-serif-text-Bold.woff2") format("woff2");
+				font-weight: 700;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			*,
 			*::before,
 			*::after {
 				box-sizing: border-box;
@@ -358,7 +491,9 @@ const articleSchema =
 				/* Typography */
 				--font-serif: "Playfair Display", Georgia, serif;
 				--font-sans: system-ui, -apple-system, sans-serif;
-				--font-arabic: "Cairo", "Segoe UI", Tahoma, sans-serif;
+				--font-arabic: "Thmanyah Serif Text", "Al Jazeera", "Cairo", serif;
+				--font-arabic-heading: "Thmanyah Serif Display", "Thmanyah Serif Text", "Al Jazeera", serif;
+				--font-arabic-sans: "Thmanyah Sans", "Al Jazeera", "Cairo", sans-serif;
 				--font-mono: "JetBrains Mono", ui-monospace, monospace;
 
 				--font-size-xs: 0.75rem;
@@ -500,7 +635,7 @@ const articleSchema =
 			html[dir="rtl"] h2,
 			html[dir="rtl"] h3,
 			html[dir="rtl"] h4 {
-				font-family: var(--font-arabic);
+				font-family: var(--font-arabic-heading);
 				letter-spacing: 0;
 			}
 
@@ -509,6 +644,13 @@ const articleSchema =
 			html[dir="rtl"] .nav-right,
 			html[dir="rtl"] .nav-links {
 				flex-direction: row-reverse;
+			}
+
+			html[dir="rtl"] .nav-links a,
+			html[dir="rtl"] .nav-admin,
+			html[dir="rtl"] .footer-links a,
+			html[dir="rtl"] .footer-heading {
+				font-family: var(--font-arabic-heading);
 			}
 
 			html[dir="rtl"] .footer-grid {

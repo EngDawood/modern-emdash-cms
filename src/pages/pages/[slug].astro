@@ -54,6 +54,7 @@ Astro.cache.set(cacheHint);
 
 	.page-content :global(p) {
 		margin-bottom: 1.5em;
+		unicode-bidi: plaintext;
 	}
 
 	.page-content :global(h2) {
@@ -62,6 +63,7 @@ Astro.cache.set(cacheHint);
 		font-weight: 500;
 		margin-top: 2em;
 		margin-bottom: 0.75em;
+		unicode-bidi: plaintext;
 	}
 
 	.page-content :global(h3) {
@@ -70,12 +72,13 @@ Astro.cache.set(cacheHint);
 		font-weight: 500;
 		margin-top: 1.75em;
 		margin-bottom: 0.5em;
+		unicode-bidi: plaintext;
 	}
 
 	.page-content :global(blockquote) {
 		margin: 1.5em 0;
-		padding-left: var(--spacing-6);
-		border-left: 3px solid var(--color-accent-muted);
+		padding-inline-start: var(--spacing-6);
+		border-inline-start: 3px solid var(--color-accent-muted);
 		color: var(--color-muted);
 		font-family: var(--font-serif);
 		font-style: italic;
