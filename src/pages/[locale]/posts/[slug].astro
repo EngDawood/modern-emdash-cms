@@ -210,7 +210,7 @@ const publishDate =
 					}
 				</header>
 
-				<div class="article-content">
+				<div class="article-content" dir="auto">
 					<PortableText value={post.data.content} />
 				</div>
 
@@ -507,7 +507,7 @@ const publishDate =
 	.article-content :global(blockquote) {
 		margin: 2em 0;
 		padding: var(--spacing-4) var(--spacing-6);
-		border-left: 3px solid var(--color-accent-muted);
+		border-inline-start: 3px solid var(--color-accent-muted);
 		background: var(--color-bg-subtle);
 		border-radius: 0 var(--radius) var(--radius) 0;
 		color: var(--color-text-secondary);
@@ -543,7 +543,7 @@ const publishDate =
 	.article-content :global(ul),
 	.article-content :global(ol) {
 		margin-bottom: 1.5em;
-		padding-left: 1.5em;
+		padding-inline-start: 1.5em;
 	}
 
 	.article-content :global(li) {

@@ -39,10 +39,10 @@ const recentPosts = posts
 	.slice(0, 4);
 
 const email = "eng.dawoodsaleh@gmail.com";
-const github = "https://github.com/EngDawood";
-const linkedin = "https://www.linkedin.com/in/dawood3";
 const telegram = "https://t.me/Daw5d";
-const twitter = "https://x.com/dawo5d";
+const github = settings.social?.github ?? "https://github.com/EngDawood";
+const linkedin = settings.social?.linkedin ?? "https://www.linkedin.com/in/dawood3";
+const twitter = settings.social?.twitter ?? "https://x.com/dawo5d";
 
 // Contact form state
 let formStatus: "idle" | "success" | "error" = "idle";
@@ -62,23 +62,18 @@ if (Astro.request.method === "POST") {
 			formStatus = "error";
 			formMessage = t("contact.form.error", locale);
 		} else {
-			const resendKey = import.meta.env.RESEND_API_KEY;
-			const res = await fetch("https://api.resend.com/emails", {
+			const res = await fetch(new URL("/_emdash/api/plugins/emdash-forms/submit", Astro.url), {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${resendKey}`,
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					from: "noreply@engdawood.com",
-					to: ["eng.dawoodsaleh@gmail.com"],
-					subject: `[Portfolio] New message from ${name}`,
-					text: `From: ${name} <${emailVal}>\n\n${message}`,
+					formId: "contact",
+					data: { name, email: emailVal, message },
 				}),
 			});
-			if (!res.ok) throw new Error(`Resend responded with ${res.status}`);
+			const result = await res.json() as { success: boolean; message?: string };
+			if (!result.success) throw new Error(result.message || "Submission failed");
 			formStatus = "success";
-			formMessage = t("contact.form.success", locale);
+			formMessage = result.message || t("contact.form.success", locale);
 		}
 	} catch {
 		formStatus = "error";
