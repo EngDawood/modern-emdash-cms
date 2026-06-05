@@ -12,7 +12,7 @@ index ade9bbb3d89555ee2c21bcaf23d8764e3792e46a..214aeff8cad1557b5125efe857783383
  var EmDashDatabaseError = class extends Error {
 @@ -12,21 +12,19 @@ var EmDashDatabaseError = class extends Error {
  /**
- * Creates a Kysely database instance
+ * Creates a Kysely database instance 
  * Supports:
 -* - file:./path/to/db.sqlite (local SQLite)
 +* - file:./path/to/db.sqlite (local SQLite via libsql)
