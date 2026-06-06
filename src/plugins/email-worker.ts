@@ -7,12 +7,14 @@
 
 import type { PluginContext, ResolvedPlugin } from "emdash";
 import { definePlugin } from "emdash";
+// On Cloudflare Workers, runtime secrets come from the Workers env, not import.meta.env.
+import { env as cfEnv } from "cloudflare:workers";
 
 export function createPlugin(): ResolvedPlugin {
 	return definePlugin({
 		id: "email-resend-provider",
 		version: "0.1.0",
-		capabilities: ["email:provide"],
+		capabilities: ["hooks.email-transport:register"],
 
 		hooks: {
 			"email:deliver": {
@@ -21,7 +23,9 @@ export function createPlugin(): ResolvedPlugin {
 					event: { message: { to: string; subject: string; text: string; html?: string }; source: string },
 					_ctx: PluginContext,
 				) => {
-					const apiKey = import.meta.env.RESEND_API_KEY;
+					const apiKey =
+						(cfEnv as Record<string, string | undefined>).RESEND_API_KEY ??
+						import.meta.env.RESEND_API_KEY;
 					const res = await fetch("https://api.resend.com/emails", {
 						method: "POST",
 						headers: {

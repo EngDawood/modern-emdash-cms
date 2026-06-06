@@ -2,7 +2,7 @@ import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
-import { webhookNotifierPlugin } from "@emdash-cms/plugin-webhook-notifier";
+import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { defineConfig } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
@@ -37,8 +37,9 @@ export default defineConfig({
 				{
 					id: "email-resend-provider",
 					version: "0.1.0",
+					format: "native",
 					entrypoint: emailWorkerEntrypoint,
-					capabilities: ["email:provide"],
+					capabilities: ["hooks.email-transport:register"],
 				},
 				{
 					id: "tracker-link",
@@ -50,7 +51,7 @@ export default defineConfig({
 					adminWidgets: [{ id: "tracker-open", title: "Task Tracker", size: "third" }],
 				},
 			],
-			sandboxed: process.env.NODE_ENV !== "production" ? [webhookNotifierPlugin()] : [],
+			sandboxed: process.env.NODE_ENV !== "production" ? [webhookNotifier] : [],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
 		}),
