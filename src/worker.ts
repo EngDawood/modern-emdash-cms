@@ -190,6 +190,19 @@ export default {
 			return new Response("Not found", { status: 404 });
 		}
 
-		return handler.fetch(request, env, ctx);
+		const response = await handler.fetch(request, env, ctx);
+
+		// Cache public GET pages at the edge (skip for authenticated users or non-200s)
+		if (
+			request.method === "GET" &&
+			response.status === 200 &&
+			!request.headers.get("Cookie")?.includes("astro-session")
+		) {
+			const cached = new Response(response.body, response);
+			cached.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+			return cached;
+		}
+
+		return response;
 	},
 };
