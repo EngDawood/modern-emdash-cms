@@ -41,7 +41,12 @@
 		"kicker": "RECENT WRITING",
 		"heading": "From the notebook",
 		"subheading": "Essays, walkthroughs, and notes from the field.",
-		"viewAll": "Read all posts"
+		"viewAll": "Read all posts",
+		"author": "Author",
+		"authors": "Authors",
+		"published": "Published",
+		"min": "min",
+		"empty": "No posts posted yet."
 	},
 	"about": {
 		"section": "About",
@@ -134,5 +139,61 @@
 		"light": "Light",
 		"dark": "Dark",
 		"system": "System"
+	},
+	"search": {
+		"placeholder": "Search posts...",
+		"title": "Search",
+		"hint": "Enter a search term to find posts.",
+		"noResults": "No results found for",
+		"resultsSummary": "Found {count} results for",
+		"button": "Search",
+		"description": "Search blog posts"
+	},
+	"project": {
+		"viewWork": "View Project",
+		"viewLive": "Visit Site",
+		"moreWork": "Other projects",
+		"noProjects": "No projects found.",
+		"viewAll": "View all projects"
+	},
+	"archive": {
+		"category": "Category",
+		"tag": "Tag",
+		"noPostsCategory": "No posts found in this category.",
+		"noPostsTag": "No posts found with this tag.",
+		"postsTitle": "Posts tagged with",
+		"categoryTitle": "Posts categorized in",
+		"postsDesc": "Browse all posts related to",
+		"categoryDesc": "Browse all posts in category"
+	},
+
+	"common": {
+		"clear": "clear"
+	},
+	"notFound": {
+		"title": "Page not found",
+		"subtitle": "The page you're looking for doesn't exist or has been moved.",
+		"goHome": "Go home",
+		"viewWork": "View our work"
+	},
+	"taxonomy": {
+		"branding": "Branding",
+		"web": "Web Design",
+		"print": "Print",
+		"photography": "Photography",
+		"development": "Development",
+		"design": "Design",
+		"notes": "Notes",
+		"identity": "Identity",
+		"ui-ux": "UI/UX",
+		"dev": "Development",
+		"art-direction": "Art Direction",
+		"packaging": "Packaging",
+		"ecommerce": "E-commerce",
+		"editorial": "Editorial",
+		"webdev": "Web Development",
+		"opinion": "Opinion",
+		"tools": "Tools",
+		"creativity": "Creativity"
 	}
 }
