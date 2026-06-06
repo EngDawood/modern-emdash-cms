@@ -7,30 +7,35 @@ export const GET: APIRoute = async ({ site, url }) => {
 	const siteTitle = settings?.title || "Studio";
 	const siteDescription = settings?.tagline || "Design & Development";
 
-	const { entries: projects } = await getEmDashCollection("projects", {
-		orderBy: { published_at: "desc" },
-		limit: 20,
-	});
+	const [{ entries: projects }, { entries: posts }] = await Promise.all([
+		getEmDashCollection("projects", { orderBy: { published_at: "desc" }, limit: 20 }),
+		getEmDashCollection("posts", { orderBy: { published_at: "desc" }, limit: 20 }),
+	]);
 
-	const items = projects
-		.map((project) => {
-			if (!project.data.publishedAt) return null;
-			const pubDate = project.data.publishedAt.toUTCString();
+	type FeedItem = { pubDate: Date; xml: string };
 
-			const projectUrl = `${siteUrl}/work/${project.id}`;
-			const title = escapeXml(project.data.title || "Untitled");
-			const description = escapeXml(project.data.summary || "");
+	const toItem = (entryUrl: string, title: string | undefined, description: string | undefined, publishedAt: Date | null | undefined): FeedItem | null => {
+		if (!publishedAt) return null;
+		return {
+			pubDate: publishedAt,
+			xml: `    <item>
+      <title>${escapeXml(title || "Untitled")}</title>
+      <link>${entryUrl}</link>
+      <guid isPermaLink="true">${entryUrl}</guid>
+      <pubDate>${publishedAt.toUTCString()}</pubDate>
+      <description>${escapeXml(description || "")}</description>
+    </item>`,
+		};
+	};
 
-			return `    <item>
-      <title>${title}</title>
-      <link>${projectUrl}</link>
-      <guid isPermaLink="true">${projectUrl}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <description>${description}</description>
-    </item>`;
-		})
-		.filter(Boolean)
-		.join("\n");
+	const feedItems: FeedItem[] = [
+		...projects.map((p) => toItem(`${siteUrl}/work/${p.data.slug || p.id}`, p.data.title, p.data.summary, p.data.publishedAt)),
+		...posts.map((p) => toItem(`${siteUrl}/posts/${p.data.slug || p.id}`, p.data.title, p.data.excerpt, p.data.publishedAt)),
+	]
+		.filter((item): item is FeedItem => item !== null)
+		.sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime());
+
+	const items = feedItems.map((item) => item.xml).join("\n");
 
 	const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
