@@ -46,6 +46,10 @@
 		"authors": "Authors",
 		"published": "Published",
 		"min": "min",
+		"readingTime": "Reading time",
+		"tags": "Tags",
+		"onThisPage": "On this page",
+		"continueReading": "Continue reading",
 		"empty": "No posts posted yet."
 	},
 	"about": {
@@ -133,7 +137,9 @@
 		"tagline": "Software Engineer — Backend, AI, Serverless",
 		"nav": "Links",
 		"connect": "Connect",
-		"rss": "RSS Feed"
+		"rss": "RSS Feed",
+		"aboutHeading": "About",
+		"aboutText": "Software engineer building serverless backends and AI tooling."
 	},
 	"theme": {
 		"light": "Light",
@@ -164,7 +170,9 @@
 		"postsTitle": "Posts tagged with",
 		"categoryTitle": "Posts categorized in",
 		"postsDesc": "Browse all posts related to",
-		"categoryDesc": "Browse all posts in category"
+		"categoryDesc": "Browse all posts in category",
+		"postSingular": "post",
+		"postPlural": "posts"
 	},
 
 	"common": {

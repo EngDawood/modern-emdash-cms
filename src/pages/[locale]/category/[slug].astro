@@ -42,7 +42,7 @@ const filteredPosts = await Promise.all(
 			<h1 class="archive-title">{term.label}</h1>
 			<p class="archive-count">
 				{filteredPosts.length}
-				{locale === "ar" ? "مقالة" : (filteredPosts.length === 1 ? "post" : "posts")}
+				{filteredPosts.length === 1 ? t("archive.postSingular", locale) : t("archive.postPlural", locale)}
 			</p>
 		</header>
 

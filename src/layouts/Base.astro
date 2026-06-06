@@ -229,12 +229,9 @@ const articleSchema =
 					</div>
 					<div class="footer-widgets-section">
 						<div class="footer-widget">
-							<h4 class="footer-heading">{locale === "ar" ? "عنّي" : "About"}</h4>
+							<h4 class="footer-heading">{t("footer.aboutHeading", locale)}</h4>
 							<p class="footer-about-text" style="color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--leading-relaxed);">
-								{locale === "ar"
-									? "استوديو تصميم صغير يركز على الأعمال الهادفة والكتابة عن هذا المجال."
-									: "A small design studio focused on meaningful work and writing about the craft."
-								}
+								{t("footer.aboutText", locale)}
 							</p>
 						</div>
 					</div>
