@@ -20,12 +20,13 @@
     "@abdulrysr/saudi-riyal-new-symbol-font": "^1.0.8",
     "@astrojs/cloudflare": "^13.1.6",
     "@astrojs/react": "^5.0.0",
-    "@emdash-cms/cloudflare": "0.1.1",
-    "@emdash-cms/plugin-forms": "0.1.1",
-    "@emdash-cms/plugin-webhook-notifier": "0.1.1",
+    "@emdash-cms/auth-atproto": "^0.2.13",
+    "@emdash-cms/cloudflare": "0.17.2",
+    "@emdash-cms/plugin-forms": "0.2.3",
+    "@emdash-cms/plugin-webhook-notifier": "0.2.0",
     "agents": "^0.11.0",
     "astro": "^6.1.2",
-    "emdash": "0.1.1",
+    "emdash": "0.17.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zod": "^4.3.6"
@@ -40,8 +41,7 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "@emdash-cms/auth@0.1.1": "patches/@emdash-cms__auth@0.1.1.patch",
-      "emdash@0.1.1": "patches/emdash@0.1.1.patch"
+      "emdash@0.17.2": "patches/emdash@0.17.2.patch"
     }
   }
 }
