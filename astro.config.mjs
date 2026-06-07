@@ -3,7 +3,7 @@ import react from "@astrojs/react";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
-import { defineConfig } from "astro/config";
+import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +22,12 @@ const trackerLinkAdminEntry = fileURLToPath(
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare(),
+	fonts: [
+		{ provider: fontProviders.google(), name: "Playfair Display", cssVariable: "--font-playfair", weights: [400, 500, 700], styles: ["normal", "italic"] },
+		{ provider: fontProviders.google(), name: "JetBrains Mono", cssVariable: "--font-jetbrains", weights: [400] },
+		{ provider: fontProviders.google(), name: "Amiri", cssVariable: "--font-amiri", weights: [400, 700] },
+		{ provider: fontProviders.google(), name: "Cairo", cssVariable: "--font-cairo", weights: [400, 500, 600] },
+	],
 	image: {
 		layout: "constrained",
 		responsiveStyles: true,
