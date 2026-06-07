@@ -64,11 +64,8 @@ export default defineConfig({
 	],
 	devToolbar: { enabled: false },
 	vite: {
-		ssr: {
-			external: ["cloudflare:workers", "cloudflare:sockets"],
-		},
 		optimizeDeps: {
-			exclude: [
+			include: [
 				"emdash/middleware",
 				"emdash/middleware/redirect",
 				"emdash/middleware/setup",
@@ -76,14 +73,12 @@ export default defineConfig({
 				"emdash/middleware/request-context",
 				"@emdash-cms/cloudflare/db/d1",
 				"emdash/media/local-runtime",
-				"@emdash-cms/cloudflare/storage/r2",
-				"emdash/runtime",
-			],
-			include: [
 				"@emdash-cms/plugin-forms",
+				"@emdash-cms/cloudflare/storage/r2",
 				"emdash/ui",
 				"@emdash-cms/plugin-forms/astro",
 				"astro/zod",
+				"emdash/runtime",
 			],
 		},
 	},
