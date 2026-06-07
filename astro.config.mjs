@@ -64,6 +64,9 @@ export default defineConfig({
 	],
 	devToolbar: { enabled: false },
 	vite: {
+		ssr: {
+			external: ["cloudflare:workers", "cloudflare:sockets"],
+		},
 		optimizeDeps: {
 			include: [
 				"emdash/middleware",
