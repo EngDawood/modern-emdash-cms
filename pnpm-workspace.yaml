@@ -7,6 +7,3 @@ onlyBuiltDependencies:
   - sharp
   - workerd
 
-patchedDependencies:
-  '@emdash-cms/auth@0.1.1': patches/@emdash-cms__auth@0.1.1.patch
-  emdash@0.1.1: patches/emdash@0.1.1.patch

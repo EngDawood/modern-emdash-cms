@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "@abdulrysr/saudi-riyal-new-symbol-font": "^1.0.8",
-    "@astrojs/cloudflare": "^13.1.6",
     "@astrojs/react": "^5.0.0",
     "@emdash-cms/auth-atproto": "^0.2.13",
     "@emdash-cms/cloudflare": "0.17.2",
@@ -33,13 +32,17 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",
-    "@cloudflare/workers-types": "^4.20260401.1",
+    "@astrojs/cloudflare": "13.1.8",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/node": "^25.9.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "wrangler": "^4.81.1"
+    "wrangler": "4.81.1"
   },
   "pnpm": {
+    "overrides": {
+      "@cloudflare/vite-plugin": "1.31.2"
+    },
     "patchedDependencies": {
       "emdash@0.17.2": "patches/emdash@0.17.2.patch"
     }

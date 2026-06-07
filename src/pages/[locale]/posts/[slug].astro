@@ -3,6 +3,7 @@ import {
 	getEmDashEntry,
 	getEmDashCollection,
 	getEntryTerms,
+	getTermsForEntries,
 	getSeoMeta,
 	getSiteSettings,
 	getTaxonomyTerms,
@@ -73,13 +74,12 @@ const bylines = post.data.bylines ?? [];
 const readingTime = getReadingTime(post.data.content);
 const otherPosts = recentPosts.filter((p) => p.id !== post.id).slice(0, 3);
 
-const otherPostsWithTags = await Promise.all(
-	otherPosts.map(async (p) => {
-		const postTags = await getEntryTerms("posts", p.data.id, "tag");
-		const postBylines = p.data.bylines ?? [];
-		return { post: p, tags: postTags, bylines: postBylines };
-	})
-);
+const otherTagsMap = await getTermsForEntries("posts", otherPosts.map(p => p.data.id), "tag");
+const otherPostsWithTags = otherPosts.map(p => ({
+	post: p,
+	tags: otherTagsMap.get(p.data.id) ?? [],
+	bylines: p.data.bylines ?? [],
+}));
 
 const publishDate =
 	post.data.publishedAt?.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {

@@ -1,5 +1,5 @@
 ---
-import { getTerm, getEmDashCollection, getEntryTerms } from "emdash";
+import { getTerm, getEmDashCollection, getTermsForEntries } from "emdash";
 import Base from "../../../layouts/Base.astro";
 import PostCard from "../../../components/PostCard.astro";
 import { getReadingTime } from "../../../utils/reading-time";
@@ -23,12 +23,8 @@ const { entries: posts } = await getEmDashCollection("posts", {
 	orderBy: { published_at: "desc" },
 });
 
-const filteredPosts = await Promise.all(
-	posts.map(async (post) => {
-		const tags = await getEntryTerms("posts", post.data.id, "tag");
-		return { post, tags };
-	})
-);
+const tagsMap = await getTermsForEntries("posts", posts.map(p => p.data.id), "tag");
+const filteredPosts = posts.map(post => ({ post, tags: tagsMap.get(post.data.id) ?? [] }));
 ---
 
 <Base

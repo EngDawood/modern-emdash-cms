@@ -1,5 +1,5 @@
 ---
-import { getEmDashCollection, getEntryTerms } from "emdash";
+import { getEmDashCollection, getTermsForEntries } from "emdash";
 import Base from "../../../layouts/Base.astro";
 import { getReadingTime } from "../../../utils/reading-time";
 import { t, locales, type Locale, defaultLocale } from "../../../i18n/utils";
@@ -24,13 +24,12 @@ const sortedPosts = posts.toSorted((a, b) => {
 	return dateB - dateA;
 });
 
-const postsWithTags = await Promise.all(
-	sortedPosts.map(async (post) => {
-		const tags = await getEntryTerms("posts", post.data.id, "tag");
-		const bylines = post.data.bylines ?? [];
-		return { post, tags, bylines };
-	})
-);
+const postTagsMap = await getTermsForEntries("posts", sortedPosts.map(p => p.data.id), "tag");
+const postsWithTags = sortedPosts.map(post => ({
+	post,
+	tags: postTagsMap.get(post.data.id) ?? [],
+	bylines: post.data.bylines ?? [],
+}));
 
 const formatDate = (date: Date) =>
 	date.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", {
