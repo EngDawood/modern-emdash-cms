@@ -68,10 +68,7 @@ export default defineConfig({
 			external: ["cloudflare:workers", "cloudflare:sockets"],
 		},
 		optimizeDeps: {
-			esbuildOptions: {
-				external: ["cloudflare:workers", "cloudflare:sockets", "virtual:emdash/*"],
-			},
-			include: [
+			exclude: [
 				"emdash/middleware",
 				"emdash/middleware/redirect",
 				"emdash/middleware/setup",
@@ -79,12 +76,14 @@ export default defineConfig({
 				"emdash/middleware/request-context",
 				"@emdash-cms/cloudflare/db/d1",
 				"emdash/media/local-runtime",
-				"@emdash-cms/plugin-forms",
 				"@emdash-cms/cloudflare/storage/r2",
+				"emdash/runtime",
+			],
+			include: [
+				"@emdash-cms/plugin-forms",
 				"emdash/ui",
 				"@emdash-cms/plugin-forms/astro",
 				"astro/zod",
-				"emdash/runtime"
 			],
 		},
 	},
