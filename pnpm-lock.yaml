@@ -35,7 +35,7 @@ importers:
         specifier: ^0.11.0
         version: 0.11.0(@babel/core@7.29.0)(@babel/runtime@7.29.2)(@cloudflare/workers-types@4.20260410.1)(ai@6.0.159(zod@4.3.6))(react@19.2.5)(rolldown@1.0.0-rc.15)(vite@7.3.2(@types/node@25.9.2)(yaml@2.8.3))(zod@4.3.6)
       astro:
-        specifier: ^6.4.4
+        specifier: ^6.1.2
         version: 6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3)
       emdash:
         specifier: 0.17.2
@@ -54,7 +54,7 @@ importers:
         specifier: ^0.9.7
         version: 0.9.8(prettier@3.8.2)(typescript@5.9.3)
       '@astrojs/cloudflare':
-        specifier: ^13.6.1
+        specifier: ^13.1.6
         version: 13.6.1(@types/node@25.9.2)(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(workerd@1.20260603.1)(wrangler@4.98.0(@cloudflare/workers-types@4.20260410.1))(yaml@2.8.3)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
