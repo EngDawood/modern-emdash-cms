@@ -1,6 +1,11 @@
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
+import { aiModerationPlugin } from "@emdash-cms/plugin-ai-moderation";
+import atproto from "@emdash-cms/plugin-atproto";
+import auditLog from "@emdash-cms/plugin-audit-log";
+import { colorPlugin } from "@emdash-cms/plugin-color";
+import { embedsPlugin } from "@emdash-cms/plugin-embeds";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { defineConfig, fontProviders } from "astro/config";
@@ -40,6 +45,9 @@ export default defineConfig({
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [
 				formsPlugin(),
+				colorPlugin(),
+				embedsPlugin(),
+				aiModerationPlugin(),
 				{
 					id: "email-cf-provider",
 					version: "0.1.0",
@@ -57,7 +65,7 @@ export default defineConfig({
 					adminWidgets: [{ id: "tracker-open", title: "Task Tracker", size: "third" }],
 				},
 			],
-			sandboxed: process.env.NODE_ENV !== "production" ? [webhookNotifier] : [],
+			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
 		}),
@@ -77,6 +85,9 @@ export default defineConfig({
 				"@emdash-cms/cloudflare/storage/r2",
 				"emdash/ui",
 				"@emdash-cms/plugin-forms/astro",
+				"@emdash-cms/plugin-color",
+				"@emdash-cms/plugin-embeds",
+				"@emdash-cms/plugin-embeds/astro",
 				"astro/zod",
 				"emdash/runtime",
 			],

@@ -82,5 +82,8 @@
 		{
 			"binding": "LOADER",
 		},
-	]
+	],
+	"ai": {
+		"binding": "AI"
+	}
 }
