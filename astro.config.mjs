@@ -9,7 +9,6 @@ import { embedsPlugin } from "@emdash-cms/plugin-embeds";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { customBlocksPlugin } from "@emdash.directory/plugin-custom-blocks";
-import { seoPlugin } from "@jdevalk/emdash-plugin-seo";
 import { calloutPlugin } from "@plugdash/callout";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
@@ -25,6 +24,14 @@ const trackerLinkEntrypoint = fileURLToPath(
 
 const trackerLinkAdminEntry = fileURLToPath(
 	new URL("./src/plugins/tracker-link.admin.tsx", import.meta.url),
+).replaceAll("\\", "/");
+
+const seoEntrypoint = fileURLToPath(
+	new URL("./src/plugins/seo/index.ts", import.meta.url),
+).replaceAll("\\", "/");
+
+const seoAdminEntry = fileURLToPath(
+	new URL("./src/plugins/seo/admin.tsx", import.meta.url),
 ).replaceAll("\\", "/");
 
 export default defineConfig({
@@ -51,7 +58,17 @@ export default defineConfig({
 				colorPlugin(),
 				embedsPlugin(),
 				calloutPlugin(),
-				seoPlugin(),
+				{
+					id: "seo",
+					version: "0.10.0",
+					format: "native",
+					entrypoint: seoEntrypoint,
+					adminEntry: seoAdminEntry,
+					adminPages: [
+						{ path: "/settings", label: "SEO", icon: "settings" },
+						{ path: "/fuzzy-redirects", label: "Fuzzy Redirects", icon: "arrow-right" },
+					],
+				},
 				aiModerationPlugin(),
 				{
 					id: "email-cf-provider",
