@@ -52,9 +52,15 @@ importers:
       '@emdash.directory/plugin-custom-blocks':
         specifier: ^0.2.0
         version: 0.2.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(emdash@0.17.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@jdevalk/astro-seo-graph':
+        specifier: 0.7.0
+        version: 0.7.0(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(prettier@3.8.2)(typescript@5.9.3)
       '@jdevalk/emdash-plugin-seo':
         specifier: ^0.11.0
         version: 0.11.0(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(emdash@0.17.2)(prettier@3.8.2)(typescript@5.9.3)
+      '@jdevalk/seo-graph-core':
+        specifier: 0.6.2
+        version: 0.6.2(typescript@5.9.3)
       '@plugdash/callout':
         specifier: ^0.1.2
         version: 0.1.2(emdash@0.17.2)
