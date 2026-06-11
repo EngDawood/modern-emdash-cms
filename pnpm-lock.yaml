@@ -49,6 +49,15 @@ importers:
       '@emdash-cms/plugin-webhook-notifier':
         specifier: 0.2.0
         version: 0.2.0(emdash@0.17.2)
+      '@emdash.directory/plugin-custom-blocks':
+        specifier: ^0.2.0
+        version: 0.2.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(emdash@0.17.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@jdevalk/emdash-plugin-seo':
+        specifier: ^0.11.0
+        version: 0.11.0(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(emdash@0.17.2)(prettier@3.8.2)(typescript@5.9.3)
+      '@plugdash/callout':
+        specifier: ^0.1.2
+        version: 0.1.2(emdash@0.17.2)
       agents:
         specifier: ^0.11.0
         version: 0.11.0(@babel/core@7.29.0)(@babel/runtime@7.29.2)(@cloudflare/workers-types@4.20260410.1)(ai@6.0.159(zod@4.3.6))(react@19.2.5)(rolldown@1.0.0-rc.15)(vite@7.3.2(@types/node@25.9.2)(yaml@2.8.3))(zod@4.3.6)
@@ -670,6 +679,11 @@ packages:
   '@emdash-cms/registry-lexicons@0.1.0':
     resolution: {integrity: sha512-+YaftVuxatwY1rpxzoUer1VyBYG3p9jLIvl02MKIF7jDMPEQXXtWvjXLEwQfm4yHk1CKPREWfYpLBMHepTuWxg==}
 
+  '@emdash.directory/plugin-custom-blocks@0.2.0':
+    resolution: {integrity: sha512-ujWZTqgwubpgVbo66fubvyz/tl0rYe9q7mKOrbLJ+Ekag60F82l8Xbk38BneWrAH7AlYdXJIq/R+J9XQtr6m3w==}
+    peerDependencies:
+      emdash: '>=0.1.0'
+
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
 
@@ -1176,6 +1190,22 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@jdevalk/astro-seo-graph@0.7.0':
+    resolution: {integrity: sha512-aYQi680n3zey8XBkN1w7L0rK20mV6/y0xA4gFbWXPgCMip7bd3d195Qn88Xg46NqQ0wm6BuASemU0YzC6Wr35Q==}
+    peerDependencies:
+      astro: ^5.0.0 || ^6.0.0
+
+  '@jdevalk/emdash-plugin-seo@0.11.0':
+    resolution: {integrity: sha512-H9/fBpVeSLgPSmoiOyek6h6bnWI3Uqcmxt6ANO2xF2838xRlYkkewzNI+bqusOsdBnf4YzGX4fURFSGY/YiGxA==}
+    peerDependencies:
+      emdash: ^0.6.0
+
+  '@jdevalk/seo-graph-core@0.6.0':
+    resolution: {integrity: sha512-v1UdAl2+H1qEc2E1yPecNw4Zs7sNqJPB0zRDUXya4YSrYd3wJMy/yk6JlYEzoELbH48ZDc00TB+nD+MqI9imOA==}
+
+  '@jdevalk/seo-graph-core@0.6.2':
+    resolution: {integrity: sha512-CjKJkytMFOlnmfib/H34iJ0+4clm7IujQqLxECO3EkIndPwkIN1xFLx762oUZieFP+Cr4jo8dosD+c2hSNEJNw==}
+
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -1353,6 +1383,11 @@ packages:
     peerDependencies:
       react: '>= 16.8'
       react-dom: '>= 16.8'
+
+  '@plugdash/callout@0.1.2':
+    resolution: {integrity: sha512-2n5I4hOjvvCikOa2JD0/TxNSFcEKlMoB+QpiPaK6YNCRzR7eN5O0pUCzAjvDaFJcwhPPPcxdbGB2/e93UICRUA==}
+    peerDependencies:
+      emdash: ^0.1.0
 
   '@poppinss/colors@4.1.6':
     resolution: {integrity: sha512-H9xkIdFswbS8n1d6vmRd8+c10t2Qe+rZITbbDHHkQixH5+2x1FDGmi/0K+WgWiqQFKPSlIYB7jlH6Kpfn6Fleg==}
@@ -2185,6 +2220,9 @@ packages:
     resolution: {integrity: sha512-2dOPJAZs6IiVotFaQB5Em0fYUNhX7cf2FfWf0dXfQ67wLmLXsUiQnRzb1BORrc9LS8YVQhXjhNXARB4kZwO+2w==}
     peerDependencies:
       astro: '>=4.6.0'
+
+  astro-seo@1.1.0:
+    resolution: {integrity: sha512-G6LDNDyga30o+52v58jU7C35n3cORUzk7RSuY+xf/ZRbW6JiNplyaOO1VoYVKO+xzYNaBcxqNln2RFRR/wgJNQ==}
 
   astro@6.4.4:
     resolution: {integrity: sha512-hVe8tq3lqt/Dr0UyB//yUmQSlHMTU8scTiF/vQddQVahLE4TTaSdH5H0nb7OvRcwo0UmlAO8DWYar4jNaS7H+A==}
@@ -3710,6 +3748,15 @@ packages:
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
+  schema-dts-lib@1.0.0:
+    resolution: {integrity: sha512-9MEO5vpQH9JdBioUupqluzxSYxPLjhmqRUudk15adUl/ypnRsM2/M1kN3AmVJQeG7nZqcL68H8JlGqQQT6vy9A==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      typescript: '>=4.9.5'
+
+  schema-dts@2.0.0:
+    resolution: {integrity: sha512-t7NoCy3Rn5GHGx6p7s1qIYK/AeIb8ZxJNR9WUNFkwMv2CiiGZBmqqYWc2FlZVm5ZbiHMY4OvBWhj7QtyrFO2Jw==}
+
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
@@ -4971,6 +5018,28 @@ snapshots:
       fast-wrap-ansi: 0.1.6
       sisteransi: 1.0.5
 
+  '@cloudflare/kumo@2.5.0(@date-fns/tz@1.4.1)(@phosphor-icons/react@2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(date-fns@4.1.0)(echarts@6.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@3.25.76)':
+    dependencies:
+      '@base-ui/react': 1.5.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@phosphor-icons/react': 2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@shikijs/langs': 4.0.2
+      '@shikijs/themes': 4.0.2
+      clsx: 2.1.1
+      motion: 12.38.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      react: 19.2.5
+      react-day-picker: 9.14.0(react@19.2.5)
+      react-dom: 19.2.5(react@19.2.5)
+      shiki: 4.0.2
+      tailwind-merge: 3.5.0
+    optionalDependencies:
+      echarts: 6.0.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@date-fns/tz'
+      - '@emotion/is-prop-valid'
+      - '@types/react'
+      - date-fns
+
   '@cloudflare/kumo@2.5.0(@date-fns/tz@1.4.1)(@phosphor-icons/react@2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(date-fns@4.1.0)(echarts@6.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@4.3.6)':
     dependencies:
       '@base-ui/react': 1.5.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -5187,6 +5256,22 @@ snapshots:
       - date-fns
       - zod
 
+  '@emdash-cms/blocks@0.18.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@3.25.76)':
+    dependencies:
+      '@cloudflare/kumo': 2.5.0(@date-fns/tz@1.4.1)(@phosphor-icons/react@2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(date-fns@4.1.0)(echarts@6.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@3.25.76)
+      '@phosphor-icons/react': 2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      clsx: 2.1.1
+      echarts: 6.0.0
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
+      tailwind-merge: 3.5.0
+    transitivePeerDependencies:
+      - '@date-fns/tz'
+      - '@emotion/is-prop-valid'
+      - '@types/react'
+      - date-fns
+      - zod
+
   '@emdash-cms/blocks@0.18.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@4.3.6)':
     dependencies:
       '@cloudflare/kumo': 2.5.0(@date-fns/tz@1.4.1)(@phosphor-icons/react@2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(date-fns@4.1.0)(echarts@6.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@4.3.6)
@@ -5302,6 +5387,20 @@ snapshots:
     dependencies:
       '@atcute/atproto': 3.1.12(@atcute/lexicons@1.3.1)
       '@atcute/lexicons': 1.3.1
+
+  '@emdash.directory/plugin-custom-blocks@0.2.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(emdash@0.17.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+    dependencies:
+      '@emdash-cms/blocks': 0.18.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.1.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@3.25.76)
+      emdash: 0.17.2(patch_hash=f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6)(5db2cf29734ce7a7c94c7bc3722fdcf7)
+      ulidx: 2.4.1
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@date-fns/tz'
+      - '@emotion/is-prop-valid'
+      - '@types/react'
+      - date-fns
+      - react
+      - react-dom
 
   '@emmetio/abbreviation@2.3.3':
     dependencies:
@@ -5623,6 +5722,41 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
+  '@jdevalk/astro-seo-graph@0.7.0(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(prettier@3.8.2)(typescript@5.9.3)':
+    dependencies:
+      '@jdevalk/seo-graph-core': 0.6.0(typescript@5.9.3)
+      astro: 6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3)
+      astro-seo: 1.1.0(prettier@3.8.2)(typescript@5.9.3)
+      schema-dts: 2.0.0(typescript@5.9.3)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - prettier
+      - prettier-plugin-astro
+      - typescript
+
+  '@jdevalk/emdash-plugin-seo@0.11.0(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(emdash@0.17.2)(prettier@3.8.2)(typescript@5.9.3)':
+    dependencies:
+      '@jdevalk/astro-seo-graph': 0.7.0(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(prettier@3.8.2)(typescript@5.9.3)
+      '@jdevalk/seo-graph-core': 0.6.2(typescript@5.9.3)
+      emdash: 0.17.2(patch_hash=f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6)(5db2cf29734ce7a7c94c7bc3722fdcf7)
+    transitivePeerDependencies:
+      - astro
+      - prettier
+      - prettier-plugin-astro
+      - typescript
+
+  '@jdevalk/seo-graph-core@0.6.0(typescript@5.9.3)':
+    dependencies:
+      schema-dts: 2.0.0(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+
+  '@jdevalk/seo-graph-core@0.6.2(typescript@5.9.3)':
+    dependencies:
+      schema-dts: 2.0.0(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -5847,6 +5981,10 @@ snapshots:
     dependencies:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
+
+  '@plugdash/callout@0.1.2(emdash@0.17.2)':
+    dependencies:
+      emdash: 0.17.2(patch_hash=f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6)(5db2cf29734ce7a7c94c7bc3722fdcf7)
 
   '@poppinss/colors@4.1.6':
     dependencies:
@@ -6630,6 +6768,14 @@ snapshots:
       '@portabletext/toolkit': 3.0.3
       '@portabletext/types': 2.0.15
       astro: 6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3)
+
+  astro-seo@1.1.0(prettier@3.8.2)(typescript@5.9.3):
+    dependencies:
+      '@astrojs/check': 0.9.8(prettier@3.8.2)(typescript@5.9.3)
+    transitivePeerDependencies:
+      - prettier
+      - prettier-plugin-astro
+      - typescript
 
   astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3):
     dependencies:
@@ -8614,6 +8760,16 @@ snapshots:
   sax@1.6.0: {}
 
   scheduler@0.27.0: {}
+
+  schema-dts-lib@1.0.0(typescript@5.9.3):
+    dependencies:
+      typescript: 5.9.3
+
+  schema-dts@2.0.0(typescript@5.9.3):
+    dependencies:
+      schema-dts-lib: 1.0.0(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
 
   semver@6.3.1: {}
 

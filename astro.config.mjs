@@ -8,6 +8,9 @@ import { colorPlugin } from "@emdash-cms/plugin-color";
 import { embedsPlugin } from "@emdash-cms/plugin-embeds";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
+import { customBlocksPlugin } from "@emdash.directory/plugin-custom-blocks";
+import { seoPlugin } from "@jdevalk/emdash-plugin-seo";
+import { calloutPlugin } from "@plugdash/callout";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
@@ -47,6 +50,8 @@ export default defineConfig({
 				formsPlugin(),
 				colorPlugin(),
 				embedsPlugin(),
+				calloutPlugin(),
+				seoPlugin(),
 				aiModerationPlugin(),
 				{
 					id: "email-cf-provider",
@@ -65,7 +70,7 @@ export default defineConfig({
 					adminWidgets: [{ id: "tracker-open", title: "Task Tracker", size: "third" }],
 				},
 			],
-			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto],
+			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto, customBlocksPlugin()],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
 		}),
@@ -88,6 +93,8 @@ export default defineConfig({
 				"@emdash-cms/plugin-color",
 				"@emdash-cms/plugin-embeds",
 				"@emdash-cms/plugin-embeds/astro",
+				"@plugdash/callout",
+				"@plugdash/callout/astro",
 				"astro/zod",
 				"emdash/runtime",
 			],
