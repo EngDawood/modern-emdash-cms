@@ -132,6 +132,19 @@
 			"twitter": "X / Twitter"
 		}
 	},
+	"signup": {
+		"title": "Create an account",
+		"description": "Sign up to write posts",
+		"heading": "Create an account",
+		"subheading": "Enter your email to receive an invite link",
+		"email": "Email address",
+		"submit": "Send invite link",
+		"success": "Check your inbox! An invite link is on its way. Once you accept it, you can log in and start writing posts.",
+		"error": "Something went wrong. Please try again.",
+		"invalidEmail": "Please enter a valid email address.",
+		"loginPrompt": "Already have an account?",
+		"login": "Sign in"
+	},
 	"footer": {
 		"copyright": "All rights reserved",
 		"tagline": "Software Engineer — Backend, AI, Serverless",
