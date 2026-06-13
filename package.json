@@ -55,7 +55,9 @@
       "@cloudflare/vite-plugin": "1.31.2"
     },
     "patchedDependencies": {
-      "emdash@0.17.2": "patches/emdash@0.17.2.patch"
+      "emdash@0.17.2": "patches/emdash@0.17.2.patch",
+      "@rollup/pluginutils": "patches/@rollup__pluginutils.patch",
+      "@astrojs/internal-helpers@0.10.0": "patches/@astrojs__internal-helpers@0.10.0.patch"
     }
   }
 }

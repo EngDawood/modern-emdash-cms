@@ -1,0 +1,13 @@
+diff --git a/dist/shiki.js b/dist/shiki.js
+index 6310bb0c97dc392d579bd9c7c6e341689a6c5f57..b5e3e943d670ad4511e0c459ea1526b35a8ffe54 100644
+--- a/dist/shiki.js
++++ b/dist/shiki.js
+@@ -3,7 +3,7 @@ import {
+   createHighlighter,
+   isSpecialLang
+ } from "shiki";
+-import { loadShikiEngine } from "#shiki-engine";
++import { loadShikiEngine } from "./shiki-engine-default.js";
+ let _cssVariablesTheme;
+ const cssVariablesTheme = () => _cssVariablesTheme ?? (_cssVariablesTheme = createCssVariablesTheme({
+   variablePrefix: "--astro-code-"

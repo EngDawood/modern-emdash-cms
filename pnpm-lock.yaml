@@ -8,6 +8,9 @@ overrides:
   '@cloudflare/vite-plugin': 1.31.2
 
 patchedDependencies:
+  '@rollup/pluginutils':
+    hash: 3d57a2a5a8dd59d30030795047b4f0b7704c66d23c36fd98e21f3b1d2736e488
+    path: patches/@rollup__pluginutils.patch
   emdash@0.17.2:
     hash: f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6
     path: patches/emdash@0.17.2.patch
@@ -6080,7 +6083,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
 
-  '@rollup/pluginutils@5.3.0(rollup@4.60.1)':
+  '@rollup/pluginutils@5.3.0(patch_hash=3d57a2a5a8dd59d30030795047b4f0b7704c66d23c36fd98e21f3b1d2736e488)(rollup@4.60.1)':
     dependencies:
       '@types/estree': 1.0.8
       estree-walker: 2.0.2
@@ -6792,7 +6795,7 @@ snapshots:
       '@capsizecss/unpack': 4.0.0
       '@clack/prompts': 1.2.0
       '@oslojs/encoding': 1.1.0
-      '@rollup/pluginutils': 5.3.0(rollup@4.60.1)
+      '@rollup/pluginutils': 5.3.0(patch_hash=3d57a2a5a8dd59d30030795047b4f0b7704c66d23c36fd98e21f3b1d2736e488)(rollup@4.60.1)
       aria-query: 5.3.2
       axobject-query: 4.1.0
       ci-info: 4.4.0
