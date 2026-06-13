@@ -1,4 +1,360 @@
 ---
-// Redirect to homepage contact section
-return Astro.redirect("/ar/#contact", 302);
+export const prerender = false;
+
+import { getEmDashEntry } from "emdash";
+import Base from "../layouts/Base.astro";
+import MarketingBlocks from "../components/MarketingBlocks.astro";
+import Icon from "../components/Icon.astro";
+import { t, defaultLocale } from "../i18n/utils";
+import type { Locale } from "../i18n/utils";
+
+const locale: Locale = defaultLocale;
+const { entry: page, cacheHint } = await getEmDashEntry("pages", "contact", { locale });
+
+try {
+	if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+} catch {}
+
+let formStatus: "idle" | "success" | "error" = "idle";
+let formMessage = "";
+
+if (Astro.request.method === "POST") {
+	try {
+		const formData = await Astro.request.formData();
+		const name = formData.get("name")?.toString() || "";
+		const emailVal = formData.get("email")?.toString() || "";
+		const company = formData.get("company")?.toString() || "";
+		const message = formData.get("message")?.toString() || "";
+
+		if (!name || !emailVal || !message) {
+			formStatus = "error";
+			formMessage = t("contact.form.error", locale);
+		} else if (!emailVal.includes("@")) {
+			formStatus = "error";
+			formMessage = t("contact.form.error", locale);
+		} else {
+			const res = await fetch(new URL("/_emdash/api/plugins/emdash-forms/submit", Astro.url), {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					formId: "contact",
+					data: { name, email: emailVal, company, message },
+				}),
+			});
+			const result = await res.json() as { success: boolean; message?: string };
+			if (!result.success) throw new Error(result.message || "Submission failed");
+			formStatus = "success";
+			formMessage = result.message || t("contact.form.success", locale);
+		}
+	} catch {
+		formStatus = "error";
+		formMessage = t("contact.form.error", locale);
+	}
+}
+
+const pageContent = page?.data.content;
 ---
+
+<Base
+	title={page?.data.title || t("nav.contact", locale) || "اتصل بنا"}
+	description={page?.data.description || "هل لديك أسئلة؟ تواصل معنا."}
+	locale={locale}
+>
+	{pageContent && <MarketingBlocks value={pageContent} />}
+
+	<section class="contact-form-section section">
+		<div class="container">
+			<div class="contact-grid">
+				<div class="contact-info">
+					<h2>تحدث مع فريقنا</h2>
+					<p>املأ النموذج وسنتواصل معك خلال 24 ساعة.</p>
+
+					<div class="contact-methods">
+						<div class="contact-method">
+							<div class="contact-icon">
+								<Icon name="ph:envelope" aria-hidden="true" />
+							</div>
+							<div class="contact-method-content">
+								<h4>البريد الإلكتروني</h4>
+								<a href="mailto:dawoodhormos@gmail.com">dawoodhormos@gmail.com</a>
+							</div>
+						</div>
+						<div class="contact-method">
+							<div class="contact-icon">
+								<Icon name="ph:lifebuoy" aria-hidden="true" />
+							</div>
+							<div class="contact-method-content">
+								<h4>الدعم الفني</h4>
+								<a href="mailto:dawoodhormos@gmail.com">dawoodhormos@gmail.com</a>
+							</div>
+						</div>
+						<div class="contact-method">
+							<div class="contact-icon">
+								<Icon name="ph:currency-dollar" aria-hidden="true" />
+							</div>
+							<div class="contact-method-content">
+								<h4>المبيعات</h4>
+								<a href="mailto:dawoodhormos@gmail.com">dawoodhormos@gmail.com</a>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="contact-form-wrapper">
+					{
+						formStatus === "success" ? (
+							<div class="form-success">
+								<div class="success-icon">✓</div>
+								<h3>تم إرسال الرسالة!</h3>
+								<p>{formMessage}</p>
+								<a href="/contact" class="btn btn-secondary">إرسال رسالة أخرى</a>
+							</div>
+						) : (
+							<form method="POST" class="contact-form">
+								{formStatus === "error" && (
+									<div class="form-error">
+										<p>{formMessage}</p>
+									</div>
+								)}
+
+								<div class="form-row">
+									<div class="form-field">
+										<label for="name">الاسم *</label>
+										<input
+											type="text"
+											id="name"
+											name="name"
+											required
+											placeholder="اسمك الكامل"
+											autocomplete="name"
+										/>
+									</div>
+									<div class="form-field">
+										<label for="email">البريد الإلكتروني *</label>
+										<input
+											type="email"
+											id="email"
+											name="email"
+											required
+											placeholder="you@company.com"
+											autocomplete="email"
+										/>
+									</div>
+								</div>
+
+								<div class="form-field">
+									<label for="company">الشركة</label>
+									<input
+										type="text"
+										id="company"
+										name="company"
+										placeholder="اسم الشركة"
+										autocomplete="organization"
+									/>
+								</div>
+
+								<div class="form-field">
+									<label for="message">الرسالة *</label>
+									<textarea
+										id="message"
+										name="message"
+										required
+										rows="5"
+										placeholder="أخبرنا عن مشروعك أو استفسارك..."
+									/>
+								</div>
+
+								<button type="submit" class="btn btn-primary btn-lg">إرسال الرسالة</button>
+							</form>
+						)
+					}
+				</div>
+			</div>
+		</div>
+	</section>
+</Base>
+
+<style>
+	.contact-form-section {
+		padding-bottom: var(--spacing-5xl);
+		padding-top: var(--spacing-2xl);
+	}
+
+	.contact-grid {
+		display: grid;
+		grid-template-columns: 1fr 1.5fr;
+		gap: var(--spacing-4xl);
+		align-items: start;
+		max-width: var(--wide-width);
+		margin: 0 auto;
+	}
+
+	.contact-info h2 {
+		font-size: var(--font-size-2xl);
+		margin-bottom: var(--spacing-md);
+	}
+
+	.contact-info > p {
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-2xl);
+	}
+
+	.contact-methods {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-lg);
+	}
+
+	.contact-method {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-md);
+	}
+
+	.contact-icon {
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.25rem;
+		color: white;
+		background: linear-gradient(
+			135deg,
+			var(--color-primary),
+			var(--color-accent)
+		);
+		border-radius: var(--radius);
+		flex-shrink: 0;
+	}
+
+	.contact-method-content h4 {
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.contact-method-content a {
+		color: var(--color-primary);
+		font-size: var(--font-size-lg);
+	}
+
+	.contact-method-content a:hover {
+		text-decoration: underline;
+	}
+
+	.contact-form-wrapper {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		padding: var(--spacing-2xl);
+	}
+
+	.contact-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-lg);
+	}
+
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--spacing-lg);
+	}
+
+	.form-field {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-sm);
+	}
+
+	.form-field label {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+	}
+
+	.form-field input,
+	.form-field textarea {
+		padding: var(--spacing-md);
+		font-family: inherit;
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		transition:
+			border-color var(--transition-fast),
+			box-shadow var(--transition-fast);
+	}
+
+	.form-field input:focus,
+	.form-field textarea:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+	}
+
+	.form-field input::placeholder,
+	.form-field textarea::placeholder {
+		color: var(--color-muted);
+	}
+
+	.form-field textarea {
+		resize: vertical;
+		min-height: 120px;
+	}
+
+	.form-error {
+		padding: var(--spacing-md);
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: var(--radius-sm);
+		color: #dc2626;
+		font-size: var(--font-size-sm);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.form-error {
+			color: #f87171;
+		}
+	}
+
+	.form-success {
+		text-align: center;
+		padding: var(--spacing-2xl);
+	}
+
+	.success-icon {
+		width: 64px;
+		height: 64px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 2rem;
+		color: white;
+		background: var(--color-success);
+		border-radius: var(--radius-full);
+		margin: 0 auto var(--spacing-lg);
+	}
+
+	.form-success h3 {
+		font-size: var(--font-size-xl);
+		margin-bottom: var(--spacing-sm);
+	}
+
+	.form-success p {
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-xl);
+	}
+
+	@media (max-width: 768px) {
+		.contact-grid {
+			grid-template-columns: 1fr;
+			gap: var(--spacing-2xl);
+		}
+
+		.form-row {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
