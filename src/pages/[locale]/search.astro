@@ -1,10 +1,10 @@
 ---
 export const prerender = false;
 
-import { getEmDashCollection } from "emdash";
+import { getEmDashEntry, search } from "emdash";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
-import { getReadingTime, extractText } from "../../utils/reading-time";
+import { getReadingTime } from "../../utils/reading-time";
 import { t, locales, type Locale, defaultLocale } from "../../i18n/utils";
 
 const { locale: localeParam } = Astro.params;
@@ -18,20 +18,21 @@ if (!locales.includes(localeParam as Locale)) {
 
 const query = Astro.url.searchParams.get("q")?.trim() || "";
 
-const { entries: allPosts } = await getEmDashCollection("posts", { locale });
+const searchRes = query
+	? await search(query, { collections: ["posts"], locale, limit: 100 })
+	: { items: [] };
 
-function matchesQuery(post: (typeof allPosts)[0], q: string): boolean {
-	if (!q) return false;
-	const lower = q.toLowerCase();
-	const title = (post.data.title || "").toLowerCase();
-	const excerpt = (post.data.excerpt || "").toLowerCase();
-	const content = extractText(post.data.content).toLowerCase();
-	return (
-		title.includes(lower) || excerpt.includes(lower) || content.includes(lower)
-	);
+const results = [];
+if (query && searchRes.items.length > 0) {
+	for (const item of searchRes.items) {
+		if (item.collection === "posts" && item.slug) {
+			const { entry } = await getEmDashEntry("posts", item.slug, { locale });
+			if (entry) {
+				results.push(entry);
+			}
+		}
+	}
 }
-
-const results = query ? allPosts.filter((p) => matchesQuery(p, query)) : [];
 ---
 
 <Base

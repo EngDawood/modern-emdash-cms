@@ -13,6 +13,7 @@ import {
 	PortableText,
 	Comments,
 	CommentForm,
+	WidgetArea,
 } from "emdash/ui";
 import Base from "../../../layouts/Base.astro";
 import PostCard from "../../../components/PostCard.astro";
@@ -88,8 +89,7 @@ const publishDate =
 		day: "numeric",
 	}) ?? null;
 
-const categories = await getTaxonomyTerms("category");
-const allTags = await getTaxonomyTerms("tag");
+
 ---
 
 <Base
@@ -227,53 +227,7 @@ const allTags = await getTaxonomyTerms("tag");
 						<h4 class="toc-title">{t("writing.onThisPage", locale)}</h4>
 						<div class="toc-content" id="toc-content"></div>
 					</nav>
-					<div class="sidebar-widgets">
-						<!-- Search Widget -->
-						<div class="widget" style="margin-bottom: var(--spacing-6);">
-							<h4 class="widget__title">{t("search.title", locale)}</h4>
-							<div class="widget__content">
-								<form method="get" action={`/${locale}/search`} class="search-form">
-									<input
-										type="search"
-										name="q"
-										placeholder={t("search.placeholder", locale)}
-										class="site-search-input"
-										style="width: 100%;"
-									/>
-								</form>
-							</div>
-						</div>
-
-						<!-- Categories Widget -->
-						<div class="widget" style="margin-bottom: var(--spacing-6);">
-							<h4 class="widget__title">{t("archive.category", locale)}</h4>
-							<div class="widget__content">
-								<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--spacing-2);">
-									{categories.map((cat) => (
-										<li>
-											<a href={`/${locale}/category/${cat.slug}`} style="text-decoration: none; color: var(--color-text-secondary); transition: color var(--transition-fast);">
-												{t(`taxonomy.${cat.slug}`, locale) !== `taxonomy.${cat.slug}` ? t(`taxonomy.${cat.slug}`, locale) : cat.label}
-											</a>
-										</li>
-									))}
-								</ul>
-							</div>
-						</div>
-
-						<!-- Tags Widget -->
-						<div class="widget">
-							<h4 class="widget__title">{t("archive.tag", locale)}</h4>
-							<div class="widget__content">
-								<div class="meta-tags" style="display: flex; flex-wrap: wrap; gap: var(--spacing-2);">
-									{allTags.map((tag) => (
-										<a href={`/${locale}/tag/${tag.slug}`} class="meta-tag">
-											{t(`taxonomy.${tag.slug}`, locale) !== `taxonomy.${tag.slug}` ? t(`taxonomy.${tag.slug}`, locale) : tag.label}
-										</a>
-									))}
-								</div>
-							</div>
-						</div>
-					</div>
+					<WidgetArea name="sidebar" />
 				</div>
 			</aside>
 		</div>
