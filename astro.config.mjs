@@ -36,7 +36,9 @@ const seoAdminEntry = fileURLToPath(
 
 export default defineConfig({
 	output: "server",
-	adapter: cloudflare(),
+	adapter: cloudflare({
+		remoteBindings: process.env.CI !== "true",
+	}),
 	fonts: [
 		{ provider: fontProviders.google(), name: "Playfair Display", cssVariable: "--font-playfair", weights: [400, 500, 700], styles: ["normal", "italic"] },
 		{ provider: fontProviders.google(), name: "JetBrains Mono", cssVariable: "--font-jetbrains", weights: [400] },
