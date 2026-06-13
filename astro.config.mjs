@@ -34,6 +34,10 @@ const seoAdminEntry = fileURLToPath(
 	new URL("./src/plugins/seo/admin.tsx", import.meta.url),
 ).replaceAll("\\", "/");
 
+const marketingBlocksEntrypoint = fileURLToPath(
+	new URL("./src/plugins/marketing-blocks/index.ts", import.meta.url),
+).replaceAll("\\", "/");
+
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare({
@@ -56,6 +60,12 @@ export default defineConfig({
 			database: d1({ binding: "DB", session: "auto" }),
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [
+				{
+					id: "marketing-blocks",
+					version: "0.1.0",
+					format: "native",
+					entrypoint: marketingBlocksEntrypoint,
+				},
 				formsPlugin(),
 				colorPlugin(),
 				embedsPlugin(),

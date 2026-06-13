@@ -2,13 +2,20 @@
 export const prerender = false;
 
 import { getEmDashEntry } from "emdash";
-import Base from "../layouts/Base.astro";
-import MarketingBlocks from "../components/MarketingBlocks.astro";
-import Icon from "../components/Icon.astro";
-import { t, defaultLocale } from "../i18n/utils";
-import type { Locale } from "../i18n/utils";
+import Base from "../../layouts/Base.astro";
+import MarketingBlocks from "../../components/MarketingBlocks.astro";
+import Icon from "../../components/Icon.astro";
+import { t, locales, type Locale, defaultLocale } from "../../i18n/utils";
 
-const locale: Locale = defaultLocale;
+const { locale: localeParam } = Astro.params;
+const locale: Locale = locales.includes(localeParam as Locale)
+	? (localeParam as Locale)
+	: defaultLocale;
+
+if (!locales.includes(localeParam as Locale)) {
+	return Astro.redirect(`/${defaultLocale}/contact`, 302);
+}
+
 const { entry: page, cacheHint } = await getEmDashEntry("pages", "contact", { locale });
 
 try {
@@ -56,8 +63,8 @@ const pageContent = page?.data.content;
 ---
 
 <Base
-	title={page?.data.title || t("nav.contact", locale) || "اتصل بنا"}
-	description={page?.data.description || "هل لديك أسئلة؟ تواصل معنا."}
+	title={page?.data.title || t("nav.contact", locale) || "Contact"}
+	description={page?.data.description || "Have questions? Want to collaborate? Reach out to us."}
 	locale={locale}
 >
 	{pageContent && <MarketingBlocks value={pageContent} />}
@@ -66,8 +73,8 @@ const pageContent = page?.data.content;
 		<div class="container">
 			<div class="contact-grid">
 				<div class="contact-info">
-					<h2>تحدث مع فريقنا</h2>
-					<p>املأ النموذج وسنتواصل معك خلال 24 ساعة.</p>
+					<h2>{locale === "ar" ? "تحدث مع فريقنا" : "Talk to our team"}</h2>
+					<p>{locale === "ar" ? "املأ النموذج وسنتواصل معك خلال 24 ساعة." : "Fill out the form and we'll be in touch within 24 hours."}</p>
 
 					<div class="contact-methods">
 						<div class="contact-method">
@@ -75,7 +82,7 @@ const pageContent = page?.data.content;
 								<Icon name="ph:envelope" aria-hidden="true" />
 							</div>
 							<div class="contact-method-content">
-								<h4>البريد الإلكتروني</h4>
+								<h4>{locale === "ar" ? "البريد الإلكتروني" : "Email"}</h4>
 								<a href="mailto:dawoodhormos@gmail.com">dawoodhormos@gmail.com</a>
 							</div>
 						</div>
@@ -84,7 +91,7 @@ const pageContent = page?.data.content;
 								<Icon name="ph:lifebuoy" aria-hidden="true" />
 							</div>
 							<div class="contact-method-content">
-								<h4>الدعم الفني</h4>
+								<h4>{locale === "ar" ? "الدعم الفني" : "Support"}</h4>
 								<a href="mailto:dawoodhormos@gmail.com">dawoodhormos@gmail.com</a>
 							</div>
 						</div>
@@ -93,7 +100,7 @@ const pageContent = page?.data.content;
 								<Icon name="ph:currency-dollar" aria-hidden="true" />
 							</div>
 							<div class="contact-method-content">
-								<h4>المبيعات</h4>
+								<h4>{locale === "ar" ? "المبيعات" : "Sales"}</h4>
 								<a href="mailto:dawoodhormos@gmail.com">dawoodhormos@gmail.com</a>
 							</div>
 						</div>
@@ -105,9 +112,11 @@ const pageContent = page?.data.content;
 						formStatus === "success" ? (
 							<div class="form-success">
 								<div class="success-icon">✓</div>
-								<h3>تم إرسال الرسالة!</h3>
+								<h3>{locale === "ar" ? "تم إرسال الرسالة!" : "Message Sent!"}</h3>
 								<p>{formMessage}</p>
-								<a href="/contact" class="btn btn-secondary">إرسال رسالة أخرى</a>
+								<a href={`/${locale}/contact`} class="btn btn-secondary">
+									{locale === "ar" ? "إرسال رسالة أخرى" : "Send another message"}
+								</a>
 							</div>
 						) : (
 							<form method="POST" class="contact-form">
@@ -119,18 +128,18 @@ const pageContent = page?.data.content;
 
 								<div class="form-row">
 									<div class="form-field">
-										<label for="name">الاسم *</label>
+										<label for="name">{locale === "ar" ? "الاسم *" : "Name *"}</label>
 										<input
 											type="text"
 											id="name"
 											name="name"
 											required
-											placeholder="اسمك الكامل"
+											placeholder={locale === "ar" ? "اسمك الكامل" : "Your name"}
 											autocomplete="name"
 										/>
 									</div>
 									<div class="form-field">
-										<label for="email">البريد الإلكتروني *</label>
+										<label for="email">{locale === "ar" ? "البريد الإلكتروني *" : "Email *"}</label>
 										<input
 											type="email"
 											id="email"
@@ -143,28 +152,30 @@ const pageContent = page?.data.content;
 								</div>
 
 								<div class="form-field">
-									<label for="company">الشركة</label>
+									<label for="company">{locale === "ar" ? "الشركة" : "Company"}</label>
 									<input
 										type="text"
 										id="company"
 										name="company"
-										placeholder="اسم الشركة"
+										placeholder={locale === "ar" ? "اسم الشركة" : "Your company"}
 										autocomplete="organization"
 									/>
 								</div>
 
 								<div class="form-field">
-									<label for="message">الرسالة *</label>
+									<label for="message">{locale === "ar" ? "الرسالة *" : "Message *"}</label>
 									<textarea
 										id="message"
 										name="message"
 										required
 										rows="5"
-										placeholder="أخبرنا عن مشروعك أو استفسارك..."
+										placeholder={locale === "ar" ? "أخبرنا عن مشروعك أو استفسارك..." : "Tell us about your project or question..."}
 									/>
 								</div>
 
-								<button type="submit" class="btn btn-primary btn-lg">إرسال الرسالة</button>
+								<button type="submit" class="btn btn-primary btn-lg">
+									{locale === "ar" ? "إرسال الرسالة" : "Send Message"}
+								</button>
 							</form>
 						)
 					}

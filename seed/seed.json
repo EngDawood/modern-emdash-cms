@@ -6,18 +6,21 @@
 		"description": "A portfolio for showcasing creative work and a blog for writing",
 		"author": "EmDash"
 	},
-
 	"settings": {
 		"title": "Studio",
 		"tagline": "Design & Development"
 	},
-
 	"collections": [
 		{
 			"slug": "projects",
 			"label": "Projects",
 			"labelSingular": "Project",
-			"supports": ["drafts", "revisions", "search", "seo"],
+			"supports": [
+				"drafts",
+				"revisions",
+				"search",
+				"seo"
+			],
 			"fields": [
 				{
 					"slug": "title",
@@ -70,7 +73,12 @@
 			"slug": "posts",
 			"label": "Posts",
 			"labelSingular": "Post",
-			"supports": ["drafts", "revisions", "search", "seo"],
+			"supports": [
+				"drafts",
+				"revisions",
+				"search",
+				"seo"
+			],
 			"commentsEnabled": true,
 			"fields": [
 				{
@@ -102,7 +110,11 @@
 			"slug": "pages",
 			"label": "Pages",
 			"labelSingular": "Page",
-			"supports": ["drafts", "revisions", "search"],
+			"supports": [
+				"drafts",
+				"revisions",
+				"search"
+			],
 			"fields": [
 				{
 					"slug": "title",
@@ -120,22 +132,45 @@
 			]
 		}
 	],
-
 	"taxonomies": [
 		{
 			"name": "category",
 			"label": "Categories",
 			"labelSingular": "Category",
 			"hierarchical": false,
-			"collections": ["projects", "posts"],
+			"collections": [
+				"projects",
+				"posts"
+			],
 			"terms": [
-				{ "slug": "branding", "label": "Branding" },
-				{ "slug": "web", "label": "Web Design" },
-				{ "slug": "print", "label": "Print" },
-				{ "slug": "photography", "label": "Photography" },
-				{ "slug": "development", "label": "Development" },
-				{ "slug": "design", "label": "Design" },
-				{ "slug": "notes", "label": "Notes" }
+				{
+					"slug": "branding",
+					"label": "Branding"
+				},
+				{
+					"slug": "web",
+					"label": "Web Design"
+				},
+				{
+					"slug": "print",
+					"label": "Print"
+				},
+				{
+					"slug": "photography",
+					"label": "Photography"
+				},
+				{
+					"slug": "development",
+					"label": "Development"
+				},
+				{
+					"slug": "design",
+					"label": "Design"
+				},
+				{
+					"slug": "notes",
+					"label": "Notes"
+				}
 			]
 		},
 		{
@@ -143,23 +178,58 @@
 			"label": "Tags",
 			"labelSingular": "Tag",
 			"hierarchical": false,
-			"collections": ["projects", "posts"],
+			"collections": [
+				"projects",
+				"posts"
+			],
 			"terms": [
-				{ "slug": "identity", "label": "Identity" },
-				{ "slug": "ui-ux", "label": "UI/UX" },
-				{ "slug": "dev", "label": "Development" },
-				{ "slug": "art-direction", "label": "Art Direction" },
-				{ "slug": "packaging", "label": "Packaging" },
-				{ "slug": "ecommerce", "label": "E-commerce" },
-				{ "slug": "editorial", "label": "Editorial" },
-				{ "slug": "webdev", "label": "Web Development" },
-				{ "slug": "opinion", "label": "Opinion" },
-				{ "slug": "tools", "label": "Tools" },
-				{ "slug": "creativity", "label": "Creativity" }
+				{
+					"slug": "identity",
+					"label": "Identity"
+				},
+				{
+					"slug": "ui-ux",
+					"label": "UI/UX"
+				},
+				{
+					"slug": "dev",
+					"label": "Development"
+				},
+				{
+					"slug": "art-direction",
+					"label": "Art Direction"
+				},
+				{
+					"slug": "packaging",
+					"label": "Packaging"
+				},
+				{
+					"slug": "ecommerce",
+					"label": "E-commerce"
+				},
+				{
+					"slug": "editorial",
+					"label": "Editorial"
+				},
+				{
+					"slug": "webdev",
+					"label": "Web Development"
+				},
+				{
+					"slug": "opinion",
+					"label": "Opinion"
+				},
+				{
+					"slug": "tools",
+					"label": "Tools"
+				},
+				{
+					"slug": "creativity",
+					"label": "Creativity"
+				}
 			]
 		}
 	],
-
 	"bylines": [
 		{
 			"id": "byline-editorial",
@@ -173,20 +243,34 @@
 			"isGuest": true
 		}
 	],
-
 	"menus": [
 		{
 			"name": "primary",
 			"label": "Primary Navigation",
 			"items": [
-				{ "type": "custom", "label": "Work", "url": "/work" },
-				{ "type": "custom", "label": "Blog", "url": "/posts" },
-				{ "type": "custom", "label": "About", "url": "/about" },
-				{ "type": "custom", "label": "Contact", "url": "/contact" }
+				{
+					"type": "custom",
+					"label": "Work",
+					"url": "/work"
+				},
+				{
+					"type": "custom",
+					"label": "Blog",
+					"url": "/posts"
+				},
+				{
+					"type": "custom",
+					"label": "About",
+					"url": "/about"
+				},
+				{
+					"type": "custom",
+					"label": "Contact",
+					"url": "/contact"
+				}
 			]
 		}
 	],
-
 	"widgetAreas": [
 		{
 			"name": "sidebar",
@@ -252,19 +336,28 @@
 			]
 		}
 	],
-
 	"sections": [
 		{
 			"slug": "newsletter-signup",
 			"title": "Newsletter Signup",
 			"description": "A call-to-action block for newsletter subscriptions",
-			"keywords": ["newsletter", "subscribe", "email", "cta"],
+			"keywords": [
+				"newsletter",
+				"subscribe",
+				"email",
+				"cta"
+			],
 			"source": "theme",
 			"content": [
 				{
 					"_type": "block",
 					"style": "h3",
-					"children": [{ "_type": "span", "text": "Stay in the loop" }]
+					"children": [
+						{
+							"_type": "span",
+							"text": "Stay in the loop"
+						}
+					]
 				},
 				{
 					"_type": "block",
@@ -279,7 +372,6 @@
 			]
 		}
 	],
-
 	"content": {
 		"pages": [
 			{
@@ -312,7 +404,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "What we do" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "What we do"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -323,6 +420,184 @@
 									"text": "We specialize in brand identity, web design, and art direction. Whether you need a complete visual identity or a single website, we bring the same level of care and attention to every project."
 								}
 							]
+						}
+					]
+				}
+			},
+			{
+				"id": "pricing-ar",
+				"slug": "pricing",
+				"status": "published",
+				"locale": "ar",
+				"data": {
+					"title": "الأسعار",
+					"content": [
+						{
+							"_type": "marketing.hero",
+							"_key": "pricing-hero-ar",
+							"headline": "أسعار بسيطة وشفافة",
+							"subheadline": "لا توجد رسوم خفية. لا مفاجآت. ابدأ مجانًا وتوسع مع نموك.",
+							"centered": true
+						},
+						{
+							"_type": "marketing.pricing",
+							"_key": "pricing-plans-ar",
+							"plans": [
+								{
+									"name": "البداية",
+									"price": "$0",
+									"period": "/شهرياً",
+									"description": "مثالي لتجربة الخدمة",
+									"features": "حتى 3 أعضاء\n5 مشاريع\nتحليلات أساسية\nدعم مجتمعي\nمساحة تخزين 1 جيجابايت",
+									"ctaLabel": "ابدأ الآن",
+									"ctaUrl": "/ar/signup"
+								},
+								{
+									"name": "المحترف",
+									"price": "$29",
+									"period": "/مستخدم/شهرياً",
+									"description": "للفرق النامية",
+									"features": "أعضاء غير محدودين\nمشاريع غير محدودة\nتحليلات متقدمة\nدعم ذو أولوية\nمساحة تخزين 100 جيجابايت\nتكاملات مخصصة\nوصول لواجهة برمجة التطبيقات API",
+									"ctaLabel": "ابدأ الفترة التجريبية",
+									"ctaUrl": "/ar/signup?plan=pro",
+									"highlighted": true
+								},
+								{
+									"name": "المؤسسات",
+									"price": "مخصص",
+									"description": "للمؤسسات الكبيرة",
+									"features": "كل شيء في باقة المحترف\nدعم فني مخصص\nعقود مخصصة\nضمان مستوى الخدمة SLA\nمساحة تخزين غير محدودة",
+									"ctaLabel": "اتصل بالمبيعات",
+									"ctaUrl": "/ar/contact"
+								}
+							]
+						},
+						{
+							"_type": "marketing.faq",
+							"_key": "pricing-faq-ar",
+							"headline": "الأسئلة الشائعة حول الأسعار",
+							"items": [
+								{
+									"question": "هل يمكنني تغيير خطتي لاحقًا؟",
+									"answer": "نعم، يمكنك الترقية أو التراجع عن الاشتراك في أي وقت. تسري التغييرات فوراً وسنقوم بتسوية الفاتورة بالتناسب."
+								},
+								{
+									"question": "ما هي طرق الدفع المقبولة؟",
+									"answer": "نقبل جميع بطاقات الائتمان الرئيسية. يمكن لعملاء باقة المؤسسات الدفع عبر الفاتورة بشروط سداد صافي 30 يومًا."
+								},
+								{
+									"question": "هل هناك خصم للدفع السنوي؟",
+									"answer": "نعم، تحصل الخطط السنوية على خصم 20% مقارنة بالفواتير الشهرية."
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"id": "pricing-en",
+				"slug": "pricing",
+				"status": "published",
+				"locale": "en",
+				"translationOf": "pricing-ar",
+				"data": {
+					"title": "Pricing",
+					"content": [
+						{
+							"_type": "marketing.hero",
+							"_key": "pricing-hero-en",
+							"headline": "Simple, transparent pricing",
+							"subheadline": "No hidden fees. No surprises. Start free and scale as you grow.",
+							"centered": true
+						},
+						{
+							"_type": "marketing.pricing",
+							"_key": "pricing-plans-en",
+							"plans": [
+								{
+									"name": "Starter",
+									"price": "$0",
+									"period": "/month",
+									"description": "Perfect for trying things out",
+									"features": "Up to 3 team members\n5 projects\nBasic analytics\nCommunity support\n1GB storage",
+									"ctaLabel": "Get Started",
+									"ctaUrl": "/en/signup"
+								},
+								{
+									"name": "Pro",
+									"price": "$29",
+									"period": "/user/month",
+									"description": "For growing teams",
+									"features": "Unlimited team members\nUnlimited projects\nAdvanced analytics\nPriority support\n100GB storage\nCustom integrations\nAPI access",
+									"ctaLabel": "Start Free Trial",
+									"ctaUrl": "/en/signup?plan=pro",
+									"highlighted": true
+								},
+								{
+									"name": "Enterprise",
+									"price": "Custom",
+									"description": "For large organizations",
+									"features": "Everything in Pro\nDedicated support\nCustom contracts\nSLA guarantee\nUnlimited storage",
+									"ctaLabel": "Contact Sales",
+									"ctaUrl": "/en/contact"
+								}
+							]
+						},
+						{
+							"_type": "marketing.faq",
+							"_key": "pricing-faq-en",
+							"headline": "Pricing FAQ",
+							"items": [
+								{
+									"question": "Can I change plans later?",
+									"answer": "Yes, you can upgrade or downgrade at any time. Changes take effect immediately and we'll prorate your billing."
+								},
+								{
+									"question": "What payment methods do you accept?",
+									"answer": "We accept all major credit cards, and Enterprise customers can pay via invoice with NET 30 terms."
+								},
+								{
+									"question": "Is there a discount for annual billing?",
+									"answer": "Yes, annual plans receive a 20% discount compared to monthly billing."
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"id": "contact-ar",
+				"slug": "contact",
+				"status": "published",
+				"locale": "ar",
+				"data": {
+					"title": "اتصل بنا",
+					"content": [
+						{
+							"_type": "marketing.hero",
+							"_key": "contact-hero-ar",
+							"headline": "تواصل معنا",
+							"subheadline": "لديك أسئلة؟ هل تريد نسخة تجريبية؟ نود أن نسمع منك.",
+							"centered": true
+						}
+					]
+				}
+			},
+			{
+				"id": "contact-en",
+				"slug": "contact",
+				"status": "published",
+				"locale": "en",
+				"translationOf": "contact-ar",
+				"data": {
+					"title": "Contact",
+					"content": [
+						{
+							"_type": "marketing.hero",
+							"_key": "contact-hero-en",
+							"headline": "Get in touch",
+							"subheadline": "Have questions? Want a demo? We'd love to hear from you.",
+							"centered": true
 						}
 					]
 				}
@@ -359,7 +634,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The approach" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The approach"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -374,7 +654,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The result" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The result"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -389,8 +674,13 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["branding"],
-					"tag": ["identity", "art-direction"]
+					"category": [
+						"branding"
+					],
+					"tag": [
+						"identity",
+						"art-direction"
+					]
 				}
 			},
 			{
@@ -424,7 +714,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Design principles" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Design principles"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -439,8 +734,13 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["web"],
-					"tag": ["ui-ux", "dev"]
+					"category": [
+						"web"
+					],
+					"tag": [
+						"ui-ux",
+						"dev"
+					]
 				}
 			},
 			{
@@ -473,7 +773,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The catalog" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The catalog"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -488,8 +793,13 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["print"],
-					"tag": ["editorial", "art-direction"]
+					"category": [
+						"print"
+					],
+					"tag": [
+						"editorial",
+						"art-direction"
+					]
 				}
 			},
 			{
@@ -522,7 +832,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Process" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Process"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -537,8 +852,13 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["photography"],
-					"tag": ["art-direction", "editorial"]
+					"category": [
+						"photography"
+					],
+					"tag": [
+						"art-direction",
+						"editorial"
+					]
 				}
 			}
 		],
@@ -581,7 +901,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "What survives" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "What survives"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -606,11 +931,17 @@
 					]
 				},
 				"bylines": [
-					{ "byline": "byline-editorial" }
+					{
+						"byline": "byline-editorial"
+					}
 				],
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["opinion"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"opinion"
+					]
 				}
 			},
 			{
@@ -641,7 +972,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The performance argument" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The performance argument"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -655,10 +991,19 @@
 						}
 					]
 				},
-				"bylines": [{ "byline": "byline-editorial" }],
+				"bylines": [
+					{
+						"byline": "byline-editorial"
+					}
+				],
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["webdev", "opinion"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"webdev",
+						"opinion"
+					]
 				}
 			},
 			{
@@ -689,7 +1034,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Embracing the box" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Embracing the box"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -704,8 +1054,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["design"],
-					"tag": ["creativity"]
+					"category": [
+						"design"
+					],
+					"tag": [
+						"creativity"
+					]
 				}
 			},
 			{
@@ -736,7 +1090,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The Unix philosophy, revisited" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The Unix philosophy, revisited"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -751,8 +1110,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["tools"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"tools"
+					]
 				}
 			},
 			{
@@ -783,7 +1146,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Removing as a feature" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Removing as a feature"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -798,8 +1166,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["notes"],
-					"tag": ["opinion"]
+					"category": [
+						"notes"
+					],
+					"tag": [
+						"opinion"
+					]
 				}
 			}
 		]

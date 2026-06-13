@@ -1,0 +1,109 @@
+---
+interface Props {
+	name: string;
+	class?: string;
+	[key: string]: any;
+}
+
+const { name, class: className, ...rest } = Astro.props;
+
+const icons: Record<string, { paths: string; viewBox?: string; fill?: string; stroke?: string; strokeWidth?: string }> = {
+	"ph:lightning": {
+		paths: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+		viewBox: "0 0 24 24"
+	},
+	"ph:shield-check": {
+		paths: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 11 2 2 4-4" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:users-three": {
+		paths: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:chart-bar": {
+		paths: '<path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:code": {
+		paths: '<path d="m18 16 4-4-4-4" /><path d="m6 8-4 4 4 4" /><path d="m14.5 4-5 16" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:globe": {
+		paths: '<circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:heart": {
+		paths: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:star": {
+		paths: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:check-circle": {
+		paths: '<circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:lock": {
+		paths: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:clock": {
+		paths: '<circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:cloud": {
+		paths: '<path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42 0-.83.04-1.24.12A7 7 0 0 0 5 10c0 4.42 3.58 8 8 8h4.5" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:sparkle": {
+		paths: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:envelope": {
+		paths: '<rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:lifebuoy": {
+		paths: '<circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" />',
+		viewBox: "0 0 24 24"
+	},
+	"ph:currency-dollar": {
+		paths: '<line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />',
+		viewBox: "0 0 24 24"
+	}
+};
+
+// Add aliases for ease of use
+icons["zap"] = icons["ph:lightning"];
+icons["shield"] = icons["ph:shield-check"];
+icons["users"] = icons["ph:users-three"];
+icons["chart"] = icons["ph:chart-bar"];
+icons["code"] = icons["ph:code"];
+icons["globe"] = icons["ph:globe"];
+icons["heart"] = icons["ph:heart"];
+icons["star"] = icons["ph:star"];
+icons["check"] = icons["ph:check-circle"];
+icons["lock"] = icons["ph:lock"];
+icons["clock"] = icons["ph:clock"];
+icons["cloud"] = icons["ph:cloud"];
+icons["sparkle"] = icons["ph:sparkle"];
+icons["envelope"] = icons["ph:envelope"];
+icons["lifebuoy"] = icons["ph:lifebuoy"];
+icons["currency-dollar"] = icons["ph:currency-dollar"];
+
+const iconData = icons[name] || icons["ph:sparkle"];
+---
+
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	viewBox={iconData.viewBox || "0 0 24 24"}
+	fill={iconData.fill || "none"}
+	stroke={iconData.stroke || "currentColor"}
+	stroke-width={iconData.strokeWidth || "2"}
+	stroke-linecap="round"
+	stroke-linejoin="round"
+	class={className}
+	{...rest}
+	set:html={iconData.paths}
+/>

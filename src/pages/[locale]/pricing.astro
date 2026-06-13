@@ -1,0 +1,61 @@
+---
+export const prerender = false;
+
+import { getEmDashEntry } from "emdash";
+import Base from "../../layouts/Base.astro";
+import MarketingBlocks from "../../components/MarketingBlocks.astro";
+import { t, locales, type Locale, defaultLocale } from "../../i18n/utils";
+
+const { locale: localeParam } = Astro.params;
+const locale: Locale = locales.includes(localeParam as Locale)
+	? (localeParam as Locale)
+	: defaultLocale;
+
+if (!locales.includes(localeParam as Locale)) {
+	return Astro.redirect(`/${defaultLocale}/pricing`, 302);
+}
+
+const { entry: page, cacheHint } = await getEmDashEntry("pages", "pricing", { locale });
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const pageContent = page?.data.content;
+---
+
+<Base
+	title={page?.data.title || t("nav.pricing", locale) || "Pricing"}
+	description={page?.data.description || "Simple, transparent pricing."}
+	locale={locale}
+>
+	{
+		pageContent ? (
+			<MarketingBlocks value={pageContent} />
+		) : (
+			<div class="empty-state">
+				<h1>{locale === "ar" ? "الأسعار" : "Pricing"}</h1>
+				<p>{locale === "ar" ? "أضف محتوى الأسعار في لوحة التحكم." : "Add pricing content in the admin."}</p>
+				<a href="/_emdash/admin" class="btn btn-primary">
+					{locale === "ar" ? "فتح لوحة التحكم" : "Open Admin"}
+				</a>
+			</div>
+		)
+	}
+</Base>
+
+<style>
+	.empty-state {
+		text-align: center;
+		padding: var(--spacing-5xl) var(--spacing-lg);
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.empty-state h1 {
+		margin-bottom: var(--spacing-md);
+	}
+
+	.empty-state p {
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-xl);
+	}
+</style>
