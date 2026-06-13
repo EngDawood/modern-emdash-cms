@@ -48,6 +48,7 @@ Key EmDash bindings (declared in `wrangler.jsonc`):
 - `MEDIA` → R2 bucket (media uploads)
 - `SESSION` → KV namespace (auth sessions)
 - `MCP_OBJECT` → Durable Object namespace (`EmDashMCP` class)
+- `AI` → Cloudflare Workers AI (used by `plugin-ai-moderation`)
 
 ### MCP Server
 
@@ -64,7 +65,31 @@ Auth: `?token=<ec_pat_*>` query param OR `Authorization: Bearer <token>` header.
 
 ### Plugins
 
-`src/plugins/email-worker.ts` is a sandboxed Worker entrypoint registered as the `email:provide` capability via the `email-resend-provider` plugin in `astro.config.mjs`. Plugin sandboxing is handled by `@emdash-cms/cloudflare/sandbox` (`PluginBridge` exported from `worker.ts`).
+All plugins are configured in `astro.config.mjs`. Plugin sandboxing is handled by `@emdash-cms/cloudflare/sandbox` (`PluginBridge` exported from `worker.ts`).
+
+**Native plugins** (run in-process, declared in `plugins: []`):
+
+| Plugin | Source | Notes |
+|--------|--------|-------|
+| `formsPlugin()` | `@emdash-cms/plugin-forms` | Contact form submissions |
+| `colorPlugin()` | `@emdash-cms/plugin-color` | Color picker field widget |
+| `embedsPlugin()` | `@emdash-cms/plugin-embeds` | YouTube, Vimeo, Bluesky, Mastodon, Twitter, Gist blocks |
+| `calloutPlugin()` | `@plugdash/callout` | Info/warning/tip callout blocks |
+| SEO inline descriptor | `src/plugins/seo/` (copied from `@jdevalk/emdash-plugin-seo`) | Meta, OG, JSON-LD, IndexNow, llms.txt |
+| `aiModerationPlugin()` | `@emdash-cms/plugin-ai-moderation` | AI comment moderation (requires `AI` binding) |
+| `email-cf-provider` | `src/plugins/email-cf-worker.ts` | Email transport via Cloudflare Email |
+| `tracker-link` | `src/plugins/tracker-link.ts` | Task tracker admin page |
+
+**Sandboxed plugins** (isolated workers, declared in `sandboxed: []`):
+
+| Plugin | Package | Notes |
+|--------|---------|-------|
+| `webhookNotifier` | `@emdash-cms/plugin-webhook-notifier` | Dev-only (excluded from production) |
+| `auditLog` | `@emdash-cms/plugin-audit-log` | Content change audit trail |
+| `atproto` | `@emdash-cms/plugin-atproto` | Bluesky syndication on publish |
+| `customBlocksPlugin()` | `@emdash.directory/plugin-custom-blocks` | Reusable HTML snippets |
+
+**Important:** The SEO plugin (`@jdevalk/emdash-plugin-seo`) ships TypeScript source without a compiled dist. Its source is copied to `src/plugins/seo/` and wired with an inline descriptor using `fileURLToPath().replaceAll("\\", "/")` — same pattern as other local native plugins. Do **not** use `seoPlugin()` from the npm package directly (its entrypoint uses `URL.pathname` which breaks on Windows).
 
 ### Design System
 

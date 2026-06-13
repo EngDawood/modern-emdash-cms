@@ -155,6 +155,7 @@ const articleSchema =
 						<a href={`/${locale}/blog`}>{t("nav.blog", locale)}</a>
 						<a href={`/${locale}#about`}>{t("nav.about", locale)}</a>
 						<a href={`/${locale}#contact`}>{t("nav.contact", locale)}</a>
+						{!isLoggedIn && <a href={`/${locale}/signup`}>{t("signup.title", locale)}</a>}
 					</div>
 					<LiveSearch
 						placeholder={t("search.placeholder", locale)}

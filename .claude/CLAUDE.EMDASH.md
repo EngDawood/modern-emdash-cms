@@ -35,28 +35,29 @@ All content is live (server-rendered at request time via `emdash/runtime` loader
 
 ## Plugins
 
-Configured in `astro.config.mjs`:
+Configured in `astro.config.mjs`. See also `CLAUDE.md` § Plugins for the full inventory.
 
-```js
-plugins: [
-  formsPlugin(),                          // @emdash-cms/plugin-forms
-  {
-    id: "email-resend-provider",
-    version: "0.1.0",
-    entrypoint: "./src/plugins/email-worker.ts",
-    capabilities: ["email:provide"],
-  },
-],
-// sandboxed is empty in production; webhookNotifierPlugin only in dev
-sandboxed: process.env.NODE_ENV !== "production" ? [webhookNotifierPlugin()] : [],
-sandboxRunner: sandbox(),                 // @emdash-cms/cloudflare/sandbox
-marketplace: "https://marketplace.emdashcms.com",
-```
+### Native plugins (`plugins: []`)
 
-- **`formsPlugin`** — runs in-process (not sandboxed); provides public submit endpoint at `/_emdash/api/plugins/emdash-forms/submit`, stores submissions in plugin storage, admin UI at `/_emdash/admin`. Contact form at `src/pages/[locale]/index.astro` submits to this endpoint.
-- **`email-resend-provider`** — custom native plugin in `src/plugins/email-worker.ts`, implements `email:deliver` exclusive hook for Resend transport; requires `RESEND_API_KEY` secret
-- **`webhookNotifierPlugin`** — sandboxed; dev-only (sandboxed array is empty in production to stay on free Cloudflare plan)
-- **Marketplace plugins** — installed via admin UI; sandboxed; only run locally on free plan
+- **`formsPlugin()`** — `@emdash-cms/plugin-forms`; public submit at `/_emdash/api/plugins/emdash-forms/submit`; contact form at `src/pages/[locale]/index.astro` posts here
+- **`colorPlugin()`** — `@emdash-cms/plugin-color`; adds `color:picker` widget to `string` fields
+- **`embedsPlugin()`** — `@emdash-cms/plugin-embeds`; YouTube/Vimeo/Bluesky/Mastodon/Twitter/Gist blocks auto-registered into `<PortableText>`
+- **`calloutPlugin()`** — `@plugdash/callout`; info/warning/tip/danger blocks auto-registered into `<PortableText>`
+- **SEO** (inline descriptor) — source at `src/plugins/seo/` (copied from `@jdevalk/emdash-plugin-seo`); injects metadata via `<EmDashHead>`; admin at `/settings` and `/fuzzy-redirects`
+- **`aiModerationPlugin()`** — `@emdash-cms/plugin-ai-moderation`; hooks `comment:beforeCreate` + `comment:moderate`; requires `AI` Workers AI binding
+- **`email-cf-provider`** — `src/plugins/email-cf-worker.ts`; Cloudflare Email transport
+- **`tracker-link`** — `src/plugins/tracker-link.ts`; task tracker admin page + widget
+
+### Sandboxed plugins (`sandboxed: []`)
+
+- **`webhookNotifier`** — `@emdash-cms/plugin-webhook-notifier`; dev-only (stripped from production)
+- **`auditLog`** — `@emdash-cms/plugin-audit-log`; content change audit trail
+- **`atproto`** — `@emdash-cms/plugin-atproto`; Bluesky post syndication; configure credentials via admin UI
+- **`customBlocksPlugin()`** — `@emdash.directory/plugin-custom-blocks`; reusable HTML snippets; admin page to manage blocks + `/customBlock` slash command in editor
+
+### Adding new native plugins
+
+Use `fileURLToPath(new URL("./src/plugins/xxx.ts", import.meta.url)).replaceAll("\\", "/")` for entrypoints — never `URL.pathname` directly (breaks on Windows with `/C:/...` prefix). If a community npm plugin ships TypeScript source without a `dist/`, copy `src/` to `src/plugins/<name>/` and create an inline descriptor.
 
 ## Key Source Files
 
@@ -103,14 +104,13 @@ The homepage follows a numbered editorial structure:
 
 ## Patches
 
-Two packages are patched via `pnpm patch` (applied automatically after `pnpm install`):
+One package is patched via `pnpm patch` (applied automatically after `pnpm install`):
 
 | Package | Patch | What it fixes |
 |---------|-------|---------------|
-| `emdash@0.1.1` | `patches/emdash@0.1.1.patch` | Switches SQLite driver to `@libsql/kysely-libsql`; fixes OAuth env access for Astro v6 + Cloudflare adapter |
-| `@emdash-cms/auth@0.1.1` | `patches/@emdash-cms__auth@0.1.1.patch` | Auth-related fixes |
+| `emdash@0.17.2` | `patches/emdash@0.17.2.patch` | Project-specific fixes against 0.17.2 |
 
-If these packages are updated, re-apply patches with `pnpm patch emdash@0.1.1` etc.
+Declared in `package.json` under `pnpm.patchedDependencies`. If you upgrade emdash, re-apply or update the patch against the new version.
 
 ## Social Links & Site Settings
 
