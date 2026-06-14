@@ -79,7 +79,7 @@ ${[...staticUrls, ...postUrls, ...projectUrls, ...pageUrls].join("\n")}
 
 	return new Response(xml, {
 		headers: {
-			"Content-Type": "application/xml; charset=utf-8",
+			"Content-Type": "text/xml; charset=utf-8",
 			"Cache-Control": "public, max-age=3600",
 		},
 	});
