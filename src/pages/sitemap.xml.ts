@@ -3,11 +3,14 @@ import { getEmDashCollection } from "emdash";
 
 const LOCALES = ["ar", "en"] as const;
 
-function urlEntry(origin: string, path: string, lastmod?: string): string {
-	const loc = `${origin}${path}`;
+function urlEntry(origin: string, locale: string, basePath: string, lastmod?: string): string {
+	// basePath is locale-agnostic (e.g. "/blog/slug" or "" for home); the
+	// locale prefix is added here so the loc and every hreflang alternate are
+	// each prefixed exactly once.
+	const loc = `${origin}/${locale}${basePath}`;
 	const alternates = LOCALES.map(
 		(lang) =>
-			`    <xhtml:link rel="alternate" hreflang="${lang}" href="${origin}/${lang}${path === "/" ? "" : path}"/>`
+			`    <xhtml:link rel="alternate" hreflang="${lang}" href="${origin}/${lang}${basePath}"/>`
 	).join("\n");
 	return [
 		"  <url>",
@@ -36,7 +39,7 @@ export const GET: APIRoute = async ({ url: reqUrl }) => {
 	const today = new Date().toISOString().split("T")[0];
 
 	const staticUrls = LOCALES.map((locale) =>
-		urlEntry(origin, `/${locale}`, today)
+		urlEntry(origin, locale, "", today)
 	);
 
 	const postUrls = posts.flatMap((post) => {
@@ -45,7 +48,7 @@ export const GET: APIRoute = async ({ url: reqUrl }) => {
 			?.toISOString()
 			.split("T")[0];
 		return LOCALES.map((locale) =>
-			urlEntry(origin, `/${locale}/blog/${slug}`, lastmod)
+			urlEntry(origin, locale, `/blog/${slug}`, lastmod)
 		);
 	});
 
@@ -55,14 +58,14 @@ export const GET: APIRoute = async ({ url: reqUrl }) => {
 			?.toISOString()
 			.split("T")[0];
 		return LOCALES.map((locale) =>
-			urlEntry(origin, `/${locale}/work/${slug}`, lastmod)
+			urlEntry(origin, locale, `/work/${slug}`, lastmod)
 		);
 	});
 
 	const pageUrls = pages.flatMap((page) => {
 		const slug = page.data.slug || page.id;
 		return LOCALES.map((locale) =>
-			urlEntry(origin, `/${locale}/pages/${slug}`)
+			urlEntry(origin, locale, `/pages/${slug}`)
 		);
 	});
 
