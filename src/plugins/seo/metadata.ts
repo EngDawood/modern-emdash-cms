@@ -43,7 +43,7 @@ export async function metadataHandler(
   }
 
   // 5. Canonical
-  const canonical = generateCanonical(page, siteUrl);
+  const canonical = await generateCanonical(page, siteUrl);
   if (canonical) {
     contributions.push({ kind: "link", rel: "canonical", href: canonical });
   }
