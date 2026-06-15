@@ -49,7 +49,8 @@
 					"slug": "summary",
 					"label": "Summary",
 					"type": "text",
-					"searchable": true
+					"searchable": true,
+					"widget": "ai:generate"
 				},
 				{
 					"slug": "content",
@@ -102,7 +103,8 @@
 				{
 					"slug": "excerpt",
 					"label": "Excerpt",
-					"type": "text"
+					"type": "text",
+					"widget": "ai:generate"
 				}
 			]
 		},
