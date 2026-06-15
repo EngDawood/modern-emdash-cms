@@ -49,10 +49,32 @@ export interface Project {
   bylines?: ContentBylineCredit[];
 }
 
+export interface VideoFile {
+  id: string;
+  slug: string | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  bylines?: ContentBylineCredit[];
+}
+
+export interface VideoUrl {
+  id: string;
+  slug: string | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  bylines?: ContentBylineCredit[];
+}
+
 declare module "emdash" {
   interface EmDashCollections {
     pages: Page;
     posts: Post;
     projects: Project;
+    video_files: VideoFile;
+    video_url: VideoUrl;
   }
 }
