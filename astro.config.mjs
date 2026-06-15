@@ -141,6 +141,7 @@ export default defineConfig({
 				"@plugdash/callout/astro",
 				"astro/zod",
 				"emdash/runtime",
+				"emdash/plugin-utils",
 			],
 		},
 	},
