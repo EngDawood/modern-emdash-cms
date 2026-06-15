@@ -67,7 +67,7 @@ const featuredImageUrl = getImageUrl(post.data.featured_image);
 const seo = getSeoMeta(post, {
 	siteTitle,
 	siteUrl: Astro.url.origin,
-	path: `/blog/${slug}`,
+	path: `/${locale}/blog/${slug}`,
 	defaultOgImage: featuredImageUrl,
 });
 
