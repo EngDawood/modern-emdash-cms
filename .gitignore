@@ -42,4 +42,4 @@ temp/*
 .claude\channels/*
 .claude\worktrees/*
 .claude\settings.local.json
-*/_archive/*
+**/_archive/**
