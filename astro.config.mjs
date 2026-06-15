@@ -38,13 +38,6 @@ const marketingBlocksEntrypoint = fileURLToPath(
 	new URL("./src/plugins/marketing-blocks/index.ts", import.meta.url),
 ).replaceAll("\\", "/");
 
-const aiGenerateEntrypoint = fileURLToPath(
-	new URL("./src/plugins/ai-generate/index.ts", import.meta.url),
-).replaceAll("\\", "/");
-
-const aiGenerateAdminEntry = fileURLToPath(
-	new URL("./src/plugins/ai-generate/admin.tsx", import.meta.url),
-).replaceAll("\\", "/");
 
 export default defineConfig({
 	output: "server",
@@ -78,13 +71,7 @@ export default defineConfig({
 				colorPlugin(),
 				embedsPlugin(),
 				calloutPlugin(),
-				{
-					id: "ai",
-					version: "0.1.0",
-					format: "native",
-					entrypoint: aiGenerateEntrypoint,
-					adminEntry: aiGenerateAdminEntry,
-				},
+
 				{
 					id: "seo",
 					version: "0.10.0",
@@ -141,7 +128,7 @@ export default defineConfig({
 				"@plugdash/callout/astro",
 				"astro/zod",
 				"emdash/runtime",
-				"emdash/plugin-utils",
+
 			],
 		},
 	},
