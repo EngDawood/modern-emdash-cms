@@ -17,6 +17,7 @@ import {
 } from "emdash/ui";
 import Base from "../../../layouts/Base.astro";
 import PostCard from "../../../components/PostCard.astro";
+import NewsletterSignup from "../../../components/NewsletterSignup.astro";
 import { getReadingTime } from "../../../utils/reading-time";
 import { locales, type Locale, defaultLocale, t } from "../../../i18n/utils";
 
@@ -214,6 +215,8 @@ const publishDate =
 				<div class="article-content" dir="auto">
 					<PortableText value={post.data.content} />
 				</div>
+
+				<NewsletterSignup locale={locale} />
 
 				<div class="article-comments">
 					<Comments collection="posts" contentId={post.data.id} threaded />
