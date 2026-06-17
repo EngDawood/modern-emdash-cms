@@ -1,10 +1,11 @@
 ---
 import { Font } from "astro:assets";
-import { getMenu, getSiteSettings, getEmDashCollection } from "emdash";
+import { getMenu, getSiteSettings, getEmDashCollection, getWidgetArea } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd, WidgetArea } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
 import LanguageSwitcher from "../components/LanguageSwitcher.astro";
+import NewsletterSignup from "../components/NewsletterSignup.astro";
 import { getDir, getLocaleFromPath, t, type Locale, defaultLocale } from "../i18n/utils";
 
 interface Props {
@@ -41,10 +42,11 @@ const {
 const locale: Locale = localeProp || getLocaleFromPath(Astro.url.pathname) || defaultLocale;
 const dir = getDir(locale);
 const isRTL = dir === "rtl";
-const [settings, _menu, { entries: pages }] = await Promise.all([
+const [settings, _menu, { entries: pages }, newsletterArea] = await Promise.all([
 	getSiteSettings(),
 	getMenu("primary"),
 	getEmDashCollection("pages"),
+	getWidgetArea("newsletter"),
 ]);
 const siteTitle = settings?.title || "Studio";
 const siteDescription = settings?.tagline || "Design & Development";
@@ -188,6 +190,14 @@ const articleSchema =
 		<main>
 			<slot />
 		</main>
+
+		{newsletterArea && newsletterArea.widgets.length > 0 && (
+			<div class="newsletter-area">
+				<div class="newsletter-area-inner">
+					<NewsletterSignup locale={locale} />
+				</div>
+			</div>
+		)}
 
 		<footer class="site-footer">
 			<div class="footer-inner">
@@ -885,6 +895,17 @@ const articleSchema =
 
 			main {
 				min-height: calc(100vh - var(--nav-height) - 300px);
+			}
+
+			/* Newsletter widget area */
+			.newsletter-area {
+				border-top: 1px solid var(--color-border);
+			}
+
+			.newsletter-area-inner {
+				max-width: var(--wide-width);
+				margin: 0 auto;
+				padding: 0 var(--spacing-6);
 			}
 
 			/* Footer */
