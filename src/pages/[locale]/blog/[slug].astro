@@ -7,6 +7,7 @@ import {
 	getSeoMeta,
 	getSiteSettings,
 	getTaxonomyTerms,
+	getWidgetArea,
 } from "emdash";
 import {
 	Image,
@@ -57,10 +58,11 @@ function getImageUrl(img: unknown): string | undefined {
 	return undefined;
 }
 
-const [settings, tags, { entries: recentPosts }] = await Promise.all([
+const [settings, tags, { entries: recentPosts }, newsletterArea] = await Promise.all([
 	getSiteSettings(),
 	getEntryTerms("posts", post.data.id, "tag"),
 	getEmDashCollection("posts", { locale, orderBy: { published_at: "desc" }, limit: 4 }),
+	getWidgetArea("newsletter"),
 ]);
 const siteTitle = settings?.title || "Studio";
 const featuredImageUrl = getImageUrl(post.data.featured_image);
@@ -216,7 +218,9 @@ const publishDate =
 					<PortableText value={post.data.content} />
 				</div>
 
-				<NewsletterSignup locale={locale} />
+				{newsletterArea && newsletterArea.widgets.length > 0 && (
+					<NewsletterSignup locale={locale} />
+				)}
 
 				<div class="article-comments">
 					<Comments collection="posts" contentId={post.data.id} threaded />
