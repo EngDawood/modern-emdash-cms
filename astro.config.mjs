@@ -10,7 +10,6 @@ import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { customBlocksPlugin } from "@emdash.directory/plugin-custom-blocks";
 import { calloutPlugin } from "@plugdash/callout";
-import { cookieConsentPlugin } from "emdash-plugin-cookie-consent";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
@@ -84,7 +83,6 @@ export default defineConfig({
 						{ path: "/fuzzy-redirects", label: "Fuzzy Redirects", icon: "arrow-right" },
 					],
 				},
-				cookieConsentPlugin(),
 				aiModerationPlugin(),
 				{
 					id: "email-cf-provider",
