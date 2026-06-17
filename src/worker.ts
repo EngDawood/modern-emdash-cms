@@ -4,11 +4,6 @@ import { EmDashMCP, handleMcp } from "./mcp";
 
 interface WorkerEnv extends Cloudflare.Env {
 	MCP_OBJECT: DurableObjectNamespace;
-	EMDASH_TOKEN?: string;
-	TRACKER_DB: D1Database;
-	SESSION: KVNamespace;
-	MEDIA: R2Bucket;
-	SELF: Fetcher;
 }
 
 export { PluginBridge } from "@emdash-cms/cloudflare/sandbox";
@@ -204,5 +199,42 @@ export default {
 		}
 
 		return response;
+	},
+
+	async email(
+		message: {
+			readonly from: string;
+			readonly to: string;
+			readonly raw: ReadableStream<Uint8Array>;
+			readonly rawSize: number;
+			setReject(reason: string): void;
+		},
+		env: WorkerEnv,
+		ctx: ExecutionContext,
+	): Promise<void> {
+		const inboundSecret = await env.SESSION.get("settings:inboundSecret");
+		if (!inboundSecret) {
+			console.error("[worker:email] settings:inboundSecret not set in KV");
+			message.setReject("Receiver not configured");
+			return;
+		}
+
+		const rawMime = await new Response(message.raw).text();
+
+		const response = await env.SELF.fetch("http://localhost/_emdash/api/plugins/emdash-inbox/inbound", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-Inbound-Secret": inboundSecret,
+				"X-EmDash-Request": "1",
+			},
+			body: JSON.stringify({ rawMime }),
+		});
+
+		if (!response.ok) {
+			const body = await response.text().catch(() => "<no body>");
+			console.error(`[worker:email] inbound forward failed: ${response.status} ${body}`);
+			message.setReject(`Ingest failed: ${response.status}`);
+		}
 	},
 };

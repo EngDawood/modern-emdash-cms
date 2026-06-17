@@ -31,6 +31,9 @@
 			"preview_bucket_name": "my-emdash-media",
 		}
 	],
+	"send_email": [
+		{ "name": "EMAIL", "remote": true }
+	],
 	
   "observability": {
     "enabled": false,

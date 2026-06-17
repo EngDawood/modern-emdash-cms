@@ -24,7 +24,7 @@ export function createPlugin(): ResolvedPlugin {
 					_ctx: PluginContext,
 				) => {
 					const apiKey =
-						(cfEnv as Record<string, string | undefined>).RESEND_API_KEY ??
+						(cfEnv as unknown as Record<string, string | undefined>).RESEND_API_KEY ??
 						import.meta.env.RESEND_API_KEY;
 					const res = await fetch("https://api.resend.com/emails", {
 						method: "POST",
