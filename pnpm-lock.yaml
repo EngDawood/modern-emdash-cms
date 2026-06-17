@@ -79,6 +79,9 @@ importers:
       emdash:
         specifier: 0.17.2
         version: 0.17.2(patch_hash=f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6)(5db2cf29734ce7a7c94c7bc3722fdcf7)
+      emdash-plugin-cookie-consent:
+        specifier: ^1.0.1
+        version: 1.0.1(emdash@0.17.2)
       mimetext:
         specifier: ^3.0.28
         version: 3.0.28
@@ -2556,6 +2559,11 @@ packages:
 
   electron-to-chromium@1.5.334:
     resolution: {integrity: sha512-mgjZAz7Jyx1SRCwEpy9wefDS7GvNPazLthHg8eQMJ76wBdGQQDW33TCrUTvQ4wzpmOrv2zrFoD3oNufMdyMpog==}
+
+  emdash-plugin-cookie-consent@1.0.1:
+    resolution: {integrity: sha512-hSMA5J4jV+G8QLu0yF4TRBsxy7xCbHxVIW1Q4TdkZQZQ2l2QXZ4ArPTcG4f8rI4sZIyfOooIWWG2sWhJ/B2iLw==}
+    peerDependencies:
+      emdash: ^0.12.0
 
   emdash@0.17.2:
     resolution: {integrity: sha512-QXfFW/bPIr2sxKlscwxx5P0cwkYLlnKT3DaZlOyZcUfPQdrBp+QiCI9k7TqiqLDz6pG0Ncz5CxEpTwAmAfLPng==}
@@ -7170,6 +7178,10 @@ snapshots:
   ee-first@1.1.1: {}
 
   electron-to-chromium@1.5.334: {}
+
+  emdash-plugin-cookie-consent@1.0.1(emdash@0.17.2):
+    dependencies:
+      emdash: 0.17.2(patch_hash=f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6)(5db2cf29734ce7a7c94c7bc3722fdcf7)
 
   emdash@0.17.2(patch_hash=f32a112e8832d66754b1e13024428600cc63757b1afc113bfd19066761cb19e6)(5db2cf29734ce7a7c94c7bc3722fdcf7):
     dependencies:
