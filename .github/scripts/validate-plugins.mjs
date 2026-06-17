@@ -20,6 +20,11 @@ const emdashVersion = existsSync(emdashPkgPath)
   ? JSON.parse(readFileSync(emdashPkgPath, "utf8")).version
   : null;
 
+// Packages whose npm exports are intentionally TypeScript source — their runtime
+// code is copied into src/plugins/ and wired via local fileURLToPath() paths.
+// The npm package is only installed for its type declarations.
+const LOCAL_COPY_EXEMPTIONS = new Set(["@jdevalk/emdash-plugin-seo"]);
+
 const PLUGIN_PATTERN = /(emdash|plugdash).*(plugin)|plugin.*(emdash|plugdash)/i;
 const pluginPackages = Object.keys(allDeps).filter((name) =>
   PLUGIN_PATTERN.test(name)
@@ -44,6 +49,12 @@ for (const pkgName of pluginPackages) {
   const pluginPkg = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
 
   // ── Check 1: exports must not point to raw .ts files ─────────────────────
+  // Skip packages intentionally wired via local src/plugins/ copy.
+  if (LOCAL_COPY_EXEMPTIONS.has(pkgName)) {
+    console.log(`⚪ ${pkgName}: local-copy pattern — npm exports not used at runtime`);
+    continue;
+  }
+
   const exports = pluginPkg.exports;
   if (exports) {
     const flatten = (v) => {

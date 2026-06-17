@@ -116,6 +116,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      schema-dts:
+        specifier: ^2.0.0
+        version: 2.0.0(typescript@5.9.3)
       wrangler:
         specifier: 4.81.1
         version: 4.81.1(@cloudflare/workers-types@4.20260410.1)
