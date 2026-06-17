@@ -38,11 +38,20 @@ const marketingBlocksEntrypoint = fileURLToPath(
 	new URL("./src/plugins/marketing-blocks/index.ts", import.meta.url),
 ).replaceAll("\\", "/");
 
+const emdashInboxEntrypoint = fileURLToPath(
+	new URL("./src/plugins/emdash-inbox/index.ts", import.meta.url),
+).replaceAll("\\", "/");
+
+const emdashInboxAdminEntry = fileURLToPath(
+	new URL("./src/plugins/emdash-inbox/admin.tsx", import.meta.url),
+).replaceAll("\\", "/");
+
 
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare({
 		remoteBindings: process.env.CI !== "true",
+		inspectorPort: 9230,
 	}),
 	fonts: [
 		{ provider: fontProviders.google(), name: "Playfair Display", cssVariable: "--font-playfair", weights: [400, 500, 700], styles: ["normal", "italic"] },
@@ -99,6 +108,20 @@ export default defineConfig({
 					adminEntry: trackerLinkAdminEntry,
 					adminPages: [{ path: "/", label: "Tracker", icon: "table" }],
 					adminWidgets: [{ id: "tracker-open", title: "Task Tracker", size: "third" }],
+				},
+				{
+					id: "emdash-inbox",
+					version: "0.7.0",
+					format: "native",
+					entrypoint: emdashInboxEntrypoint,
+					adminEntry: emdashInboxAdminEntry,
+					adminPages: [{ path: "/", label: "Inbox", icon: "envelope" }],
+					capabilities: [
+						"email:provide",
+						"email:intercept",
+						"hooks.email-transport:register",
+						"hooks.email-events:register",
+					],
 				},
 			],
 			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto, customBlocksPlugin()],

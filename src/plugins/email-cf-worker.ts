@@ -37,7 +37,7 @@ export function createPlugin(): ResolvedPlugin {
 					}
 
 					const emailMessage = new EmailMessage(FROM, event.message.to, msg.asRaw());
-					const env = cfEnv as Record<string, { send(msg: EmailMessage): Promise<void> }>;
+					const env = cfEnv as unknown as Record<string, { send(msg: EmailMessage): Promise<void> }>;
 					await env.SEND_EMAIL.send(emailMessage);
 				},
 			},

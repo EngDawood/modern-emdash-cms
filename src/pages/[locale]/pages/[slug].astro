@@ -37,7 +37,7 @@ Astro.cache.set(cacheHint);
 		</header>
 
 		<div class="page-content" dir="auto">
-			<MarketingBlocks value={page.data.content} />
+			<MarketingBlocks value={page.data.content || []} />
 		</div>
 	</article>
 </Base>

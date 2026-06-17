@@ -14,11 +14,6 @@ import { EmDashClient } from "emdash/client";
 
 interface Env extends Cloudflare.Env {
 	MCP_OBJECT: DurableObjectNamespace;
-	EMDASH_URL?: string;
-	EMDASH_TOKEN?: string;
-	TRACKER_DB: D1Database;
-	MEDIA: R2Bucket;
-	SELF: Fetcher;
 }
 
 const UPSTREAM_PATH = "/_emdash/api/mcp";
@@ -321,6 +316,16 @@ const trackerHandlers: Record<string, Handler> = {
 	},
 };
 
+const INBOX_TOOL_NAMES = new Set([
+	"list_threads",
+	"get_thread",
+	"search_messages",
+	"mark_read",
+	"pin_thread",
+	"snooze_thread",
+	"mark_done",
+]);
+
 // ── Proxy handler ────────────────────────────────────────────────────────────
 
 export async function handleMcp(request: Request, env: Env): Promise<Response> {
@@ -372,7 +377,7 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 		return new Response(null, { status: 202, headers: CORS_HEADERS });
 	}
 
-	// tools/list — merge upstream tools with tracker tools
+	// tools/list — merge upstream tools, plugin inbox tools, and tracker tools
 	if (rpc.method === "tools/list") {
 		let upstreamTools: unknown[] = [];
 		try {
@@ -380,12 +385,51 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 			const upstreamData = await parseSseOrJson(res);
 			upstreamTools = (upstreamData.result?.tools as unknown[]) ?? [];
 		} catch {
-			// upstream unavailable — return tracker tools only
+			// upstream unavailable
 		}
+
+		let inboxTools: unknown[] = [];
+		try {
+			const inboxRes = await env.SELF.fetch(new Request(`${baseUrl}/_emdash/api/plugins/emdash-inbox/messages/mcp`, {
+				method: "POST",
+				headers: upstreamHeaders,
+				body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+			}));
+			if (inboxRes.ok) {
+				const inboxData = (await inboxRes.json()) as any;
+				inboxTools = inboxData.result?.tools ?? [];
+			}
+		} catch (e) {
+			console.error("Failed to fetch inbox plugin tools:", e);
+		}
+
 		return Response.json(
-			{ jsonrpc: "2.0", id: rpc.id, result: { tools: [...upstreamTools, ...TRACKER_TOOLS] } },
+			{ jsonrpc: "2.0", id: rpc.id, result: { tools: [...upstreamTools, ...inboxTools, ...TRACKER_TOOLS] } },
 			{ headers: CORS_HEADERS },
 		);
+	}
+
+	// tools/call for inbox plugin tools
+	if (rpc.method === "tools/call" && typeof rpc.params?.name === "string" && INBOX_TOOL_NAMES.has(rpc.params.name)) {
+		try {
+			const inboxRes = await env.SELF.fetch(new Request(`${baseUrl}/_emdash/api/plugins/emdash-inbox/messages/mcp`, {
+				method: "POST",
+				headers: upstreamHeaders,
+				body: JSON.stringify(rpc),
+			}));
+			if (!inboxRes.ok) {
+				const body = await inboxRes.text().catch(() => "<no body>");
+				throw new Error(`Inbox plugin returned ${inboxRes.status}: ${body}`);
+			}
+			const inboxData = (await inboxRes.json()) as any;
+			return Response.json(inboxData, { headers: CORS_HEADERS });
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e);
+			return Response.json(
+				{ jsonrpc: "2.0", id: rpc.id, result: { content: [{ type: "text", text: message }], isError: true } },
+				{ headers: CORS_HEADERS },
+			);
+		}
 	}
 
 	// tools/call for tracker_*

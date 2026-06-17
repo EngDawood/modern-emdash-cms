@@ -74,9 +74,7 @@
 		{ "binding": "SELF", "service": "dawood-emdash" }
 	],
 	"send_email": [
-		{ "name": "SEND_EMAIL",
-	      "remote": true
- }
+		{ "name": "EMAIL", "remote": true }
 	],
 	"worker_loaders": [
 		{

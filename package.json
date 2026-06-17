@@ -33,12 +33,19 @@
     "@jdevalk/emdash-plugin-seo": "^0.11.0",
     "@jdevalk/seo-graph-core": "0.6.2",
     "@plugdash/callout": "^0.1.2",
+    "@tiptap/core": "3.22.3",
+    "@tiptap/pm": "3.22.3",
+    "@tiptap/react": "^3.22.3",
+    "@tiptap/starter-kit": "^3.22.3",
     "agents": "^0.11.0",
     "astro": "^6.1.2",
+    "dompurify": "^3.4.11",
     "emdash": "0.17.2",
     "mimetext": "^3.0.28",
+    "postal-mime": "^2.7.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "schema-dts": "^2.0.0",
     "spark-emdash": "^0.6.0",
     "zod": "^4.3.6"
   },
@@ -46,6 +53,7 @@
     "@astrojs/check": "^0.9.7",
     "@astrojs/cloudflare": "13.1.8",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^25.9.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -53,7 +61,11 @@
   },
   "pnpm": {
     "overrides": {
-      "@cloudflare/vite-plugin": "1.31.2"
+      "@cloudflare/vite-plugin": "1.31.2",
+      "@tiptap/core": "3.22.3",
+      "@tiptap/pm": "3.22.3",
+      "@tiptap/react": "3.22.3",
+      "@tiptap/starter-kit": "3.22.3"
     },
     "patchedDependencies": {
       "emdash@0.17.2": "patches/emdash@0.17.2.patch",
