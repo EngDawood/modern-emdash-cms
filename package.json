@@ -39,6 +39,7 @@
     "mimetext": "^3.0.28",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "spark-emdash": "^0.6.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

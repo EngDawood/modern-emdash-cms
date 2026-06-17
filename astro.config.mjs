@@ -110,6 +110,7 @@ export default defineConfig({
 	vite: {
 		optimizeDeps: {
 			include: [
+				"spark-emdash/middleware",
 				"emdash/middleware",
 				"emdash/middleware/redirect",
 				"emdash/middleware/setup",
