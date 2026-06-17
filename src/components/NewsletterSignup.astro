@@ -1,0 +1,197 @@
+---
+interface Props {
+	locale?: "ar" | "en";
+}
+
+const { locale = "ar" } = Astro.props;
+const isAr = locale === "ar";
+---
+
+<div class="newsletter-signup">
+	<div class="newsletter-inner">
+		<span class="newsletter-kicker">
+			— {isAr ? "النشرة البريدية" : "Newsletter"} —
+		</span>
+		<h3 class="newsletter-heading">
+			{isAr ? "ابقَ على اطلاع" : "Stay in the loop"}
+		</h3>
+		<p class="newsletter-desc">
+			{
+				isAr
+					? "أُخبرك عند نشر مقالات جديدة. لا رسائل مزعجة، إلغاء الاشتراك في أي وقت."
+					: "Get notified when new posts are published. No spam, unsubscribe anytime."
+			}
+		</p>
+		<form class="newsletter-form" data-subscribe>
+			<div class="newsletter-row">
+				<input
+					type="email"
+					name="email"
+					placeholder={isAr ? "بريدك الإلكتروني" : "your@email.com"}
+					required
+					class="newsletter-input"
+					dir="ltr"
+					autocomplete="email"
+				/>
+				<button type="submit" class="newsletter-btn">
+					{isAr ? "اشترك" : "Subscribe"}
+				</button>
+			</div>
+			<p class="newsletter-status" role="status" aria-live="polite"></p>
+		</form>
+	</div>
+</div>
+
+<script>
+	const form = document.querySelector("[data-subscribe]") as HTMLFormElement | null;
+	if (form) {
+		const input = form.querySelector('input[name="email"]') as HTMLInputElement;
+		const btn = form.querySelector("button") as HTMLButtonElement;
+		const status = form.querySelector(".newsletter-status") as HTMLParagraphElement;
+
+		form.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			btn.disabled = true;
+			status.textContent = "";
+			status.className = "newsletter-status";
+
+			try {
+				const res = await fetch("/api/subscribe", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ email: input.value.trim() }),
+				});
+				const data = (await res.json()) as { success: boolean; message?: string; error?: string };
+
+				if (data.success) {
+					status.textContent = data.message ?? "You're subscribed!";
+					status.className = "newsletter-status newsletter-status--ok";
+					form.reset();
+				} else {
+					status.textContent = data.error ?? "Something went wrong.";
+					status.className = "newsletter-status newsletter-status--err";
+					btn.disabled = false;
+				}
+			} catch {
+				status.textContent = "Network error. Please try again.";
+				status.className = "newsletter-status newsletter-status--err";
+				btn.disabled = false;
+			}
+		});
+	}
+</script>
+
+<style>
+	.newsletter-signup {
+		margin: var(--spacing-16) 0;
+		padding: var(--spacing-10) var(--spacing-8);
+		background: var(--color-bg-subtle);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+	}
+
+	.newsletter-inner {
+		max-width: 540px;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	.newsletter-kicker {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+	}
+
+	.newsletter-heading {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-2xl);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		color: var(--color-text);
+		margin: var(--spacing-3) 0 var(--spacing-2);
+	}
+
+	.newsletter-desc {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		line-height: 1.7;
+		margin-bottom: var(--spacing-6);
+	}
+
+	.newsletter-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-3);
+	}
+
+	.newsletter-row {
+		display: flex;
+		gap: var(--spacing-2);
+	}
+
+	.newsletter-input {
+		flex: 1;
+		padding: var(--spacing-3) var(--spacing-4);
+		font-size: var(--font-size-sm);
+		font-family: inherit;
+		color: var(--color-text);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		outline: none;
+		transition: border-color var(--transition-fast);
+	}
+
+	.newsletter-input:focus {
+		border-color: var(--color-accent);
+	}
+
+	.newsletter-btn {
+		padding: var(--spacing-3) var(--spacing-5);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--color-bg);
+		background: var(--color-accent);
+		border: 1px solid var(--color-accent);
+		border-radius: var(--radius);
+		cursor: pointer;
+		white-space: nowrap;
+		transition: opacity var(--transition-fast);
+	}
+
+	.newsletter-btn:hover {
+		opacity: 0.85;
+	}
+
+	.newsletter-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.newsletter-status {
+		font-size: var(--font-size-sm);
+		min-height: 1.2em;
+	}
+
+	.newsletter-status--ok {
+		color: #2d7a4f;
+	}
+
+	.newsletter-status--err {
+		color: #c0392b;
+	}
+
+	@media (max-width: 500px) {
+		.newsletter-row {
+			flex-direction: column;
+		}
+
+		.newsletter-btn {
+			width: 100%;
+		}
+	}
+</style>
