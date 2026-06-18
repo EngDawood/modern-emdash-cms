@@ -7,6 +7,7 @@ import {
 	getSeoMeta,
 	getSiteSettings,
 	getTaxonomyTerms,
+	getWidgetArea,
 } from "emdash";
 import {
 	Image,
@@ -17,6 +18,7 @@ import {
 } from "emdash/ui";
 import Base from "../../../layouts/Base.astro";
 import PostCard from "../../../components/PostCard.astro";
+import NewsletterSignup from "../../../components/NewsletterSignup.astro";
 import { getReadingTime } from "../../../utils/reading-time";
 import { locales, type Locale, defaultLocale, t } from "../../../i18n/utils";
 
@@ -56,10 +58,11 @@ function getImageUrl(img: unknown): string | undefined {
 	return undefined;
 }
 
-const [settings, tags, { entries: recentPosts }] = await Promise.all([
+const [settings, tags, { entries: recentPosts }, newsletterPostArea] = await Promise.all([
 	getSiteSettings(),
 	getEntryTerms("posts", post.data.id, "tag"),
 	getEmDashCollection("posts", { locale, orderBy: { published_at: "desc" }, limit: 4 }),
+	getWidgetArea("newsletter-post"),
 ]);
 const siteTitle = settings?.title || "Studio";
 const featuredImageUrl = getImageUrl(post.data.featured_image);
@@ -214,6 +217,10 @@ const publishDate =
 				<div class="article-content" dir="auto">
 					<PortableText value={post.data.content} />
 				</div>
+
+				{newsletterPostArea && newsletterPostArea.widgets.length > 0 && (
+					<NewsletterSignup locale={locale} />
+				)}
 
 				<div class="article-comments">
 					<Comments collection="posts" contentId={post.data.id} threaded />
