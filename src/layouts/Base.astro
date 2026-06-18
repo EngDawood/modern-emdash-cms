@@ -42,11 +42,11 @@ const {
 const locale: Locale = localeProp || getLocaleFromPath(Astro.url.pathname) || defaultLocale;
 const dir = getDir(locale);
 const isRTL = dir === "rtl";
-const [settings, _menu, { entries: pages }, newsletterArea] = await Promise.all([
+const [settings, _menu, { entries: pages }, newsletterFooterArea] = await Promise.all([
 	getSiteSettings(),
 	getMenu("primary"),
 	getEmDashCollection("pages"),
-	getWidgetArea("newsletter"),
+	getWidgetArea("newsletter-footer"),
 ]);
 const siteTitle = settings?.title || "Studio";
 const siteDescription = settings?.tagline || "Design & Development";
@@ -191,7 +191,7 @@ const articleSchema =
 			<slot />
 		</main>
 
-		{newsletterArea && newsletterArea.widgets.length > 0 && (
+		{newsletterFooterArea && newsletterFooterArea.widgets.length > 0 && (
 			<div class="newsletter-area">
 				<div class="newsletter-area-inner">
 					<NewsletterSignup locale={locale} />

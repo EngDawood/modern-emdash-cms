@@ -58,11 +58,11 @@ function getImageUrl(img: unknown): string | undefined {
 	return undefined;
 }
 
-const [settings, tags, { entries: recentPosts }, newsletterArea] = await Promise.all([
+const [settings, tags, { entries: recentPosts }, newsletterPostArea] = await Promise.all([
 	getSiteSettings(),
 	getEntryTerms("posts", post.data.id, "tag"),
 	getEmDashCollection("posts", { locale, orderBy: { published_at: "desc" }, limit: 4 }),
-	getWidgetArea("newsletter"),
+	getWidgetArea("newsletter-post"),
 ]);
 const siteTitle = settings?.title || "Studio";
 const featuredImageUrl = getImageUrl(post.data.featured_image);
@@ -218,7 +218,7 @@ const publishDate =
 					<PortableText value={post.data.content} />
 				</div>
 
-				{newsletterArea && newsletterArea.widgets.length > 0 && (
+				{newsletterPostArea && newsletterPostArea.widgets.length > 0 && (
 					<NewsletterSignup locale={locale} />
 				)}
 
