@@ -674,6 +674,29 @@ export function createPlugin() {
 		},
 
 		routes: {
+			"settings/get": {
+				handler: async (routeCtx) => {
+					const senderAddress = (await routeCtx.kv.get<string>(SETTINGS.senderAddress)) ?? "";
+					const inboundSecretSet = !!(await routeCtx.kv.get<string>(SETTINGS.inboundSecret));
+					return { senderAddress, inboundSecretSet };
+				},
+			},
+
+			"settings/update": {
+				handler: async (routeCtx) => {
+					const input = routeCtx.input as
+						| { senderAddress?: unknown; inboundSecret?: unknown }
+						| null;
+					if (typeof input?.senderAddress === "string") {
+						await routeCtx.kv.put(SETTINGS.senderAddress, input.senderAddress.trim());
+					}
+					if (typeof input?.inboundSecret === "string" && input.inboundSecret.trim()) {
+						await routeCtx.kv.put(SETTINGS.inboundSecret, input.inboundSecret.trim());
+					}
+					return { ok: true };
+				},
+			},
+
 			"messages/list": {
 				handler: async (routeCtx) => {
 					// Lazy setup: same idempotent migration pass as the other admin routes.
@@ -947,7 +970,10 @@ export function createPlugin() {
 		},
 
 		admin: {
-			pages: [{ path: "/", label: "Inbox", icon: "envelope" }],
+			pages: [
+				{ path: "/", label: "Inbox", icon: "envelope" },
+				{ path: "/settings", label: "Settings", icon: "settings" },
+			],
 			// settingsSchema defaults are not materialized automatically by EmDash;
 			// the hook above validates presence at send time and throws if missing.
 			settingsSchema: {

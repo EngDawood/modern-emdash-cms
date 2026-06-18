@@ -220,6 +220,123 @@ function InboxPage() {
 	);
 }
 
+function SettingsPage() {
+	const [senderAddress, setSenderAddress] = React.useState("");
+	const [inboundSecret, setInboundSecret] = React.useState("");
+	const [inboundSecretSet, setInboundSecretSet] = React.useState(false);
+	const [loading, setLoading] = React.useState(true);
+	const [saving, setSaving] = React.useState(false);
+	const [error, setError] = React.useState<string | null>(null);
+	const [success, setSuccess] = React.useState(false);
+
+	React.useEffect(() => {
+		apiFetch(`${API}/settings/get`, { method: "POST" })
+			.then((res) =>
+				parseApiResponse<{ senderAddress: string; inboundSecretSet: boolean }>(
+					res,
+					"Failed to load settings",
+				),
+			)
+			.then((data) => {
+				setSenderAddress(data.senderAddress);
+				setInboundSecretSet(data.inboundSecretSet);
+			})
+			.catch((err) => setError(err instanceof Error ? err.message : String(err)))
+			.finally(() => setLoading(false));
+	}, []);
+
+	const handleSave = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setSaving(true);
+		setError(null);
+		setSuccess(false);
+		try {
+			const body: Record<string, string> = { senderAddress };
+			if (inboundSecret) body.inboundSecret = inboundSecret;
+			const res = await apiFetch(`${API}/settings/update`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			await parseApiResponse(res, "Failed to save settings");
+			setSuccess(true);
+			if (inboundSecret) {
+				setInboundSecret("");
+				setInboundSecretSet(true);
+			}
+		} catch (err) {
+			setError(err instanceof Error ? err.message : String(err));
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	if (loading) {
+		return <div className="text-muted-foreground text-sm">Loading settings…</div>;
+	}
+
+	return (
+		<div className="space-y-6 max-w-lg">
+			<div>
+				<h1 className="text-3xl font-bold">Settings</h1>
+				<p className="text-muted-foreground mt-1">Configure the inbox email transport.</p>
+			</div>
+
+			{error && (
+				<div className="p-3 rounded-lg border border-destructive/50 bg-destructive/5 text-sm text-destructive">
+					{error}
+				</div>
+			)}
+			{success && (
+				<div className="p-3 rounded-lg border border-green-500/50 bg-green-500/5 text-sm text-green-700">
+					Settings saved.
+				</div>
+			)}
+
+			<form onSubmit={handleSave} className="space-y-4">
+				<div className="space-y-1">
+					<label className="text-sm font-medium">Verified sender address</label>
+					<input
+						type="email"
+						value={senderAddress}
+						onChange={(e) => setSenderAddress(e.target.value)}
+						placeholder="noreply@yourdomain.com"
+						className="w-full rounded-md border px-3 py-2 text-sm bg-background"
+					/>
+					<p className="text-xs text-muted-foreground">
+						Must be a sender on a domain onboarded in Cloudflare Email Sending.
+					</p>
+				</div>
+
+				<div className="space-y-1">
+					<label className="text-sm font-medium">
+						Inbound webhook secret{inboundSecretSet ? " (set — leave blank to keep)" : ""}
+					</label>
+					<input
+						type="password"
+						value={inboundSecret}
+						onChange={(e) => setInboundSecret(e.target.value)}
+						placeholder={inboundSecretSet ? "••••••••" : "Enter secret"}
+						className="w-full rounded-md border px-3 py-2 text-sm bg-background"
+					/>
+					<p className="text-xs text-muted-foreground">
+						Shared secret sent by your inbound email Worker as X-Inbound-Secret.
+					</p>
+				</div>
+
+				<button
+					type="submit"
+					disabled={saving}
+					className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+				>
+					{saving ? "Saving…" : "Save settings"}
+				</button>
+			</form>
+		</div>
+	);
+}
+
 export const pages: PluginAdminExports["pages"] = {
 	"/": InboxPage as any,
+	"/settings": SettingsPage as any,
 };
