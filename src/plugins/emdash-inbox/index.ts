@@ -687,11 +687,15 @@ export function createPlugin() {
 					const input = routeCtx.input as
 						| { senderAddress?: unknown; inboundSecret?: unknown }
 						| null;
+					const kv = routeCtx.kv as {
+						get<T>(key: string): Promise<T | null>;
+						set(key: string, value: string): Promise<void>;
+					};
 					if (typeof input?.senderAddress === "string") {
-						await routeCtx.kv.put(SETTINGS.senderAddress, input.senderAddress.trim());
+						await kv.set(SETTINGS.senderAddress, input.senderAddress.trim());
 					}
 					if (typeof input?.inboundSecret === "string" && input.inboundSecret.trim()) {
-						await routeCtx.kv.put(SETTINGS.inboundSecret, input.inboundSecret.trim());
+						await kv.set(SETTINGS.inboundSecret, input.inboundSecret.trim());
 					}
 					return { ok: true };
 				},
