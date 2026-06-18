@@ -14,10 +14,6 @@ import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
 
-const emailWorkerEntrypoint = fileURLToPath(
-	new URL("./src/plugins/email-cf-worker.ts", import.meta.url),
-).replaceAll("\\", "/");
-
 const trackerLinkEntrypoint = fileURLToPath(
 	new URL("./src/plugins/tracker-link.ts", import.meta.url),
 ).replaceAll("\\", "/");
@@ -93,13 +89,6 @@ export default defineConfig({
 					],
 				},
 				aiModerationPlugin(),
-				{
-					id: "email-cf-provider",
-					version: "0.1.0",
-					format: "native",
-					entrypoint: emailWorkerEntrypoint,
-					capabilities: ["hooks.email-transport:register"],
-				},
 				{
 					id: "tracker-link",
 					version: "0.1.0",
