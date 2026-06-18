@@ -8,7 +8,7 @@ import { colorPlugin } from "@emdash-cms/plugin-color";
 import { embedsPlugin } from "@emdash-cms/plugin-embeds";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
-import { customBlocksPlugin } from "@emdash.directory/plugin-custom-blocks";
+
 import { calloutPlugin } from "@plugdash/callout";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
@@ -46,7 +46,7 @@ const emdashInboxAdminEntry = fileURLToPath(
 export default defineConfig({
 	output: "server",
 	adapter: cloudflare({
-		remoteBindings: process.env.CI !== "true",
+		remoteBindings: false,
 		inspectorPort: 9230,
 	}),
 	fonts: [
@@ -76,6 +76,25 @@ export default defineConfig({
 				colorPlugin(),
 				embedsPlugin(),
 				calloutPlugin(),
+				{
+					id: "custom-blocks",
+					version: "0.2.0",
+					format: "native",
+					entrypoint: "@emdash.directory/plugin-custom-blocks",
+					storage: {
+						blocks: {
+							indexes: ["status", "createdAt"],
+							uniqueIndexes: ["slug"],
+						},
+					},
+					adminPages: [
+						{
+							path: "/",
+							label: "Blocks",
+							icon: "list",
+						},
+					],
+				},
 
 				{
 					id: "seo",
@@ -104,7 +123,10 @@ export default defineConfig({
 					format: "native",
 					entrypoint: emdashInboxEntrypoint,
 					adminEntry: emdashInboxAdminEntry,
-					adminPages: [{ path: "/", label: "Inbox", icon: "envelope" }],
+					adminPages: [
+						{ path: "/", label: "Inbox", icon: "envelope" },
+						{ path: "/settings", label: "Settings", icon: "settings" },
+					],
 					capabilities: [
 						"email:provide",
 						"email:intercept",
@@ -113,13 +135,18 @@ export default defineConfig({
 					],
 				},
 			],
-			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto, customBlocksPlugin()],
+			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
 		}),
 	],
 	devToolbar: { enabled: false },
 	vite: {
+		ssr: {
+			optimizeDeps: {
+				include: ["schema-dts", "@jdevalk/astro-seo-graph", "@jdevalk/seo-graph-core", "@atproto/api"],
+			},
+		},
 		optimizeDeps: {
 			include: [
 				"spark-emdash/middleware",

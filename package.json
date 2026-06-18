@@ -19,6 +19,7 @@
   "dependencies": {
     "@abdulrysr/saudi-riyal-new-symbol-font": "^1.0.8",
     "@astrojs/react": "^5.0.0",
+    "@atproto/api": "^0.13.35",
     "@emdash-cms/auth-atproto": "^0.2.13",
     "@emdash-cms/cloudflare": "0.17.2",
     "@emdash-cms/plugin-ai-moderation": "^0.2.0",

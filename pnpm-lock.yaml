@@ -32,6 +32,9 @@ importers:
       '@astrojs/react':
         specifier: ^5.0.0
         version: 5.0.3(@types/node@25.9.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(yaml@2.8.3)
+      '@atproto/api':
+        specifier: ^0.13.35
+        version: 0.13.35
       '@emdash-cms/auth-atproto':
         specifier: ^0.2.13
         version: 0.2.13(@atcute/lexicons@1.3.1)(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(emdash@0.17.2)(react@19.2.5)(typescript@5.9.3)
