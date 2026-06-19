@@ -1,0 +1,52 @@
+---
+export const prerender = false;
+
+import { getEmDashEntry } from "emdash";
+import Base from "../layouts/Base.astro";
+import MarketingBlocks from "../components/MarketingBlocks.astro";
+import { defaultLocale, t } from "../i18n/utils";
+import type { Locale } from "../i18n/utils";
+
+const locale: Locale = defaultLocale;
+const { entry: page, cacheHint } = await getEmDashEntry("pages", "faq", { locale });
+
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const pageContent = page?.data.content;
+---
+
+<Base
+	title={page?.data.title || t("nav.faq", locale) || "الأسئلة الشائعة"}
+	description={page?.data.description || "إجابات على الأسئلة الشائعة حول داوود صالح وأعماله."}
+	locale={locale}
+>
+	{
+		pageContent ? (
+			<MarketingBlocks value={pageContent} />
+		) : (
+			<div class="empty-state">
+				<h1>الأسئلة الشائعة</h1>
+				<p>أضف محتوى الأسئلة الشائعة في لوحة التحكم.</p>
+				<a href="/_emdash/admin" class="btn btn-primary">فتح لوحة التحكم</a>
+			</div>
+		)
+	}
+</Base>
+
+<style>
+	.empty-state {
+		text-align: center;
+		padding: var(--spacing-5xl) var(--spacing-lg);
+		max-width: var(--max-width);
+		margin: 0 auto;
+	}
+
+	.empty-state h1 {
+		margin-bottom: var(--spacing-md);
+	}
+
+	.empty-state p {
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-xl);
+	}
+</style>

@@ -13,7 +13,7 @@
 import { EmDashClient } from "emdash/client";
 
 interface Env extends Cloudflare.Env {
-	MCP_OBJECT: DurableObjectNamespace;
+	MCP_OBJECT: DurableObjectNamespace<EmDashMCP>;
 }
 
 const UPSTREAM_PATH = "/_emdash/api/mcp";

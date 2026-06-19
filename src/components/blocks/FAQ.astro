@@ -12,6 +12,20 @@ interface Props {
 
 const { node } = Astro.props;
 const { _key, headline, items } = node;
+
+// FAQPage structured data so Google can show these as rich-result snippets.
+const faqJsonLd = {
+	"@context": "https://schema.org",
+	"@type": "FAQPage",
+	mainEntity: items.map((item) => ({
+		"@type": "Question",
+		name: item.question,
+		acceptedAnswer: {
+			"@type": "Answer",
+			text: item.answer,
+		},
+	})),
+};
 ---
 
 <section class="faq section" id={_key}>
@@ -38,6 +52,8 @@ const { _key, headline, items } = node;
 		</div>
 	</div>
 </section>
+
+<script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
 
 <style>
 	.faq-header {

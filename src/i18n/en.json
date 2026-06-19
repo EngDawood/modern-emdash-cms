@@ -10,7 +10,8 @@
 		"skills": "Skills",
 		"blog": "blog",
 		"contact": "Contact",
-		"jobs": "Jobs"
+		"jobs": "Jobs",
+		"faq": "FAQ"
 	},
 	"jobs": {
 		"title": "Jobs",
@@ -131,6 +132,12 @@
 			"telegram": "Telegram",
 			"twitter": "X / Twitter"
 		}
+	},
+	"faq": {
+		"kicker": "FAQ",
+		"heading": "Frequently asked questions",
+		"subheading": "Quick answers to the questions that come up most.",
+		"viewAll": "View all FAQs"
 	},
 	"signup": {
 		"title": "Create an account",

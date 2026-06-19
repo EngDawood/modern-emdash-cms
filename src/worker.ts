@@ -3,7 +3,7 @@ import { EmDashClient } from "emdash/client";
 import { EmDashMCP, handleMcp } from "./mcp";
 
 interface WorkerEnv extends Cloudflare.Env {
-	MCP_OBJECT: DurableObjectNamespace;
+	MCP_OBJECT: DurableObjectNamespace<EmDashMCP>;
 }
 
 export { PluginBridge } from "@emdash-cms/cloudflare/sandbox";
