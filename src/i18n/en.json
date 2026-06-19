@@ -66,9 +66,9 @@
 			"status": "Status",
 			"statusVal": "Open to work"
 		},
-		"bio1": "I got into programming because I liked understanding how things work — that's still what drives most of what I build. Over the past few years I've been working independently, building backend systems, Telegram bots, and tools that connect AI models to real data.",
-		"bio2": "One project I kept coming back to was MCP — a protocol that lets AI models use external tools and live data sources. I built an MCP server for Arabic academic research because the gap was obvious: millions of Arabic research records with almost no AI-accessible tooling around them.",
-		"bio3": "Before going independent I taught OOP at Hajjah University for about seven months. Teaching is useful that way — you can't hide behind vague code when someone's waiting for an explanation."
+		"bio1": "This site is the technical blog and portfolio of Dawood Saleh, a software engineer specializing in backend systems, serverless architecture, and AI tooling. Working independently with international clients since 2023, he builds backends on Cloudflare Workers, Telegram bots, and tools that connect AI models to real-world data.",
+		"bio2": "The core focus is the Model Context Protocol (MCP) — the open standard that lets AI models call external tools and query live data sources. His MCP server for Arabic academic research opened AI-accessible access to millions of previously unindexed Arabic research records, and anchors a growing portfolio of MCP servers, automation bots, and serverless backends documented on this site.",
+		"bio3": "Beyond the project work, this blog covers backend engineering, AI tooling, and the developer ecosystem forming around protocols like MCP — informed by a background that includes teaching Object-Oriented Programming at Hajjah University and writing technical research for academic and engineering audiences."
 	},
 	"projects": {
 		"section": "Projects",
