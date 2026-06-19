@@ -36,12 +36,7 @@ export function IconBtn({ icon, onClick, title, size = 14 }: IconBtnProps) {
 }
 
 export function SAR({ amount }: { amount: number }) {
-  return (
-    <span>
-      <span className="sar-symbol">&#xea;</span>
-      {' '}{currency(amount)}
-    </span>
-  );
+  return <span>﷼{' '}{currency(amount)}</span>;
 }
 
 export function useClickOutside(ref: RefObject<HTMLElement | null>, onClose: () => void) {

@@ -2,14 +2,6 @@
    Tracker — hi-fi freelance workspace
    Warm paper base · amber accent · dense data layout
 ========================================================= */
-@import '@abdulrysr/saudi-riyal-new-symbol-font/style.css';
-
-.sar-symbol {
-  font-family: 'SaudiRiyalSymbol', sans-serif;
-  font-weight: bold;
-  font-size: inherit;
-  line-height: 1;
-}
 
 :root {
   /* Paper / surface — warm neutrals */
