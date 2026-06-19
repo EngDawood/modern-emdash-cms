@@ -26,9 +26,6 @@ importers:
 
   .:
     dependencies:
-      '@abdulrysr/saudi-riyal-new-symbol-font':
-        specifier: ^1.0.8
-        version: 1.0.8
       '@astrojs/react':
         specifier: ^5.0.0
         version: 5.0.3(@types/node@25.9.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(yaml@2.8.3)
@@ -149,9 +146,6 @@ importers:
         version: 4.81.1(@cloudflare/workers-types@4.20260410.1)
 
 packages:
-
-  '@abdulrysr/saudi-riyal-new-symbol-font@1.0.8':
-    resolution: {integrity: sha512-9Pnpg1jI3gBj7Us8zwnk/dFLXOucoiPAzrsDfpdF9J66TsHxbmsrGQpBLGGamCiouky0FTjywsMCe/QsiYt4nQ==}
 
   '@ai-sdk/gateway@3.0.96':
     resolution: {integrity: sha512-BDiVEMUVHGpngReeigzLyJobG0TvzYbNGzdHI8JYBZHrjOX4aL6qwIls7z3p7V4TuXVWUCbG8TSWEe7ksX4Vhw==}
@@ -4479,8 +4473,6 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
-
-  '@abdulrysr/saudi-riyal-new-symbol-font@1.0.8': {}
 
   '@ai-sdk/gateway@3.0.96(zod@4.3.6)':
     dependencies:

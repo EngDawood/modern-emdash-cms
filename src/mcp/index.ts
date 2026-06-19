@@ -10,10 +10,11 @@
  * so a valid EmDash PAT (ec_pat_*) authenticates against the built-in.
  */
 
+import { DurableObject } from "cloudflare:workers";
 import { EmDashClient } from "emdash/client";
 
 interface Env extends Cloudflare.Env {
-	MCP_OBJECT: DurableObjectNamespace;
+	MCP_OBJECT: DurableObjectNamespace<EmDashMCP>;
 }
 
 const UPSTREAM_PATH = "/_emdash/api/mcp";
@@ -462,8 +463,7 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 
 // ── Durable Object stub (kept for wrangler binding compatibility) ────────────
 
-export class EmDashMCP {
-	constructor(private state: DurableObjectState, private env: Env) {}
+export class EmDashMCP extends DurableObject<Env> {
 	async fetch(request: Request): Promise<Response> {
 		return handleMcp(request, this.env);
 	}

@@ -1,5 +1,5 @@
 ---
-import { getEmDashCollection, getSiteSettings } from "emdash";
+import { getEmDashCollection, getEmDashEntry, getSiteSettings } from "emdash";
 import Base from "../../layouts/Base.astro";
 import { t, locales, type Locale, defaultLocale } from "../../i18n/utils";
 import { skillsData } from "../../data/skills";
@@ -15,12 +15,20 @@ if (!locales.includes(localeParam as Locale)) {
 	return Astro.redirect(`/${defaultLocale}/`, 302);
 }
 
-const [settings, { entries: projects, cacheHint }, { entries: posts }] = await Promise.all([
+const [settings, { entries: projects, cacheHint }, { entries: posts }, { entry: faqPage, cacheHint: faqCacheHint }] = await Promise.all([
 	getSiteSettings(),
 	getEmDashCollection("projects"),
 	getEmDashCollection("posts"),
+	getEmDashEntry("pages", "faq", { locale }),
 ]);
 Astro.cache.set(cacheHint);
+Astro.cache.set(faqCacheHint);
+
+// Pull the FAQ items out of the marketing.faq block for the homepage teaser
+const faqBlock = faqPage?.data.content?.find(
+	(block: { _type: string }) => block._type === "marketing.faq",
+) as { items?: { question: string; answer: string }[] } | undefined;
+const faqItems: { question: string; answer: string }[] = faqBlock?.items ?? [];
 
 // Get the 3 most recent projects for the homepage
 const featuredProjects = projects
@@ -367,6 +375,32 @@ if (Astro.request.method === "POST") {
 			</div>
 		</div>
 	</section>
+
+	<!-- ── FAQ §05 ── -->
+	{faqItems.length > 0 && (
+		<section id="faq" class="section-faq reveal">
+			<div class="section-inner">
+				<div class="section-head reveal-child">
+					<div class="kicker">
+						<span class="kicker-num">§05</span>
+						<span class="kicker-rule"></span>
+						{t("faq.kicker", locale)}
+					</div>
+					<h2 class="section-title">{t("faq.heading", locale)}</h2>
+					<p class="section-sub">{t("faq.subheading", locale)}</p>
+				</div>
+				<div class="faq-teaser-list">
+					{faqItems.slice(0, 4).map((item: { question: string; answer: string }, i: number) => (
+						<details class="faq-teaser-item reveal-item" style={`--delay: ${i}`}>
+							<summary class="faq-teaser-question">{item.question}</summary>
+							<p class="faq-teaser-answer">{item.answer}</p>
+						</details>
+					))}
+				</div>
+				<a href={`/${locale}/faq`} class="view-all reveal-child">{t("faq.viewAll", locale)} →</a>
+			</div>
+		</section>
+	)}
 </Base>
 
 <style>
@@ -439,6 +473,39 @@ if (Astro.request.method === "POST") {
 
 	.accent {
 		color: var(--color-accent);
+	}
+
+	/* ── FAQ teaser ── */
+	.faq-teaser-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-3);
+	}
+
+	.faq-teaser-item {
+		border-bottom: 1px solid var(--color-border);
+		padding: var(--spacing-4) 0;
+	}
+
+	.faq-teaser-question {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-lg);
+		font-weight: 500;
+		color: var(--color-text);
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.faq-teaser-question::-webkit-details-marker {
+		display: none;
+	}
+
+	.faq-teaser-answer {
+		margin-top: var(--spacing-3);
+		font-family: var(--font-serif);
+		font-size: var(--font-size-base);
+		color: var(--color-muted);
+		line-height: 1.6;
 	}
 
 	/* ── Buttons ── */
