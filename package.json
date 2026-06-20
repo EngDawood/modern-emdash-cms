@@ -17,6 +17,7 @@
     "typecheck": "astro check"
   },
   "dependencies": {
+    "@dawod/emdash-rss-aggregator": "file:./src/plugins/rss-aggregator",
     "@astrojs/react": "^5.0.0",
     "@atproto/api": "^0.13.35",
     "@emdash-cms/auth-atproto": "^0.2.13",
