@@ -57,7 +57,7 @@ const pageContent = page?.data.content;
 
 <Base
 	title={page?.data.title || t("nav.contact", locale) || "اتصل بنا"}
-	description={page?.data.description || "هل لديك أسئلة؟ تواصل معنا."}
+	description="هل لديك أسئلة؟ تواصل معنا."
 	locale={locale}
 >
 	{pageContent && <MarketingBlocks value={pageContent} />}

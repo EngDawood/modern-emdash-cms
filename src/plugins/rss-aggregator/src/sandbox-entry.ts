@@ -5,7 +5,7 @@
  * Contains all hooks, routes, and admin configuration.
  */
 
-import { definePlugin } from "emdash";
+import { definePlugin, PluginRouteError } from "emdash";
 import type {
 	PluginContext,
 	StorageCollection,
@@ -474,8 +474,8 @@ export function createPlugin() {
 		// ── Sources CRUD ─────────────────────────────────────────────────
 
 		sources: {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const url = new URL(routeCtx.request.url);
+			handler: async (ctx: RouteContext) => {
+				const url = new URL(ctx.request.url);
 				const status = url.searchParams.get("status") || undefined;
 				const tag = url.searchParams.get("tag") || undefined;
 				const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 100);
@@ -486,14 +486,14 @@ export function createPlugin() {
 				if (tag) where.tag = tag;
 
 				const result = await sources(ctx).query({
-					where: Object.keys(where).length > 0 ? where : undefined,
+					where: Object.keys(where).length > 0 ? (where as any) : undefined,
 					orderBy: { createdAt: "desc" },
 					limit,
 					cursor,
 				});
 
 				const total = await sources(ctx).count(
-					Object.keys(where).length > 0 ? where : undefined,
+					Object.keys(where).length > 0 ? (where as any) : undefined,
 				);
 
 				return {
@@ -506,8 +506,8 @@ export function createPlugin() {
 		},
 
 		"sources/create": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const input = routeCtx.input as CreateSourceInput;
+			handler: async (ctx: RouteContext) => {
+				const input = ctx.input as CreateSourceInput;
 				const settings = await loadSettings(ctx);
 				const now = new Date().toISOString();
 				const id = generateId("src");
@@ -578,15 +578,12 @@ export function createPlugin() {
 		},
 
 		"sources/update": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id, ...updates } = routeCtx.input as UpdateSourceInput & { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id, ...updates } = ctx.input as UpdateSourceInput & { id: string };
 				const existing = await sources(ctx).get(id);
 
 				if (!existing) {
-					throw new Response(JSON.stringify({ error: "Source not found" }), {
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					});
+					throw PluginRouteError.notFound(`Source "${id}" not found`);
 				}
 
 				const updated: Source = {
@@ -603,15 +600,12 @@ export function createPlugin() {
 		},
 
 		"sources/delete": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id } = routeCtx.input as { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id } = ctx.input as { id: string };
 
 				const existing = await sources(ctx).get(id);
 				if (!existing) {
-					throw new Response(JSON.stringify({ error: "Source not found" }), {
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					});
+					throw PluginRouteError.notFound(`Source "${id}" not found`);
 				}
 
 				// Delete all items for this source
@@ -667,15 +661,12 @@ export function createPlugin() {
 		},
 
 		"sources/fetch-now": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id } = routeCtx.input as { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id } = ctx.input as { id: string };
 				const source = await sources(ctx).get(id);
 
 				if (!source) {
-					throw new Response(JSON.stringify({ error: "Source not found" }), {
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					});
+					throw PluginRouteError.notFound(`Source "${id}" not found`);
 				}
 
 				const settings = await loadSettings(ctx);
@@ -686,7 +677,7 @@ export function createPlugin() {
 		},
 
 		"sources/fetch-all": {
-			handler: async (_routeCtx: RouteContext, ctx: PluginContext) => {
+			handler: async (ctx: RouteContext) => {
 				const settings = await loadSettings(ctx);
 
 				// Get all active sources
@@ -717,8 +708,8 @@ export function createPlugin() {
 		// ── Items ────────────────────────────────────────────────────────
 
 		items: {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const url = new URL(routeCtx.request.url);
+			handler: async (ctx: RouteContext) => {
+				const url = new URL(ctx.request.url);
 				const sourceId = url.searchParams.get("sourceId") || undefined;
 				const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 100);
 				const cursor = url.searchParams.get("cursor") || undefined;
@@ -727,14 +718,14 @@ export function createPlugin() {
 				if (sourceId) where.sourceId = sourceId;
 
 				const result = await feedItems(ctx).query({
-					where: Object.keys(where).length > 0 ? where : undefined,
+					where: Object.keys(where).length > 0 ? (where as any) : undefined,
 					orderBy: { publishedAt: "desc" },
 					limit,
 					cursor,
 				});
 
 				const total = await feedItems(ctx).count(
-					Object.keys(where).length > 0 ? where : undefined,
+					Object.keys(where).length > 0 ? (where as any) : undefined,
 				);
 
 				return {
@@ -747,23 +738,20 @@ export function createPlugin() {
 		},
 
 		"items/delete": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { ids } = routeCtx.input as { ids: string[] };
+			handler: async (ctx: RouteContext) => {
+				const { ids } = ctx.input as { ids: string[] };
 				const deleted = await feedItems(ctx).deleteMany(ids);
 				return { success: true, deleted };
 			},
 		},
 
 		"items/reject": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id, reason } = routeCtx.input as { id: string; reason?: string };
+			handler: async (ctx: RouteContext) => {
+				const { id, reason } = ctx.input as { id: string; reason?: string };
 				const item = await feedItems(ctx).get(id);
 
 				if (!item) {
-					throw new Response(JSON.stringify({ error: "Item not found" }), {
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					});
+					throw PluginRouteError.notFound(`Item "${id}" not found`);
 				}
 
 				// Add to reject list
@@ -787,8 +775,8 @@ export function createPlugin() {
 		// ── Displays CRUD ────────────────────────────────────────────────
 
 		displays: {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				if (routeCtx.request.method === "GET") {
+			handler: async (ctx: RouteContext) => {
+				if (ctx.request.method === "GET") {
 					const result = await displays(ctx).query({
 						orderBy: { name: "asc" } as any,
 						limit: 100,
@@ -802,8 +790,8 @@ export function createPlugin() {
 		},
 
 		"displays/create": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const input = routeCtx.input as CreateDisplayInput;
+			handler: async (ctx: RouteContext) => {
+				const input = ctx.input as CreateDisplayInput;
 				const now = new Date().toISOString();
 				const id = generateId("dsp");
 
@@ -819,15 +807,12 @@ export function createPlugin() {
 		},
 
 		"displays/update": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id, ...updates } = routeCtx.input as UpdateDisplayInput & { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id, ...updates } = ctx.input as UpdateDisplayInput & { id: string };
 				const existing = await displays(ctx).get(id);
 
 				if (!existing) {
-					throw new Response(JSON.stringify({ error: "Display not found" }), {
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					});
+					throw PluginRouteError.notFound(`Display "${id}" not found`);
 				}
 
 				const updated: Display = {
@@ -842,13 +827,10 @@ export function createPlugin() {
 		},
 
 		"displays/delete": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id } = routeCtx.input as { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id } = ctx.input as { id: string };
 				if (id === "default") {
-					throw new Response(
-						JSON.stringify({ error: "Cannot delete the default display" }),
-						{ status: 400, headers: { "Content-Type": "application/json" } },
-					);
+					throw PluginRouteError.badRequest("Cannot delete the default display");
 				}
 				await displays(ctx).delete(id);
 				return { success: true };
@@ -858,8 +840,8 @@ export function createPlugin() {
 		// ── Reject List ──────────────────────────────────────────────────
 
 		"reject-list": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const url = new URL(routeCtx.request.url);
+			handler: async (ctx: RouteContext) => {
+				const url = new URL(ctx.request.url);
 				const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 100);
 				const cursor = url.searchParams.get("cursor") || undefined;
 
@@ -878,8 +860,8 @@ export function createPlugin() {
 		},
 
 		"reject-list/remove": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id } = routeCtx.input as { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id } = ctx.input as { id: string };
 				await rejectList(ctx).delete(id);
 				return { success: true };
 			},
@@ -888,7 +870,7 @@ export function createPlugin() {
 		// ── Folders ──────────────────────────────────────────────────────
 
 		folders: {
-			handler: async (_routeCtx: RouteContext, ctx: PluginContext) => {
+			handler: async (ctx: RouteContext) => {
 				const result = await folders(ctx).query({ limit: 100 });
 				return {
 					items: result.items.map((i) => ({ id: i.id, ...i.data })),
@@ -897,8 +879,8 @@ export function createPlugin() {
 		},
 
 		"folders/create": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { name, sourceIds } = routeCtx.input as { name: string; sourceIds?: string[] };
+			handler: async (ctx: RouteContext) => {
+				const { name, sourceIds } = ctx.input as { name: string; sourceIds?: string[] };
 				const now = new Date().toISOString();
 				const id = generateId("fld");
 				const slug = name
@@ -920,15 +902,12 @@ export function createPlugin() {
 		},
 
 		"folders/update": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id, ...updates } = routeCtx.input as Partial<Folder> & { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id, ...updates } = ctx.input as Partial<Folder> & { id: string };
 				const existing = await folders(ctx).get(id);
 
 				if (!existing) {
-					throw new Response(JSON.stringify({ error: "Folder not found" }), {
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					});
+					throw PluginRouteError.notFound(`Folder "${id}" not found`);
 				}
 
 				const updated: Folder = {
@@ -943,8 +922,8 @@ export function createPlugin() {
 		},
 
 		"folders/delete": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { id } = routeCtx.input as { id: string };
+			handler: async (ctx: RouteContext) => {
+				const { id } = ctx.input as { id: string };
 				await folders(ctx).delete(id);
 				return { success: true };
 			},
@@ -953,8 +932,8 @@ export function createPlugin() {
 		// ── Import Logs ──────────────────────────────────────────────────
 
 		logs: {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const url = new URL(routeCtx.request.url);
+			handler: async (ctx: RouteContext) => {
+				const url = new URL(ctx.request.url);
 				const sourceId = url.searchParams.get("sourceId") || undefined;
 				const status = url.searchParams.get("status") || undefined;
 				const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 100);
@@ -965,7 +944,7 @@ export function createPlugin() {
 				if (status) where.status = status;
 
 				const result = await importLogs(ctx).query({
-					where: Object.keys(where).length > 0 ? where : undefined,
+					where: Object.keys(where).length > 0 ? (where as any) : undefined,
 					orderBy: { createdAt: "desc" },
 					limit,
 					cursor,
@@ -980,8 +959,8 @@ export function createPlugin() {
 		},
 
 		"logs/clear": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { sourceId } = routeCtx.input as { sourceId?: string };
+			handler: async (ctx: RouteContext) => {
+				const { sourceId } = ctx.input as { sourceId?: string };
 
 				const where: Record<string, unknown> = {};
 				if (sourceId) where.sourceId = sourceId;
@@ -990,7 +969,7 @@ export function createPlugin() {
 				let cursor: string | undefined;
 				do {
 					const result = await importLogs(ctx).query({
-						where: Object.keys(where).length > 0 ? where : undefined,
+						where: Object.keys(where).length > 0 ? (where as any) : undefined,
 						limit: 1000,
 						cursor,
 					});
@@ -1008,14 +987,14 @@ export function createPlugin() {
 		// ── Settings ─────────────────────────────────────────────────────
 
 		settings: {
-			handler: async (_routeCtx: RouteContext, ctx: PluginContext) => {
+			handler: async (ctx: RouteContext) => {
 				return await loadSettings(ctx);
 			},
 		},
 
 		"settings/save": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const input = routeCtx.input as Partial<PluginSettings>;
+			handler: async (ctx: RouteContext) => {
+				const input = ctx.input as Partial<PluginSettings>;
 
 				for (const [key, value] of Object.entries(input)) {
 					if (value !== undefined) {
@@ -1031,7 +1010,7 @@ export function createPlugin() {
 		// ── Stats ────────────────────────────────────────────────────────
 
 		stats: {
-			handler: async (_routeCtx: RouteContext, ctx: PluginContext) => {
+			handler: async (ctx: RouteContext) => {
 				const totalSources = await sources(ctx).count();
 				const activeSources = await sources(ctx).count({ status: "active" });
 				const pausedSources = await sources(ctx).count({ status: "paused" });
@@ -1076,8 +1055,8 @@ export function createPlugin() {
 
 		"public/items": {
 			public: true,
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const url = new URL(routeCtx.request.url);
+			handler: async (ctx: RouteContext) => {
+				const url = new URL(ctx.request.url);
 				const displayId = url.searchParams.get("display") || "default";
 				const sourceId = url.searchParams.get("source") || undefined;
 				const tag = url.searchParams.get("tag") || undefined;
@@ -1112,7 +1091,7 @@ export function createPlugin() {
 				}
 
 				const result = await feedItems(ctx).query({
-					where: Object.keys(where).length > 0 ? where : undefined,
+					where: Object.keys(where).length > 0 ? (where as any) : undefined,
 					orderBy: { publishedAt: "desc" },
 					limit: Math.min(effectiveLimit, limit),
 					cursor,
@@ -1144,11 +1123,11 @@ export function createPlugin() {
 
 		"public/feed.xml": {
 			public: true,
-			handler: async (_routeCtx: RouteContext, ctx: PluginContext) => {
+			handler: async (ctx: RouteContext) => {
 				const settings = await loadSettings(ctx);
 
 				if (!settings.enableCustomFeed) {
-					throw new Response("Feed not enabled", { status: 404 });
+					throw PluginRouteError.notFound("Outgoing RSS feed is not enabled");
 				}
 
 				const result = await feedItems(ctx).query({
@@ -1168,12 +1147,14 @@ export function createPlugin() {
 		// ── Feed validation ──────────────────────────────────────────────
 
 		"validate-feed": {
-			handler: async (routeCtx: RouteContext, ctx: PluginContext) => {
-				const { url } = routeCtx.input as { url: string };
+			handler: async (ctx: RouteContext) => {
+				const { url } = ctx.input as { url: string };
 				const settings = await loadSettings(ctx);
 
 				if (!ctx.http) {
-					throw new Error("Network access not available");
+					throw PluginRouteError.internal(
+							"Network access not available (network:fetch capability missing)",
+						);
 				}
 
 				try {

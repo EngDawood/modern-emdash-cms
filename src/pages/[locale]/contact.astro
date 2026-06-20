@@ -64,7 +64,7 @@ const pageContent = page?.data.content;
 
 <Base
 	title={page?.data.title || t("nav.contact", locale) || "Contact"}
-	description={page?.data.description || "Have questions? Want to collaborate? Reach out to us."}
+	description="Have questions? Want to collaborate? Reach out to us."
 	locale={locale}
 >
 	{pageContent && <MarketingBlocks value={pageContent} />}
