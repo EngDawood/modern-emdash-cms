@@ -9,6 +9,7 @@ import { embedsPlugin } from "@emdash-cms/plugin-embeds";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 
+import { rssAggregatorPlugin } from "@dawod/emdash-rss-aggregator";
 import { calloutPlugin } from "@plugdash/callout";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
@@ -107,7 +108,8 @@ export default defineConfig({
 						{ path: "/fuzzy-redirects", label: "Fuzzy Redirects", icon: "arrow-right" },
 					],
 				},
-				aiModerationPlugin(),
+				rssAggregatorPlugin(),
+			aiModerationPlugin(),
 				{
 					id: "tracker-link",
 					version: "0.1.0",
@@ -168,7 +170,8 @@ export default defineConfig({
 				"@plugdash/callout/astro",
 				"astro/zod",
 				"emdash/runtime",
-
+				"@dawod/emdash-rss-aggregator",
+				"@dawod/emdash-rss-aggregator/sandbox",
 			],
 		},
 	},

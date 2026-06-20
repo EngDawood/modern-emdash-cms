@@ -11,7 +11,6 @@ export interface Page {
   status: string;
   title: string;
   content?: PortableTextBlock[];
-  description?: string;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
