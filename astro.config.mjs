@@ -2,8 +2,6 @@ import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { aiModerationPlugin } from "@emdash-cms/plugin-ai-moderation";
-import atproto from "@emdash-cms/plugin-atproto";
-import auditLog from "@emdash-cms/plugin-audit-log";
 import { colorPlugin } from "@emdash-cms/plugin-color";
 import { embedsPlugin } from "@emdash-cms/plugin-embeds";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
@@ -137,7 +135,10 @@ export default defineConfig({
 					],
 				},
 			],
-			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : []), auditLog, atproto],
+			// Perf test: audit-log + atproto removed from sandboxed[]. Their
+			// content:read hooks were dispatched into Worker-Loader sandboxes on
+			// every render and stalling SSR (~18s/page, admin hung). See PR.
+			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : [])],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
 		}),
