@@ -79,5 +79,8 @@
 	],
 	"ai": {
 		"binding": "AI"
+	},
+	"dev": {
+		"inspector_port": 0
 	}
 }

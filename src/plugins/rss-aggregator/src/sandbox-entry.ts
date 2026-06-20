@@ -1212,6 +1212,8 @@ export function createPlugin() {
 });
 }
 
+export default createPlugin;
+
 // ── RSS/Atom Output Builders ──────────────────────────────────────────
 
 function escapeXml(str: string): string {
