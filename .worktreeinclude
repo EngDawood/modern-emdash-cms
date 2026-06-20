@@ -3,6 +3,4 @@
 .env.local
 .env.*
 **/.claude/settings.local.json
-src\components\tracker/*
-
 CLAUDE*
