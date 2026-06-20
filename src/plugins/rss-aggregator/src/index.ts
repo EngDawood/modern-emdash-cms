@@ -51,23 +51,18 @@ export function rssAggregatorPlugin(options: RssAggregatorOptions = {}): PluginD
 			"network:fetch",
 		],
 		allowedHosts: ["*"],
+		// The descriptor declares single-field indexes only — the descriptor
+		// type (StorageCollectionDeclaration) does not support composite
+		// indexes. Composite indexes are declared on the runtime-authoritative
+		// storage config in sandbox-entry.ts (the ResolvedPlugin returned by
+		// createPlugin), which is what actually provisions indexes for this
+		// native-format plugin.
 		storage: {
 			sources: {
-				indexes: [
-					"status",
-					"tag",
-					"createdAt",
-					["status", "nextFetchAt"],
-				],
+				indexes: ["status", "tag", "createdAt"],
 			},
 			feedItems: {
-				indexes: [
-					"sourceId",
-					"guid",
-					"publishedAt",
-					["sourceId", "publishedAt"],
-					["sourceId", "guid"],
-				],
+				indexes: ["sourceId", "guid", "publishedAt"],
 			},
 			displays: {
 				indexes: ["name"],
@@ -76,12 +71,7 @@ export function rssAggregatorPlugin(options: RssAggregatorOptions = {}): PluginD
 				indexes: ["guid", "sourceId", "createdAt"],
 			},
 			importLogs: {
-				indexes: [
-					"sourceId",
-					"status",
-					"createdAt",
-					["sourceId", "createdAt"],
-				],
+				indexes: ["sourceId", "status", "createdAt"],
 			},
 			folders: {
 				indexes: ["slug", "name"],
