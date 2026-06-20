@@ -79,6 +79,7 @@ All plugins are configured in `astro.config.mjs`. Plugin sandboxing is handled b
 | `aiModerationPlugin()` | `@emdash-cms/plugin-ai-moderation` | AI comment moderation (requires `AI` binding) |
 | `email-cf-provider` | `src/plugins/email-cf-worker.ts` | Email transport via Cloudflare Email |
 | `tracker-link` | `src/plugins/tracker-link.ts` | Task tracker admin page |
+| `rssAggregatorPlugin()` | `src/plugins/rss-aggregator/` (local) | RSS/Atom feed aggregator; uses EmDash plugin storage (no extra D1 needed) |
 
 **Sandboxed plugins** (isolated workers, declared in `sandboxed: []`):
 
@@ -88,6 +89,8 @@ All plugins are configured in `astro.config.mjs`. Plugin sandboxing is handled b
 | `auditLog` | `@emdash-cms/plugin-audit-log` | Content change audit trail |
 | `atproto` | `@emdash-cms/plugin-atproto` | Bluesky syndication on publish |
 | `customBlocksPlugin()` | `@emdash.directory/plugin-custom-blocks` | Reusable HTML snippets |
+
+**Local plugins with type stubs:** `src/plugins/rss-aggregator/src/types/` contains `declare module "..."` stubs for peer deps. These shadow the real package types when the root `tsconfig.json` includes `**/*`. Always exclude such stub directories in the root `tsconfig.json`: `"exclude": ["dist", "src/plugins/rss-aggregator/src/types"]`.
 
 **Important:** The SEO plugin (`@jdevalk/emdash-plugin-seo`) ships TypeScript source without a compiled dist. Its source is copied to `src/plugins/seo/` and wired with an inline descriptor using `fileURLToPath().replaceAll("\\", "/")` — same pattern as other local native plugins. Do **not** use `seoPlugin()` from the npm package directly (its entrypoint uses `URL.pathname` which breaks on Windows).
 
