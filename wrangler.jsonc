@@ -12,7 +12,6 @@
 			"database_name": "my-emdash-site",
 			"database_id": "b578b3b5-25b4-4cbe-8dab-f0196a3d33f4",
 		},
-		{ "binding": "TRACKER_DB", "database_name": "dawood-db", "database_id": "f6c6f466-4669-4c66-a56f-455bafff6d77", "migrations_dir": "migrations/tracker" }
 	],
 	"routes": [
 		{

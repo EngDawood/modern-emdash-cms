@@ -46,7 +46,6 @@ Configured in `astro.config.mjs`. See also `CLAUDE.md` § Plugins for the full i
 - **SEO** (inline descriptor) — source at `src/plugins/seo/` (copied from `@jdevalk/emdash-plugin-seo`); injects metadata via `<EmDashHead>`; admin at `/settings` and `/fuzzy-redirects`
 - **`aiModerationPlugin()`** — `@emdash-cms/plugin-ai-moderation`; hooks `comment:beforeCreate` + `comment:moderate`; requires `AI` Workers AI binding
 - **`email-cf-provider`** — `src/plugins/email-cf-worker.ts`; Cloudflare Email transport
-- **`tracker-link`** — `src/plugins/tracker-link.ts`; task tracker admin page + widget
 
 ### Sandboxed plugins (`sandboxed: []`)
 
