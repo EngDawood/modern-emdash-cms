@@ -16,8 +16,13 @@ import type {
 	MediaType,
 	AuthorInfo,
 	Enclosure,
+	ItemTranslation,
 } from "./types.js";
 import { parseFeed, extractYouTubeVideoId } from "./feed-parser.js";
+import { fetchFullText } from "./full-text.js";
+import { importImages } from "./image-importer.js";
+import { applyFieldMappings } from "./field-mapper.js";
+import { summarize, rewriteInVoice, translate } from "./ai-service.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -189,7 +194,7 @@ export async function fetchAndImportFeed(
 			}
 
 			// Generate excerpt
-			const excerpt = generateExcerpt(parsed.description || parsed.content || "", 40);
+			let excerpt = generateExcerpt(parsed.description || parsed.content || "", 40);
 
 			// Extract image
 			let imageUrl: string | undefined;
@@ -227,7 +232,81 @@ export async function fetchAndImportFeed(
 				authorInfo.name = source.fallbackAuthor;
 			}
 
-			const feedItemData = {
+			// ── Full Text RSS (premium) ──────────────────────────────────
+			// For excerpt-only feeds, scrape the full article from the source page.
+			if (source.enableFullText && settings.enableFullText && parsed.link) {
+				const wordCount = content ? content.replace(/<[^>]+>/g, " ").trim().split(/\s+/).filter(Boolean).length : 0;
+				if (settings.fullTextMinWords <= 0 || wordCount < settings.fullTextMinWords) {
+					try {
+						const full = await fetchFullText(ctx, settings, parsed.link);
+						if (full) {
+							content = source.trimContent && source.contentMaxWords > 0
+								? trimContentToWords(full, source.contentMaxWords)
+								: full;
+							excerpt = generateExcerpt(content, 40);
+						}
+					} catch (ftErr) {
+						ctx.log.warn("Full-text fetch failed", { guid: parsed.guid, error: String(ftErr) });
+					}
+				}
+			}
+
+			// ── Image Import to Media Library (premium) ──────────────────
+			let mediaIds: string[] = [];
+			const doImages = source.importImages ?? settings.imageImportEnabled;
+			if (doImages) {
+				try {
+					const imgRes = await importImages(ctx, settings, {
+						featuredImageUrl: imageUrl,
+						content,
+						importContentImages: settings.imageImportContentImages,
+					});
+					content = imgRes.content;
+					if (imgRes.featuredUrl) imageUrl = imgRes.featuredUrl;
+					mediaIds = imgRes.mediaIds;
+				} catch (imgErr) {
+					ctx.log.warn("Image import failed", { guid: parsed.guid, error: String(imgErr) });
+				}
+			}
+
+			// ── Custom Field Mapping (premium) ───────────────────────────
+			const customFields = applyFieldMappings(source.fieldMappings, parsed);
+
+			// ── AI Content Suite ─────────────────────────────────────────
+			let summary: string | undefined;
+			let rewrittenContent: string | undefined;
+			let translations: Record<string, ItemTranslation> | undefined;
+			let aiProcessedAt: string | undefined;
+			if (settings.aiEnabled) {
+				try {
+					if ((source.enableAiSummary ?? settings.aiSummaryEnabled) && content) {
+						const r = await summarize(ctx, settings, { title: parsed.title, content });
+						if (r.ok) { summary = r.value; aiProcessedAt = now; }
+					}
+					if ((source.enableAiRewrite ?? settings.aiRewriteEnabled) && content) {
+						const r = await rewriteInVoice(ctx, settings, { title: parsed.title, content, voice: settings.aiOwnerVoice });
+						if (r.ok) { rewrittenContent = r.value; aiProcessedAt = now; }
+					}
+					if (settings.translationEnabled && (source.enableTranslation ?? true) && settings.translationLocales.trim()) {
+						const locales = settings.translationLocales.split(",").map((s) => s.trim()).filter(Boolean);
+						for (const locale of locales) {
+							const r = await translate(ctx, settings, { title: parsed.title, excerpt, content, summary, targetLocale: locale });
+							if (r.ok && r.value) {
+								translations = { ...(translations || {}), [locale]: r.value };
+								aiProcessedAt = now;
+							}
+						}
+					}
+				} catch (aiErr) {
+					ctx.log.warn("AI processing failed", { guid: parsed.guid, error: String(aiErr) });
+				}
+			}
+
+			// ── Manual Curation (premium) ────────────────────────────────
+			const requireApproval = source.requireApproval ?? settings.curationEnabled;
+			const status: "pending" | "approved" = requireApproval ? "pending" : "approved";
+
+			const feedItemData: FeedItem = {
 				sourceId,
 				sourceName: source.name,
 				sourceUrl: source.url,
@@ -245,7 +324,19 @@ export async function fetchAndImportFeed(
 				audioUrl,
 				categories: parsed.categories,
 				importedAt: now,
+				status,
+				approvedAt: status === "approved" ? now : undefined,
+				summary,
+				rewrittenContent,
+				aiProcessedAt,
+				translations,
+				mediaIds: mediaIds.length ? mediaIds : undefined,
+				customFields: Object.keys(customFields).length ? customFields : undefined,
 			};
+
+			// Content entry payload: custom-mapped fields are promoted to top-level
+			// so they can map onto collection fields.
+			const contentPayload = { ...feedItemData, ...customFields };
 
 			let targetItemId = existing ? existing.id : generateId("itm");
 			let contentId = existing?.contentId;
@@ -255,10 +346,10 @@ export async function fetchAndImportFeed(
 				try {
 					if (contentId) {
 						// Update CMS entry
-						await ctx.content.update?.(collectionName, contentId, feedItemData);
+						await ctx.content.update?.(collectionName, contentId, contentPayload);
 					} else {
 						// Create CMS entry
-						const contentEntry = await ctx.content.create?.(collectionName, feedItemData);
+						const contentEntry = await ctx.content.create?.(collectionName, contentPayload);
 						contentId = contentEntry?.id;
 					}
 				} catch (contentErr) {
@@ -266,12 +357,13 @@ export async function fetchAndImportFeed(
 				}
 			}
 
-			// Feed to Post conversion (premium)
-			if (source.feedToPost && source.postCollection && ctx.content) {
+			// Feed to Post conversion (premium) — only for approved items.
+			// Pending items create their post later, via the items/approve route.
+			if (status === "approved" && source.feedToPost && source.postCollection && ctx.content) {
 				try {
 					const postData = {
 						title: parsed.title,
-						content,
+						content: rewrittenContent ?? content,
 						excerpt,
 						publishedAt: parsed.pubDate || now,
 						status: source.postStatus || "draft",
@@ -291,7 +383,7 @@ export async function fetchAndImportFeed(
 			}
 
 			// Store feed item in plugin storage
-			const storedItem: FeedItem & { contentId?: string } = {
+			const storedItem: FeedItem = {
 				...feedItemData,
 				contentId,
 			};

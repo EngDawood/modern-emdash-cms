@@ -201,6 +201,7 @@ export function parseFeed(xml: string): ParsedFeed {
 				enclosure,
 				mediaThumbnail,
 				mediaContent,
+				raw: entryXml,
 			};
 		});
 
@@ -277,6 +278,7 @@ export function parseFeed(xml: string): ParsedFeed {
 				mediaThumbnail,
 				mediaContent,
 				commentsUrl,
+				raw: itemXml,
 			};
 		});
 

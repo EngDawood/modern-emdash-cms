@@ -26,9 +26,18 @@ import type {
 	CreateDisplayInput,
 	UpdateDisplayInput,
 } from "./types.js";
+import type { CreditState } from "./types.js";
 import { DEFAULT_SETTINGS } from "./types.js";
 import { fetchAndImportFeed, fetchAllPendingSources } from "./feed-fetcher.js";
 import { parseFeed } from "./feed-parser.js";
+import {
+	getCreditState,
+	setCreditLimit,
+	resetCredits,
+	summarize,
+	rewriteInVoice,
+	translate,
+} from "./ai-service.js";
 
 // ── Helper: Load settings from KV ─────────────────────────────────────
 
@@ -275,6 +284,114 @@ export function createPlugin() {
 				default: 30000,
 				min: 5000,
 				max: 120000,
+			},
+
+			// ── AI Content Suite ──────────────────────────────────────
+			aiEnabled: {
+				type: "boolean",
+				label: "Enable AI Content Suite",
+				description: "Master switch for AI summarization, rewriting and translation.",
+				default: false,
+			},
+			aiApiEndpoint: {
+				type: "string",
+				label: "AI API Endpoint",
+				description: "OpenAI-compatible chat completions URL.",
+				default: "https://api.openai.com/v1/chat/completions",
+			},
+			aiApiKey: {
+				type: "secret",
+				label: "AI API Key",
+				description: "Bearer token for the AI endpoint.",
+			},
+			aiModel: {
+				type: "string",
+				label: "AI Model",
+				description: "Model identifier sent to the AI endpoint.",
+				default: "gpt-4o-mini",
+			},
+			aiSummaryEnabled: {
+				type: "boolean",
+				label: "Auto-generate TL;DR Summaries",
+				description: "Summarize every imported item on import.",
+				default: false,
+			},
+			aiSummaryWords: {
+				type: "number",
+				label: "Summary Length (words)",
+				default: 50,
+				min: 10,
+				max: 200,
+			},
+			aiRewriteEnabled: {
+				type: "boolean",
+				label: "Auto-rewrite in Owner Voice",
+				description: "Rewrite imported items as original content on import.",
+				default: false,
+			},
+			aiOwnerVoice: {
+				type: "string",
+				label: "Site Owner Voice",
+				description: "Describe the tone/voice used when rewriting articles.",
+				multiline: true,
+			},
+			aiCreditMonthlyLimit: {
+				type: "number",
+				label: "Monthly AI Credit Limit",
+				description: "Maximum AI operations per month. 0 = unlimited.",
+				default: 0,
+				min: 0,
+			},
+
+			// ── Multilingual Translation ──────────────────────────────
+			translationEnabled: {
+				type: "boolean",
+				label: "Enable Translation",
+				description: "Translate imported content into target locales using AI.",
+				default: false,
+			},
+			translationLocales: {
+				type: "string",
+				label: "Target Locales",
+				description: "Comma-separated BCP-47 locales, e.g. ar,fr,es.",
+			},
+
+			// ── Image Import to Media Library ─────────────────────────
+			imageImportEnabled: {
+				type: "boolean",
+				label: "Import Featured Images",
+				description: "Download featured images into EmDash media storage (R2/local).",
+				default: false,
+			},
+			imageImportContentImages: {
+				type: "boolean",
+				label: "Import In-content Images",
+				description: "Also download images embedded in content and rewrite their URLs.",
+				default: false,
+			},
+			imageImportMaxPerItem: {
+				type: "number",
+				label: "Max Images per Item",
+				default: 10,
+				min: 1,
+				max: 50,
+			},
+
+			// ── Manual Curation ───────────────────────────────────────
+			curationEnabled: {
+				type: "boolean",
+				label: "Require Manual Approval",
+				description: "Import items into a pending queue requiring approval before publishing.",
+				default: false,
+			},
+
+			// ── Full Text ─────────────────────────────────────────────
+			fullTextMinWords: {
+				type: "number",
+				label: "Full-text Min Words Threshold",
+				description: "Only fetch full text when the item is shorter than this. 0 = always when enabled.",
+				default: 0,
+				min: 0,
 			},
 		},
 	},
@@ -711,11 +828,13 @@ export function createPlugin() {
 			handler: async (ctx: RouteContext) => {
 				const url = new URL(ctx.request.url);
 				const sourceId = url.searchParams.get("sourceId") || undefined;
+				const status = url.searchParams.get("status") || undefined;
 				const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 100);
 				const cursor = url.searchParams.get("cursor") || undefined;
 
 				const where: Record<string, unknown> = {};
 				if (sourceId) where.sourceId = sourceId;
+				if (status) where.status = status;
 
 				const result = await feedItems(ctx).query({
 					where: Object.keys(where).length > 0 ? (where as any) : undefined,
@@ -769,6 +888,146 @@ export function createPlugin() {
 				await feedItems(ctx).delete(id);
 
 				return { success: true };
+			},
+		},
+
+		// ── Manual Curation: approve a pending item ──────────────────────
+
+		"items/approve": {
+			handler: async (ctx: RouteContext) => {
+				const { id } = ctx.input as { id: string };
+				const item = await feedItems(ctx).get(id);
+				if (!item) {
+					throw PluginRouteError.notFound(`Item "${id}" not found`);
+				}
+
+				const now = new Date().toISOString();
+				const updated: FeedItem = { ...item, status: "approved", approvedAt: now };
+				await feedItems(ctx).put(id, updated);
+
+				// Sync status to the linked content entry (best-effort)
+				const settings = await loadSettings(ctx);
+				const collectionName = settings.contentCollection || "feed-items";
+				if (updated.contentId && ctx.content?.update) {
+					try {
+						await ctx.content.update(collectionName, updated.contentId, { status: "approved" });
+					} catch (err) {
+						ctx.log.warn("Failed to sync approval to content entry", { id, error: String(err) });
+					}
+				}
+
+				// Run deferred Feed-to-Post for the now-approved item
+				const src = await sources(ctx).get(updated.sourceId);
+				if (src?.feedToPost && src.postCollection && ctx.content?.create) {
+					try {
+						await ctx.content.create(src.postCollection, {
+							title: updated.title,
+							content: updated.rewrittenContent ?? updated.content,
+							excerpt: updated.excerpt,
+							publishedAt: updated.publishedAt,
+							status: src.postStatus || "draft",
+							author: updated.author?.name,
+							featuredImage: updated.imageUrl,
+							meta: { rssSourceId: updated.sourceId, rssGuid: updated.guid },
+						});
+					} catch (err) {
+						ctx.log.warn("Failed to create post on approval", { id, collection: src.postCollection, error: String(err) });
+					}
+				}
+
+				return { success: true, item: updated };
+			},
+		},
+
+		// ── AI Content Suite: on-demand AI action for an item ────────────
+
+		"items/ai": {
+			handler: async (ctx: RouteContext) => {
+				const { id, action, locale } = ctx.input as {
+					id: string;
+					action: "summarize" | "rewrite" | "translate";
+					locale?: string;
+				};
+				const item = await feedItems(ctx).get(id);
+				if (!item) {
+					throw PluginRouteError.notFound(`Item "${id}" not found`);
+				}
+
+				const settings = await loadSettings(ctx);
+				const now = new Date().toISOString();
+				const updated: FeedItem = { ...item };
+
+				if (action === "summarize") {
+					const r = await summarize(ctx, settings, { title: item.title, content: item.content || "" });
+					if (!r.ok) throw PluginRouteError.internal(r.error || "AI request failed");
+					updated.summary = r.value;
+					updated.aiProcessedAt = now;
+				} else if (action === "rewrite") {
+					const r = await rewriteInVoice(ctx, settings, {
+						title: item.title,
+						content: item.content || "",
+						voice: settings.aiOwnerVoice,
+					});
+					if (!r.ok) throw PluginRouteError.internal(r.error || "AI request failed");
+					updated.rewrittenContent = r.value;
+					updated.aiProcessedAt = now;
+				} else if (action === "translate") {
+					if (!locale) throw PluginRouteError.badRequest("locale is required for translate");
+					const r = await translate(ctx, settings, {
+						title: item.title,
+						excerpt: item.excerpt,
+						content: item.content,
+						summary: item.summary,
+						targetLocale: locale,
+					});
+					if (!r.ok || !r.value) throw PluginRouteError.internal(r.error || "AI request failed");
+					updated.translations = { ...(item.translations || {}), [locale]: r.value };
+					updated.aiProcessedAt = now;
+				} else {
+					throw PluginRouteError.badRequest(`Unknown AI action "${action}"`);
+				}
+
+				await feedItems(ctx).put(id, updated);
+
+				// Best-effort sync to content entry
+				const collectionName = settings.contentCollection || "feed-items";
+				if (updated.contentId && ctx.content?.update) {
+					try {
+						await ctx.content.update(collectionName, updated.contentId, {
+							summary: updated.summary,
+							rewrittenContent: updated.rewrittenContent,
+							translations: updated.translations,
+						});
+					} catch (err) {
+						ctx.log.warn("Failed to sync AI result to content entry", { id, error: String(err) });
+					}
+				}
+
+				return { success: true, item: updated };
+			},
+		},
+
+		// ── AI Credits ───────────────────────────────────────────────────
+
+		credits: {
+			handler: async (ctx: RouteContext) => {
+				const settings = await loadSettings(ctx);
+				return await getCreditState(ctx, settings);
+			},
+		},
+
+		"credits/save": {
+			handler: async (ctx: RouteContext) => {
+				const { limit, reset } = ctx.input as { limit?: number; reset?: boolean };
+				let state: CreditState;
+				if (reset) {
+					state = await resetCredits(ctx);
+				} else if (typeof limit === "number") {
+					state = await setCreditLimit(ctx, limit);
+				} else {
+					state = await getCreditState(ctx, await loadSettings(ctx));
+				}
+				return { success: true, state };
 			},
 		},
 

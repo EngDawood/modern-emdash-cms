@@ -30,6 +30,20 @@ export interface Source {
 	contentMaxWords: number;
 	enableFullText: boolean;
 
+	// AI Content Suite (per-source overrides; require global aiEnabled)
+	enableAiSummary?: boolean;
+	enableAiRewrite?: boolean;
+	enableTranslation?: boolean;
+
+	// Image import to media library (per-source override)
+	importImages?: boolean;
+
+	// Custom field mapping (premium: Custom Mapping)
+	fieldMappings?: FieldMapping[];
+
+	// Manual curation (premium: Manual Curation) — per-source override
+	requireApproval?: boolean;
+
 	// Post conversion (premium: Feed-to-Post)
 	feedToPost: boolean;
 	postCollection: string;
@@ -100,6 +114,37 @@ export interface FeedItem {
 	categories?: string[];
 	customFields?: Record<string, unknown>;
 	importedAt: string;
+
+	// Link to the synced EmDash content entry (collection = settings.contentCollection)
+	contentId?: string;
+
+	// Manual curation state. "approved" when curation is disabled.
+	status?: ItemStatus;
+	approvedAt?: string;
+	approvedBy?: string;
+
+	// AI Content Suite outputs
+	summary?: string; // AI TL;DR
+	rewrittenContent?: string; // AI rewrite in the site owner's voice
+	aiProcessedAt?: string;
+
+	// Multilingual translations keyed by locale (e.g. "ar", "fr")
+	translations?: Record<string, ItemTranslation>;
+
+	// Media library references created by image import
+	mediaIds?: string[];
+}
+
+/** Manual curation lifecycle state for an imported item. */
+export type ItemStatus = "pending" | "approved" | "rejected";
+
+/** A translated rendition of an item for a single locale. */
+export interface ItemTranslation {
+	title?: string;
+	excerpt?: string;
+	content?: string;
+	summary?: string;
+	translatedAt?: string;
 }
 
 export interface AuthorInfo {
@@ -275,6 +320,8 @@ export interface ParsedItem {
 	mediaThumbnail?: string;
 	mediaContent?: string;
 	commentsUrl?: string;
+	/** Raw XML of the source <item>/<entry> block — used for custom field mapping. */
+	raw?: string;
 }
 
 // ── Plugin Settings ────────────────────────────────────────────────────
@@ -303,6 +350,58 @@ export interface PluginSettings {
 	userAgent: string;
 	fetchTimeout: number;
 	enableYouTubeDetection: boolean;
+
+	// ── AI Content Suite ──────────────────────────────────────────────
+	/** Master switch for all AI features. */
+	aiEnabled: boolean;
+	/** OpenAI-compatible chat completions endpoint. */
+	aiApiEndpoint: string;
+	/** Bearer API key for the AI endpoint (secret). */
+	aiApiKey: string;
+	/** Model identifier sent to the AI endpoint. */
+	aiModel: string;
+	/** Auto-generate a TL;DR summary for every imported item. */
+	aiSummaryEnabled: boolean;
+	/** Target length (words) for generated summaries. */
+	aiSummaryWords: number;
+	/** Auto-rewrite imported items in the site owner's voice. */
+	aiRewriteEnabled: boolean;
+	/** Description of the site owner's voice/tone used when rewriting. */
+	aiOwnerVoice: string;
+	/** Monthly AI credit allowance. 0 = unlimited. */
+	aiCreditMonthlyLimit: number;
+
+	// ── Multilingual translation ──────────────────────────────────────
+	/** Enable translating imported content into target locales. */
+	translationEnabled: boolean;
+	/** Comma-separated target locales, e.g. "ar,fr,es". */
+	translationLocales: string;
+
+	// ── Image import to media library ─────────────────────────────────
+	/** Download featured images into EmDash media storage (R2/local). */
+	imageImportEnabled: boolean;
+	/** Also download in-content images and rewrite their URLs. */
+	imageImportContentImages: boolean;
+	/** Maximum images to import per item. */
+	imageImportMaxPerItem: number;
+
+	// ── Manual curation ───────────────────────────────────────────────
+	/** Import items into a "pending" queue requiring manual approval. */
+	curationEnabled: boolean;
+
+	// ── Full text ─────────────────────────────────────────────────────
+	/** Only fetch full text when the excerpt is shorter than this (words). 0 = always when enabled. */
+	fullTextMinWords: number;
+}
+
+/** Credit ledger state (stored in KV under credits:* keys). */
+export interface CreditState {
+	/** Monthly allowance. 0 = unlimited. */
+	limit: number;
+	/** Credits consumed in the current period. */
+	used: number;
+	/** Current accounting period in YYYY-MM form. */
+	period: string;
 }
 
 /** Default settings values. */
@@ -329,6 +428,32 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	userAgent: "EmDash RSS Aggregator/1.0",
 	fetchTimeout: 30000,
 	enableYouTubeDetection: true,
+
+	// AI Content Suite
+	aiEnabled: false,
+	aiApiEndpoint: "https://api.openai.com/v1/chat/completions",
+	aiApiKey: "",
+	aiModel: "gpt-4o-mini",
+	aiSummaryEnabled: false,
+	aiSummaryWords: 50,
+	aiRewriteEnabled: false,
+	aiOwnerVoice: "",
+	aiCreditMonthlyLimit: 0,
+
+	// Multilingual translation
+	translationEnabled: false,
+	translationLocales: "",
+
+	// Image import
+	imageImportEnabled: false,
+	imageImportContentImages: false,
+	imageImportMaxPerItem: 10,
+
+	// Manual curation
+	curationEnabled: false,
+
+	// Full text
+	fullTextMinWords: 0,
 };
 
 // ── Utility Types ──────────────────────────────────────────────────────
