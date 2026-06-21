@@ -1,0 +1,170 @@
+---
+import { t, type Locale } from "../../i18n/utils";
+
+interface Props {
+	featuredProjects: any[];
+	locale: Locale;
+}
+
+const { featuredProjects, locale } = Astro.props;
+---
+
+<section id="work" class="section-work reveal">
+	<div class="section-inner">
+		<div class="section-head reveal-child">
+			<div class="kicker">
+				<span class="kicker-num">§01</span>
+				<span class="kicker-rule"></span>
+				{t("projects.kicker", locale)}
+			</div>
+			<h2 class="section-title">{t("projects.heading", locale)}</h2>
+		</div>
+		<div class="project-rows">
+			{featuredProjects.map((project, i) => (
+				<a href={`/${locale}/work/${project.id}`} class="project-row reveal-item" style={`--delay: ${i}`}>
+					<div class="row-meta">
+						<span class="row-num">0{i + 1}</span>
+						<span class="row-year">{project.data.year}</span>
+					</div>
+					<h3 class="row-title">{project.data.title}</h3>
+					<p class="row-desc">{project.data.summary}</p>
+					<div class="row-footer">
+						<span class="row-arrow">→</span>
+					</div>
+				</a>
+			))}
+		</div>
+		<a href={`/${locale}/work`} class="view-all reveal-child">{t("projects.viewAll", locale)} →</a>
+	</div>
+</section>
+
+<style>
+	/* ── Work §01 ── */
+	.section-work {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.project-rows {
+		border-top: 1px solid var(--color-border);
+	}
+
+	.project-row {
+		display: block;
+		padding: var(--spacing-8) 0;
+		border-bottom: 1px solid var(--color-border);
+		text-decoration: none;
+		position: relative;
+		transition: padding-left var(--transition-base);
+	}
+
+	.project-row::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-accent);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform var(--transition-base);
+	}
+
+	html[dir="rtl"] .project-row::before {
+		transform-origin: right;
+	}
+
+	.project-row:hover::before {
+		transform: scaleX(1);
+	}
+
+	.project-row:hover {
+		padding-left: var(--spacing-4);
+	}
+
+	html[dir="rtl"] .project-row:hover {
+		padding-left: 0;
+		padding-right: var(--spacing-4);
+	}
+
+	.row-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: var(--spacing-3);
+	}
+
+	.row-num {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		color: var(--color-accent);
+	}
+
+	.row-year {
+		font-family: var(--font-mono);
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		color: var(--color-muted);
+	}
+
+	.row-title {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-xl);
+		font-weight: 500;
+		color: var(--color-text);
+		letter-spacing: -0.01em;
+		margin-bottom: var(--spacing-2);
+		transition: color var(--transition-fast);
+	}
+
+	.project-row:hover .row-title {
+		color: var(--color-accent);
+	}
+
+	.row-desc {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		line-height: 1.6;
+		max-width: 640px;
+		margin-bottom: var(--spacing-4);
+	}
+
+	.row-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.row-tags {
+		display: flex;
+		gap: var(--spacing-2);
+		flex-wrap: wrap;
+	}
+
+	.row-tag {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+		border: 1px solid var(--color-border);
+		padding: 2px 8px;
+		border-radius: 2px;
+	}
+
+	.row-arrow {
+		font-size: var(--font-size-lg);
+		color: var(--color-muted);
+		transition: transform var(--transition-fast), color var(--transition-fast);
+	}
+
+	.project-row:hover .row-arrow {
+		color: var(--color-accent);
+		transform: translate(4px, -2px);
+	}
+
+	html[dir="rtl"] .project-row:hover .row-arrow {
+		transform: translate(-4px, -2px);
+	}
+</style>

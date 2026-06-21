@@ -1,0 +1,25 @@
+---
+// ScrollReveal.astro - Reusable scroll animation utility component
+---
+
+<script>
+	// Intersection Observer for scroll reveal animations
+	const observerOptions = {
+		root: null,
+		rootMargin: '0px',
+		threshold: 0.1
+	};
+
+	const observer = new IntersectionObserver((entries) => {
+		entries.forEach((entry) => {
+			if (entry.isIntersecting) {
+				entry.target.classList.add('visible');
+			}
+		});
+	}, observerOptions);
+
+	// Observe all reveal sections
+	document.querySelectorAll('.reveal').forEach((el) => {
+		observer.observe(el);
+	});
+</script>

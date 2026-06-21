@@ -1,0 +1,275 @@
+---
+import { t, type Locale } from "../i18n/utils";
+
+interface Props {
+	locale: Locale;
+	siteTitle: string;
+	pages: any[];
+}
+
+const { locale, siteTitle, pages } = Astro.props;
+---
+
+<footer class="site-footer">
+	<div class="footer-inner">
+		<div class="footer-grid">
+			<div class="footer-brand">
+				<a href={`/${locale}`} class="footer-logo-wrap" dir="ltr">
+					<svg width="52" height="40" viewBox="0 0 52 40" class="footer-logo-mark" aria-hidden="true">
+						<text x="0" y="35" font-family="'Playfair Display', serif" font-size="46" font-weight="400" fill="var(--color-text)" letter-spacing="-0.06em">D</text>
+						<text x="19" y="35" font-family="'Playfair Display', serif" font-size="46" font-weight="400" font-style="italic" fill="var(--color-accent)" letter-spacing="-0.06em">s</text>
+						<circle cx="47" cy="33" r="1.8" fill="var(--color-accent)" />
+					</svg>
+					<div class="footer-logo-text">
+						<span class="footer-logo-name">{siteTitle}</span>
+						<span class="footer-logo-sub">{t("footer.tagline", locale)}</span>
+					</div>
+				</a>
+			</div>
+			<div class="footer-nav">
+				<h4 class="footer-heading">{t("footer.nav", locale)}</h4>
+				<ul class="footer-links">
+					<li><a href={`/${locale}`}>{t("nav.home", locale)}</a></li>
+					<li><a href={`/${locale}/work`}>{t("nav.projects", locale)}</a></li>
+					<li><a href={`/${locale}/blog`}>{t("nav.blog", locale)}</a></li>
+					{
+						pages.slice(0, 2).map((page) => (
+							<li>
+								<a href={`/${locale}/pages/${page.data.slug || page.id}`}>
+									{page.data.title}
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</div>
+			<div class="footer-nav">
+				<h4 class="footer-heading">{t("footer.connect", locale)}</h4>
+				<ul class="footer-links">
+					<li><a href={`/${locale}#contact`}>{t("nav.contact", locale)}</a></li>
+					<li><a href="/rss.xml">{t("footer.rss", locale)}</a></li>
+				</ul>
+			</div>
+			<div class="footer-widgets-section">
+				<div class="footer-widget">
+					<h4 class="footer-heading">{t("footer.aboutHeading", locale)}</h4>
+					<p class="footer-about-text" style="color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--leading-relaxed);">
+						{t("footer.aboutText", locale)}
+					</p>
+				</div>
+			</div>
+		</div>
+		<div class="footer-bottom">
+			<p class="footer-copyright">
+				&copy; {new Date().getFullYear()} {t("footer.copyright", locale)}
+			</p>
+			<div class="theme-switcher">
+				<button
+					type="button"
+					class="theme-btn"
+					data-theme="light"
+					aria-label="Light mode">{t("theme.light", locale)}</button
+				>
+				<button
+					type="button"
+					class="theme-btn"
+					data-theme="dark"
+					aria-label="Dark mode">{t("theme.dark", locale)}</button
+				>
+				<button
+					type="button"
+					class="theme-btn"
+					data-theme="system"
+					aria-label="System theme">{t("theme.system", locale)}</button
+				>
+			</div>
+		</div>
+	</div>
+</footer>
+
+<style>
+	/* Footer */
+	.site-footer {
+		background: var(--color-bg-subtle);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.footer-inner {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: var(--spacing-16) var(--spacing-6) var(--spacing-8);
+	}
+
+	.footer-grid {
+		display: grid;
+		grid-template-columns: 2fr 1fr 1fr 1fr;
+		gap: var(--spacing-12);
+		margin-bottom: var(--spacing-12);
+	}
+
+	.footer-brand {
+		max-width: 280px;
+	}
+
+	.footer-logo-wrap {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 14px;
+		text-decoration: none;
+	}
+
+	.footer-logo-mark {
+		display: block;
+		overflow: visible;
+		flex-shrink: 0;
+	}
+
+	.footer-logo-text {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.footer-logo-name {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-lg);
+		font-weight: 500;
+		color: var(--color-text);
+		letter-spacing: -0.02em;
+	}
+
+	.footer-logo-sub {
+		font-family: var(--font-serif);
+		font-style: italic;
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+	}
+
+	.footer-nav {
+		min-width: 0;
+	}
+
+	.footer-heading {
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wider);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-4);
+	}
+
+	.footer-links {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.footer-links li {
+		margin-bottom: var(--spacing-2);
+	}
+
+	.footer-links a {
+		color: var(--color-text-secondary);
+		text-decoration: none;
+		font-size: var(--font-size-sm);
+		transition: color var(--transition-fast);
+	}
+
+	.footer-links a:hover {
+		color: var(--color-text);
+	}
+
+	.footer-widgets-section :global(.widget-area) {
+		display: block;
+	}
+
+	.footer-widgets-section :global(.widget__title) {
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wider);
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-4);
+	}
+
+	.footer-widgets-section :global(.widget__content) {
+		color: var(--color-text-secondary);
+		font-size: var(--font-size-sm);
+		line-height: var(--leading-relaxed);
+	}
+
+	.footer-bottom {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-top: var(--spacing-6);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.footer-copyright {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+	}
+
+	.footer-copyright a {
+		color: var(--color-text-secondary);
+		text-decoration: none;
+	}
+
+	.theme-switcher {
+		display: flex;
+		gap: var(--spacing-xs);
+	}
+
+	.theme-btn {
+		background: transparent;
+		border: 1px solid var(--color-border);
+		color: var(--color-muted);
+		font-family: var(--font-sans);
+		font-size: var(--font-size-sm);
+		padding: var(--spacing-xs) var(--spacing-sm);
+		border-radius: var(--radius);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
+
+	.theme-btn:hover {
+		color: var(--color-text);
+		border-color: var(--color-text);
+	}
+
+	.theme-btn.active {
+		background: var(--color-surface);
+		color: var(--color-text);
+		border-color: var(--color-accent);
+	}
+
+	@media (max-width: 900px) {
+		.footer-grid {
+			grid-template-columns: 1fr 1fr;
+			gap: var(--spacing-8);
+		}
+
+		.footer-brand {
+			grid-column: span 2;
+			max-width: none;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.footer-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.footer-brand {
+			grid-column: span 1;
+		}
+
+		.footer-bottom {
+			flex-direction: column;
+			gap: var(--spacing-4);
+			text-align: center;
+		}
+	}
+</style>
