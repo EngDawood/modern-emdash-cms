@@ -16,20 +16,39 @@ export default {
 			return handleMcp(request, env);
 		}
 
-		const response = await handler.fetch(request, env, ctx);
+		// Only cache GET requests from unauthenticated users
+		const isGet = request.method === "GET";
+		const hasSession = request.headers.get("Cookie")?.includes("astro-session");
+		const isApiOrAdmin = url.pathname.startsWith("/_emdash/");
 
-		// Cache public GET pages at the edge (skip for authenticated users or non-200s)
-		if (
-			request.method === "GET" &&
-			response.status === 200 &&
-			!request.headers.get("Cookie")?.includes("astro-session")
-		) {
-			const cached = new Response(response.body, response);
-			cached.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
-			return cached;
+		if (isGet && !hasSession && !isApiOrAdmin) {
+			const cache = caches.default;
+			const cacheKey = new Request(url.toString(), request);
+
+			// 1. Check edge cache first
+			const cachedResponse = await cache.match(cacheKey);
+			if (cachedResponse) {
+				return cachedResponse;
+			}
+
+			// 2. Cache miss — render via Astro
+			const response = await handler.fetch(request, env, ctx);
+
+			if (response.status === 200) {
+				const toCache = new Response(response.body, response);
+				toCache.headers.set(
+					"Cache-Control",
+					"public, s-maxage=60, stale-while-revalidate=300",
+				);
+				// Store in edge cache without blocking the response
+				ctx.waitUntil(cache.put(cacheKey, toCache.clone()));
+				return toCache;
+			}
+
+			return response;
 		}
 
-		return response;
+		return handler.fetch(request, env, ctx);
 	},
 
 	async email(

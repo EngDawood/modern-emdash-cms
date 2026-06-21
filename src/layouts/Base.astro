@@ -45,7 +45,7 @@ const isRTL = dir === "rtl";
 const [settings, _menu, { entries: pages }, newsletterFooterArea] = await Promise.all([
 	getSiteSettings(),
 	getMenu("primary"),
-	getEmDashCollection("pages"),
+	getEmDashCollection("pages", { limit: 2 }),
 	getWidgetArea("newsletter-footer"),
 ]);
 const siteTitle = settings?.title || "Studio";
@@ -116,6 +116,20 @@ const articleSchema =
 		<Font cssVariable="--font-amiri" />
 		<Font cssVariable="--font-cairo" />
 		<link rel="preconnect" href="https://cdn.engdawood.com" crossorigin />
+		<link
+			rel="preload"
+			href="https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-serif-text/woff2/thmanyah-serif-text-Regular.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+		<link
+			rel="preload"
+			href="https://cdn.engdawood.com/fonts/Thmanyah-Font-Family/thmanyah-sans/woff2/thmanyah-sans-Regular.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
 		<link
 			rel="alternate"
 			type="application/rss+xml"

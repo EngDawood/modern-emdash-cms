@@ -17,8 +17,8 @@ if (!locales.includes(localeParam as Locale)) {
 
 const [settings, { entries: projects, cacheHint }, { entries: posts }, { entry: faqPage, cacheHint: faqCacheHint }] = await Promise.all([
 	getSiteSettings(),
-	getEmDashCollection("projects"),
-	getEmDashCollection("posts"),
+	getEmDashCollection("projects", { orderBy: { published_at: "desc" }, limit: 3 }),
+	getEmDashCollection("posts", { orderBy: { published_at: "desc" }, limit: 4 }),
 	getEmDashEntry("pages", "faq", { locale }),
 ]);
 Astro.cache.set(cacheHint);
@@ -30,23 +30,9 @@ const faqBlock = faqPage?.data.content?.find(
 ) as { items?: { question: string; answer: string }[] } | undefined;
 const faqItems: { question: string; answer: string }[] = faqBlock?.items ?? [];
 
-// Get the 3 most recent projects for the homepage
-const featuredProjects = projects
-	.toSorted((a, b) => {
-		const dateA = a.data.publishedAt?.getTime() ?? 0;
-		const dateB = b.data.publishedAt?.getTime() ?? 0;
-		return dateB - dateA;
-	})
-	.slice(0, 3);
-
-// Get 4 most recent posts for the writing section
-const recentPosts = posts
-	.toSorted((a, b) => {
-		const dateA = a.data.publishedAt?.getTime() ?? 0;
-		const dateB = b.data.publishedAt?.getTime() ?? 0;
-		return dateB - dateA;
-	})
-	.slice(0, 4);
+// Projects and posts are already sorted and limited by the query
+const featuredProjects = projects;
+const recentPosts = posts;
 
 const email = "eng.dawoodsaleh@gmail.com";
 const telegram = "https://t.me/Daw5d";

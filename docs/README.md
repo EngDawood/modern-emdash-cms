@@ -30,3 +30,9 @@ The documentation is organized into logical modules:
 7. **[SEO Architecture](./seo.md)**
    - Full SEO setup: meta tags, Open Graph, hreflang, JSON-LD schemas, sitemap, robots.txt, and RSS feed.
    - Includes how to pass SEO props, use `getSeoMeta()`, and extend for new locales.
+
+## Plugin Documentation
+
+Plugin-specific docs live in `docs/plugins/`.
+
+- **[RSS Aggregator](./plugins/rss-aggregator.md)** — Import pipeline, AI Content Suite (summarize/rewrite/translate), image import, custom field mapping, manual curation, full-text RSS, displays, and full route reference.

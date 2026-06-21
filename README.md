@@ -22,6 +22,7 @@ Personal portfolio built with [Astro](https://astro.build/) and [EmDash CMS](htt
 - **EmDash CMS** — All content lives in D1, managed via EmDash. Pages fetch at request time via `getEmDashCollection()` / `getEmDashEntry()`
 - **MCP server** — `/mcp` endpoint exposes 46 tools (36 EmDash content tools + 10 custom tools). Auth via `?token=` or `Authorization: Bearer`
 - **Sandboxed plugins** — Marketplace plugins run in isolated Workers via the `LOADER` binding (paid plan)
+- **RSS Aggregator** — Local native plugin (`src/plugins/rss-aggregator/`) that imports feeds into EmDash content, with AI summarization/rewriting/translation, image import to R2, custom field mapping, manual curation, and full-text RSS. See [`docs/plugins/rss-aggregator.md`](./docs/plugins/rss-aggregator.md)
 - **Editorial design** — Oxblood `#6b1438` accent, bone `#f8f5ef` background, Playfair Display + Amiri + Thmanyah typefaces
 
 ## Branches
@@ -39,8 +40,8 @@ pnpm install
 # Create .dev.vars
 echo 'EMDASH_TOKEN=your-token' > .dev.vars
 
-# First-time DB setup
-pnpm bootstrap
+# First-time DB setup 
+pnpm bootstrap # Not recommended 
 
 # Start dev server
 pnpm dev        # http://localhost:4321
@@ -78,7 +79,7 @@ wrangler.prod.jsonc   # Production deploy config
 
 ```bash
 # List available tools
-curl -H "Authorization: Bearer $EMDASH_TOKEN" https://engdawood.com/mcp
+curl -H "Authorization: Bearer $EMDASH_TOKEN" https://<Your-Domain>.com/mcp
 ```
 
 The `/mcp` endpoint merges EmDash's built-in content tools with custom tools and forwards requests to the appropriate handler via `env.SELF` service binding.
@@ -88,7 +89,7 @@ The `/mcp` endpoint merges EmDash's built-in content tools with custom tools and
 | Variable | Required | Description |
 |---|---|---|
 | `EMDASH_TOKEN` | Yes | Bearer token for MCP auth |
-| `EMDASH_URL` | No | Override base URL (defaults to `https://engdawood.com`) |
+| `EMDASH_URL` | No | Override base URL (defaults to `https://Your-Domain.com`) |
 | `JOBS_API_URL` | No | External jobs Worker API base URL |
 
 ## Deployment
