@@ -1,0 +1,298 @@
+---
+import { t, type Locale } from "../i18n/utils";
+import LiveSearch from "emdash/ui/search";
+import LanguageSwitcher from "./LanguageSwitcher.astro";
+
+interface Props {
+	locale: Locale;
+	isLoggedIn: boolean;
+}
+
+const { locale, isLoggedIn } = Astro.props;
+---
+
+<header class="site-header">
+	<nav class="nav">
+		<a href={`/${locale}`} class="site-logo" dir="ltr" aria-label="Home">
+			<svg width="44" height="34" viewBox="0 0 44 34" class="logo-mark" aria-hidden="true">
+				<text x="0" y="30" font-family="'Playfair Display', serif" font-size="40" font-weight="400" fill="var(--color-text)" letter-spacing="-0.06em">D</text>
+				<text x="17" y="30" font-family="'Playfair Display', serif" font-size="40" font-weight="400" font-style="italic" fill="var(--color-accent)" letter-spacing="-0.06em">s</text>
+				<circle cx="40" cy="29" r="1.6" fill="var(--color-accent)" />
+			</svg>
+			<div class="logo-wordmark">
+				<span class="logo-name">Dawood Saleh</span>
+				<span class="logo-sub">{t("hero.role", locale)}</span>
+			</div>
+		</a>
+		<div class="nav-right">
+			<div class="nav-links">
+				<a href={`/${locale}/work`}>{t("nav.projects", locale)}</a>
+				<a href={`/${locale}/blog`}>{t("nav.blog", locale)}</a>
+				<a href={`/${locale}#about`}>{t("nav.about", locale)}</a>
+				<a href={`/${locale}#contact`}>{t("nav.contact", locale)}</a>
+				{!isLoggedIn && <a href={`/${locale}/signup`}>{t("signup.title", locale)}</a>}
+			</div>
+			<LiveSearch
+				placeholder={t("search.placeholder", locale)}
+				class="site-search"
+				inputClass="site-search-input"
+				resultsClass="site-search-results"
+				resultClass="site-search-result"
+				collections={["projects", "posts", "pages"]}
+			/>
+			<button
+				type="button"
+				id="theme-toggle"
+				class="theme-toggle-btn"
+				aria-label="Toggle dark mode"
+			>
+				<svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+				<svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+			</button>
+			<LanguageSwitcher locale={locale} />
+			{isLoggedIn ? (
+				<a href="/_emdash/admin" class="nav-admin">Admin</a>
+			) : (
+				<a href="/_emdash/admin" class="nav-admin">Login</a>
+			)}
+		</div>
+	</nav>
+</header>
+
+<style>
+	.site-header {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: color-mix(in srgb, var(--color-bg) 80%, transparent);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.nav {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: var(--spacing-4) var(--spacing-6);
+		height: var(--nav-height);
+	}
+
+	.site-logo {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 12px;
+		text-decoration: none;
+		flex-shrink: 0;
+	}
+
+	.logo-mark {
+		display: block;
+		overflow: visible;
+	}
+
+	.logo-wordmark {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		line-height: 1.1;
+	}
+
+	.logo-name {
+		font-family: var(--font-serif);
+		font-size: 23px;
+		font-weight: 500;
+		color: var(--color-text);
+		letter-spacing: -0.02em;
+	}
+
+	.logo-sub {
+		font-family: var(--font-serif);
+		font-size: 13px;
+		font-style: italic;
+		color: var(--color-muted);
+	}
+
+	.nav-right {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-6);
+	}
+
+	.nav-links {
+		display: flex;
+		gap: var(--spacing-6);
+		font-family: var(--font-mono);
+		font-size: 17px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.nav-links a {
+		text-decoration: none;
+		color: var(--color-muted);
+		transition: color var(--transition-fast);
+	}
+
+	.nav-links a:hover {
+		color: var(--color-text);
+	}
+
+	.nav-admin {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		text-decoration: none;
+		opacity: 0.5;
+		transition: opacity var(--transition-fast);
+	}
+
+	.nav-admin:hover {
+		opacity: 1;
+	}
+
+	/* Search */
+	.site-search {
+		position: relative;
+		width: var(--search-input-width);
+		--emdash-search-border-focus: var(--color-accent);
+	}
+
+	:global(.site-search-input) {
+		width: var(--search-input-width);
+		padding: var(--spacing-2) var(--spacing-3);
+		font-family: var(--font-sans);
+		font-size: var(--font-size-sm);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+		color: var(--color-text);
+		transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+	}
+
+	:global(.site-search-input)::placeholder {
+		color: var(--color-muted);
+	}
+
+	:global(.site-search-input):focus,
+	:global(.site-search-input):focus-visible {
+		outline: none;
+		border-color: var(--color-accent) !important;
+		box-shadow: 0 0 0 3px var(--color-accent-ring);
+	}
+
+	:global(.site-search-results) {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		margin-top: var(--spacing-2);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-dropdown);
+		max-height: 400px;
+		overflow-y: auto;
+		z-index: 1000;
+	}
+
+	:global(.site-search-result) {
+		display: block;
+		padding: var(--spacing-3) var(--spacing-4);
+		text-decoration: none;
+		color: var(--color-text);
+		border-bottom: 1px solid var(--color-border-subtle);
+		transition: background var(--transition-fast);
+	}
+
+	:global(.site-search-result):last-child {
+		border-bottom: none;
+	}
+
+	:global(.site-search-result):hover,
+	:global(.site-search-result.focused) {
+		background: var(--color-surface);
+	}
+
+	:global(.site-search-result .emdash-live-search-result-title) {
+		display: block;
+		font-weight: 500;
+		font-size: var(--font-size-sm);
+	}
+
+	:global(.site-search-result .emdash-live-search-result-collection) {
+		display: block;
+		font-size: var(--font-size-xs);
+		color: var(--color-muted);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		margin-top: 2px;
+	}
+
+	:global(.site-search-result .emdash-live-search-result-snippet) {
+		display: block;
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		margin-top: var(--spacing-1);
+	}
+
+	.theme-toggle-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		color: var(--color-muted);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		flex-shrink: 0;
+	}
+
+	.theme-toggle-btn:hover {
+		color: var(--color-text);
+		border-color: var(--color-accent);
+	}
+
+	/* Show/hide sun and moon based on current theme */
+	#icon-moon { display: none; }
+	:root.dark #icon-sun { display: none; }
+	:root.dark #icon-moon { display: block; }
+
+	@media (max-width: 640px) {
+		.nav {
+			height: auto;
+			flex-wrap: wrap;
+			gap: var(--spacing-2);
+			padding: var(--spacing-3) var(--spacing-4);
+		}
+
+		.nav-right {
+			display: contents;
+		}
+
+		.site-search {
+			order: 0;
+			max-width: 130px;
+		}
+
+		:global(.site-search-input) {
+			width: 130px !important;
+		}
+
+		.nav-links {
+			order: 1;
+			width: 100%;
+			flex-wrap: wrap;
+			gap: var(--spacing-3);
+		}
+
+		.nav-admin {
+			order: 2;
+		}
+	}
+</style>
