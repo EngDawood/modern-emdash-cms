@@ -1,0 +1,4 @@
+# Content-hashed build output (filenames include a hash) is immutable —
+# cache aggressively so repeat visitors never re-download or re-validate it.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
