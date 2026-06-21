@@ -1,0 +1,183 @@
+---
+import { t, type Locale } from "../../i18n/utils";
+
+interface Props {
+	recentPosts: any[];
+	locale: Locale;
+}
+
+const { recentPosts, locale } = Astro.props;
+---
+
+<section id="writing" class="section-writing reveal">
+	<div class="section-inner">
+		<div class="section-head reveal-child">
+			<div class="kicker">
+				<span class="kicker-num">§02</span>
+				<span class="kicker-rule"></span>
+				{t("writing.kicker", locale)}
+			</div>
+			<h2 class="section-title">{t("writing.heading", locale)}</h2>
+			<p class="section-sub">{t("writing.subheading", locale)}</p>
+		</div>
+		{recentPosts.length > 0 && (
+			<div class="writing-grid">
+				<a href={`/${locale}/blog/${recentPosts[0].id}`} class="writing-card feature-card reveal-item" style="--delay: 0">
+					<div class="writing-meta">
+						{recentPosts[0].data.publishedAt && (
+							<span class="writing-date">{recentPosts[0].data.publishedAt.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+						)}
+					</div>
+					<h3 class="writing-title">{recentPosts[0].data.title}</h3>
+					<span class="writing-cta">{locale === "ar" ? "اقرأ المقال ←" : "Read the piece →"}</span>
+				</a>
+				<div class="writing-side">
+					{recentPosts.slice(1).map((post, i) => (
+						<a href={`/${locale}/blog/${post.id}`} class="writing-card side-card reveal-item" style={`--delay: ${i + 1}`}>
+							<div class="writing-meta">
+								{post.data.publishedAt && (
+									<span class="writing-date">{post.data.publishedAt.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { month: "short", year: "numeric" })}</span>
+								)}
+							</div>
+							<h4 class="writing-title-sm">{post.data.title}</h4>
+							<span class="writing-arrow">{locale === "ar" ? "←" : "→"}</span>
+						</a>
+					))}
+				</div>
+			</div>
+		)}
+		<a href={`/${locale}/blog`} class="view-all reveal-child">{t("writing.viewAll", locale)} →</a>
+	</div>
+</section>
+
+<style>
+	/* ── Writing §02 ── */
+	.section-writing {
+		background: var(--color-bg-subtle);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.writing-grid {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: var(--spacing-6);
+		margin-bottom: var(--spacing-4);
+	}
+
+	.writing-card {
+		display: block;
+		text-decoration: none;
+		padding: var(--spacing-6);
+		border: 1px solid var(--color-border);
+		transition: background var(--transition-base), border-color var(--transition-fast);
+	}
+
+	.writing-card:hover {
+		background: var(--color-surface);
+		border-color: var(--color-accent);
+	}
+
+	.feature-card {
+		background: var(--color-surface);
+	}
+
+	.writing-side {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-4);
+	}
+
+	.side-card {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+	}
+
+	.writing-meta {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-3);
+		margin-bottom: var(--spacing-3);
+		flex-wrap: wrap;
+	}
+
+	.writing-tag {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--color-accent);
+	}
+
+	.writing-date {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.1em;
+		color: var(--color-muted);
+	}
+
+	.writing-title {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-xl);
+		font-weight: 500;
+		color: var(--color-text);
+		letter-spacing: -0.01em;
+		line-height: 1.25;
+		margin-bottom: var(--spacing-3);
+	}
+
+	.writing-title-sm {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-base);
+		font-weight: 500;
+		color: var(--color-text);
+		line-height: 1.3;
+		margin-bottom: var(--spacing-2);
+	}
+
+	.writing-dek {
+		font-size: var(--font-size-sm);
+		color: var(--color-muted);
+		line-height: 1.6;
+		margin-bottom: var(--spacing-4);
+	}
+
+	.writing-cta {
+		font-family: var(--font-serif);
+		font-style: italic;
+		font-size: var(--font-size-sm);
+		color: var(--color-accent);
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		transition: gap var(--transition-fast);
+	}
+
+	.writing-card:hover .writing-cta {
+		gap: 8px;
+	}
+
+	.writing-arrow {
+		font-size: var(--font-size-base);
+		color: var(--color-muted);
+		margin-top: auto;
+		transition: color var(--transition-fast), transform var(--transition-fast);
+	}
+
+	.writing-card:hover .writing-arrow {
+		color: var(--color-accent);
+		transform: translateX(4px);
+	}
+
+	html[dir="rtl"] .writing-card:hover .writing-arrow {
+		transform: translateX(-4px);
+	}
+
+	/* ── Responsive ── */
+	@media (max-width: 768px) {
+		.writing-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

@@ -1,0 +1,237 @@
+---
+import { t, type Locale } from "../../i18n/utils";
+
+interface Props {
+	locale: Locale;
+	email: string;
+	github: string;
+	linkedin: string;
+	telegram: string;
+	twitter: string;
+	formStatus: "idle" | "success" | "error";
+	formMessage: string;
+}
+
+const { locale, email, github, linkedin, telegram, twitter, formStatus, formMessage } = Astro.props;
+---
+
+<section id="contact" class="section-contact reveal">
+	<div class="section-inner">
+		<div class="section-head reveal-child">
+			<div class="kicker">
+				<span class="kicker-num">§04</span>
+				<span class="kicker-rule"></span>
+				{locale === "ar" ? "تواصل" : "CONTACT"}
+			</div>
+		</div>
+		<div class="contact-grid">
+			<div class="contact-info reveal-child">
+				<h2 class="contact-heading">
+					{t("contact.heading1", locale)}
+					<span class="accent"> {t("contact.heading2", locale)}</span>
+				</h2>
+				<p class="contact-description">{t("contact.description", locale)}</p>
+				<div class="contact-links">
+					<a href={`mailto:${email}`} class="contact-link">
+						<span class="link-label">{t("contact.links.email", locale)}</span>
+						<span class="link-value">{email}</span>
+					</a>
+					<a href={github} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.github", locale)}</span>
+						<span class="link-value">EngDawood</span>
+					</a>
+					<a href={linkedin} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.linkedin", locale)}</span>
+						<span class="link-value">dawood3</span>
+					</a>
+					<a href={telegram} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.telegram", locale)}</span>
+						<span class="link-value">Daw5d</span>
+					</a>
+					<a href={twitter} target="_blank" rel="noopener noreferrer" class="contact-link">
+						<span class="link-label">{t("contact.links.twitter", locale)}</span>
+						<span class="link-value">dawo5d</span>
+					</a>
+				</div>
+			</div>
+			<div class="contact-form-wrapper reveal-child">
+				<h4 class="form-heading">{t("contact.form.heading", locale)}</h4>
+				{formStatus === "success" ? (
+					<div class="form-success">
+						<p>{formMessage}</p>
+						<a href={`/${locale}#contact`} class="btn btn-ghost">{t("contact.cta", locale)}</a>
+					</div>
+				) : (
+					<form method="POST" class="contact-form">
+						{formStatus === "error" && (
+							<div class="form-error">{formMessage}</div>
+						)}
+						<div class="form-field">
+							<label for="name">{t("contact.form.name", locale)}</label>
+							<input type="text" id="name" name="name" required autocomplete="name" />
+						</div>
+						<div class="form-field">
+							<label for="email">{t("contact.form.email", locale)}</label>
+							<input type="email" id="email" name="email" required autocomplete="email" />
+						</div>
+						<div class="form-field">
+							<label for="message">{t("contact.form.message", locale)}</label>
+							<textarea id="message" name="message" rows="5" required></textarea>
+						</div>
+						<button type="submit" class="btn btn-primary">
+							{t("contact.form.submit", locale)}
+						</button>
+					</form>
+				)}
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	/* ── Contact §04 ── */
+	.section-contact {
+		background: var(--color-bg-subtle);
+	}
+
+	.contact-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--spacing-16);
+	}
+
+	.contact-heading {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-3xl);
+		font-weight: 500;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+		margin-bottom: var(--spacing-5);
+	}
+
+	.contact-description {
+		font-size: var(--font-size-base);
+		color: var(--color-muted);
+		line-height: 1.7;
+		margin-bottom: var(--spacing-8);
+	}
+
+	.contact-links {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.contact-link {
+		display: flex;
+		flex-direction: column;
+		padding: var(--spacing-4) 0;
+		border-bottom: 1px solid var(--color-border);
+		text-decoration: none;
+		transition: border-color var(--transition-fast);
+	}
+
+	.contact-link:hover {
+		border-color: var(--color-accent);
+	}
+
+	.link-label {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+		margin-bottom: 3px;
+	}
+
+	.link-value {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		font-weight: 500;
+		transition: color var(--transition-fast);
+	}
+
+	.contact-link:hover .link-value {
+		color: var(--color-accent);
+	}
+
+	.form-heading {
+		font-family: var(--font-serif);
+		font-size: var(--font-size-xl);
+		font-weight: 500;
+		margin-bottom: var(--spacing-6);
+		letter-spacing: -0.01em;
+	}
+
+	.contact-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-5);
+	}
+
+	.form-field {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-2);
+	}
+
+	.form-field label {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+	}
+
+	.form-field input,
+	.form-field textarea {
+		padding: var(--spacing-3) var(--spacing-4);
+		font-family: var(--font-serif);
+		font-size: var(--font-size-base);
+		color: var(--color-text);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 0;
+		transition: border-color var(--transition-fast);
+	}
+
+	.form-field input:focus,
+	.form-field textarea:focus {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+
+	.form-field textarea {
+		resize: vertical;
+		min-height: 120px;
+	}
+
+	.form-error {
+		padding: var(--spacing-3) var(--spacing-4);
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid rgba(239, 68, 68, 0.25);
+		color: #dc2626;
+		font-size: var(--font-size-sm);
+	}
+
+	.form-success {
+		padding: var(--spacing-8);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		text-align: center;
+	}
+
+	.form-success p {
+		color: #22c55e;
+		font-family: var(--font-serif);
+		margin-bottom: var(--spacing-5);
+	}
+
+	/* ── Responsive ── */
+	@media (max-width: 768px) {
+		.contact-grid {
+			grid-template-columns: 1fr;
+			gap: var(--spacing-8);
+		}
+	}
+</style>
