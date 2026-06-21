@@ -126,6 +126,16 @@ declare module "emdash" {
 		users?: UserAccess;
 		cron?: CronAccess;
 		email?: EmailAccess;
+		/** Site information — always available. */
+		site: SiteInfo;
+		/** URL helper — generates absolute URLs from paths. Always available. */
+		url(path: string): string;
+	}
+
+	export interface SiteInfo {
+		name: string;
+		url: string;
+		locale: string;
 	}
 
 	export interface RouteContext<TInput = unknown> {
@@ -197,8 +207,17 @@ declare module "emdash" {
 	export interface MediaAccess {
 		get(id: string): Promise<MediaEntry | null>;
 		list(options?: { limit?: number; cursor?: string }): Promise<PaginatedResult<MediaEntry>>;
-		getUploadUrl(): Promise<{ url: string; id: string }>;
-		delete(id: string): Promise<boolean>;
+		getUploadUrl?(filename: string, contentType: string): Promise<{ uploadUrl: string; mediaId: string }>;
+		/**
+		 * Upload media bytes directly. Preferred in sandboxed mode.
+		 * Returns the created media item reference.
+		 */
+		upload?(
+			filename: string,
+			contentType: string,
+			bytes: ArrayBuffer,
+		): Promise<{ mediaId: string; storageKey: string; url: string }>;
+		delete?(id: string): Promise<boolean>;
 	}
 
 	export interface MediaEntry {
@@ -224,7 +243,7 @@ declare module "emdash" {
 
 	// ── Cron ────────────────────────────────────────────────────────────
 	export interface CronAccess {
-		schedule(name: string, config: { schedule: string }): Promise<void>;
+		schedule(name: string, config: { schedule: string; data?: Record<string, unknown> }): Promise<void>;
 		cancel(name: string): Promise<void>;
 		list(): Promise<Array<{ name: string; schedule: string; nextRun?: string }>>;
 	}

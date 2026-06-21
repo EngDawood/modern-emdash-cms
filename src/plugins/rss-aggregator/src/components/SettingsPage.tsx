@@ -7,6 +7,7 @@ import {
 	Select,
 	Toggle,
 	NumberInput,
+	TextArea,
 	Card,
 	Alert,
 	Loading,
@@ -286,7 +287,139 @@ export const SettingsPage: React.FC = () => {
 								checked={settings.defaultNofollow}
 								onChange={(val) => updateSetting("defaultNofollow", val)}
 							/>
+							<NumberInput
+								label="Full-text Min Words Threshold"
+								value={settings.fullTextMinWords}
+								onChange={(val) => updateSetting("fullTextMinWords", val)}
+								min={0}
+								description="Only scrape full text when item is shorter than this. 0 = always when enabled."
+							/>
 						</div>
+					</div>
+				</Card>
+
+				{/* 6. AI Content Suite */}
+				<Card title="AI Content Suite" className="col-span-2">
+					<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+						<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+							<Toggle
+								label="Enable AI Content Suite"
+								checked={settings.aiEnabled}
+								onChange={(val) => updateSetting("aiEnabled", val)}
+								description="Master switch for AI summaries, rewriting and translation."
+							/>
+							<Input
+								label="AI API Endpoint"
+								value={settings.aiApiEndpoint}
+								onChange={(val) => updateSetting("aiApiEndpoint", val)}
+								description="OpenAI-compatible chat completions URL."
+							/>
+							<Input
+								label="AI API Key"
+								type="password"
+								value={settings.aiApiKey}
+								onChange={(val) => updateSetting("aiApiKey", val)}
+								description="Bearer token for the AI endpoint."
+							/>
+							<Input
+								label="AI Model"
+								value={settings.aiModel}
+								onChange={(val) => updateSetting("aiModel", val)}
+							/>
+							<NumberInput
+								label="Monthly AI Credit Limit"
+								value={settings.aiCreditMonthlyLimit}
+								onChange={(val) => updateSetting("aiCreditMonthlyLimit", val)}
+								min={0}
+								description="Max AI operations per month. 0 = unlimited."
+							/>
+						</div>
+						<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+							<Toggle
+								label="Auto-generate TL;DR Summaries"
+								checked={settings.aiSummaryEnabled}
+								onChange={(val) => updateSetting("aiSummaryEnabled", val)}
+								description="Summarize each imported item on import."
+							/>
+							<NumberInput
+								label="Summary Length (words)"
+								value={settings.aiSummaryWords}
+								onChange={(val) => updateSetting("aiSummaryWords", val)}
+								min={10}
+								max={200}
+							/>
+							<Toggle
+								label="Auto-rewrite in Owner Voice"
+								checked={settings.aiRewriteEnabled}
+								onChange={(val) => updateSetting("aiRewriteEnabled", val)}
+								description="Rewrite imported items as original content."
+							/>
+							<TextArea
+								label="Site Owner Voice"
+								value={settings.aiOwnerVoice}
+								onChange={(val) => updateSetting("aiOwnerVoice", val)}
+								rows={3}
+								placeholder="E.g. Warm, editorial, first-person, concise."
+							/>
+						</div>
+					</div>
+				</Card>
+
+				{/* 7. Multilingual Translation */}
+				<Card title="Multilingual Translation">
+					<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+						<Toggle
+							label="Enable Translation"
+							checked={settings.translationEnabled}
+							onChange={(val) => updateSetting("translationEnabled", val)}
+							description="Translate imported content into target locales (requires AI)."
+						/>
+						{settings.translationEnabled && (
+							<Input
+								label="Target Locales"
+								value={settings.translationLocales}
+								onChange={(val) => updateSetting("translationLocales", val)}
+								placeholder="ar,fr,es"
+								description="Comma-separated BCP-47 locale codes."
+							/>
+						)}
+					</div>
+				</Card>
+
+				{/* 8. Image Import to Media Library */}
+				<Card title="Image Import to Media Library">
+					<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+						<Toggle
+							label="Import Featured Images"
+							checked={settings.imageImportEnabled}
+							onChange={(val) => updateSetting("imageImportEnabled", val)}
+							description="Download featured images into media storage (R2/local)."
+						/>
+						<Toggle
+							label="Import In-content Images"
+							checked={settings.imageImportContentImages}
+							onChange={(val) => updateSetting("imageImportContentImages", val)}
+							description="Also download embedded images and rewrite their URLs."
+						/>
+						<NumberInput
+							label="Max Images per Item"
+							value={settings.imageImportMaxPerItem}
+							onChange={(val) => updateSetting("imageImportMaxPerItem", val)}
+							min={1}
+							max={50}
+						/>
+					</div>
+				</Card>
+
+				{/* 9. Manual Curation */}
+				<Card title="Manual Curation">
+					<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+						<Toggle
+							label="Require Manual Approval"
+							checked={settings.curationEnabled}
+							onChange={(val) => updateSetting("curationEnabled", val)}
+							description="Import items into a pending queue requiring approval before they go live."
+						/>
 					</div>
 				</Card>
 			</div>
