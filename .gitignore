@@ -32,7 +32,6 @@ uploads/*
 
 .vscode/*
 .wrangler/*
-CLAUDE-tracker.md
 CLAUDE.CLOUDFLARE.md
 CLAUDE.EMDASH.md
 public/fonts/*

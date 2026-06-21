@@ -13,14 +13,6 @@ import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
 
-const trackerLinkEntrypoint = fileURLToPath(
-	new URL("./src/plugins/tracker-link.ts", import.meta.url),
-).replaceAll("\\", "/");
-
-const trackerLinkAdminEntry = fileURLToPath(
-	new URL("./src/plugins/tracker-link.admin.tsx", import.meta.url),
-).replaceAll("\\", "/");
-
 const seoEntrypoint = fileURLToPath(
 	new URL("./src/plugins/seo/index.ts", import.meta.url),
 ).replaceAll("\\", "/");
@@ -108,15 +100,6 @@ export default defineConfig({
 				},
 				rssAggregatorPlugin(),
 			aiModerationPlugin(),
-				{
-					id: "tracker-link",
-					version: "0.1.0",
-					format: "native",
-					entrypoint: trackerLinkEntrypoint,
-					adminEntry: trackerLinkAdminEntry,
-					adminPages: [{ path: "/", label: "Tracker", icon: "table" }],
-					adminWidgets: [{ id: "tracker-open", title: "Task Tracker", size: "third" }],
-				},
 				{
 					id: "emdash-inbox",
 					version: "0.7.0",

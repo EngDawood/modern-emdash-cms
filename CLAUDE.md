@@ -54,7 +54,6 @@ Key EmDash bindings (declared in `wrangler.jsonc`):
 
 A single public endpoint at `/mcp` acts as a **stateless proxy** that merges both tool sets:
 
-- **Tracker tools (10)** — handled locally: TRACKER_DB (D1) + R2 file attachments. Tool names start with `tracker_`.
 - **EmDash content tools (36)** — forwarded internally to `/_emdash/api/mcp` via `env.SELF` Service Binding. Covers content, schema, media, search, taxonomies, menus, revisions.
 
 Auth: `?token=<ec_pat_*>` query param OR `Authorization: Bearer <token>` header. The token is forwarded upstream as a Bearer to authenticate against the built-in.
@@ -78,7 +77,6 @@ All plugins are configured in `astro.config.mjs`. Plugin sandboxing is handled b
 | SEO inline descriptor | `src/plugins/seo/` (copied from `@jdevalk/emdash-plugin-seo`) | Meta, OG, JSON-LD, IndexNow, llms.txt |
 | `aiModerationPlugin()` | `@emdash-cms/plugin-ai-moderation` | AI comment moderation (requires `AI` binding) |
 | `email-cf-provider` | `src/plugins/email-cf-worker.ts` | Email transport via Cloudflare Email |
-| `tracker-link` | `src/plugins/tracker-link.ts` | Task tracker admin page |
 | `rssAggregatorPlugin()` | `src/plugins/rss-aggregator/` (local) | RSS/Atom feed aggregator; uses EmDash plugin storage (no extra D1 needed) |
 
 **Sandboxed plugins** (isolated workers, declared in `sandboxed: []`):
@@ -124,7 +122,6 @@ Detailed subsystem docs live in `.claude/`. Claude Code loads these on-demand vi
 | `.claude/CLAUDE.EMDASH.md` | EmDash CMS — collections, plugins, patches, page structure, common gotchas |
 | `.claude/CLAUDE.CLOUDFLARE.md` | Cloudflare / Wrangler — dual-config setup, sandbox behavior, adapter gotchas |
 | `.claude/CLAUDE-mcp.md` | MCP server — tool structure, runtime constraints, tool inventory, how to add tools |
-| `.claude/CLAUDE-tracker.md` | Task tracker — active work items and session history |
 | `.claude/rules/dep-pinning.md` | Dependency pinning — Cloudflare adapter/vite-plugin/wrangler triad, upgrade rules, failure signatures |
 
 ## EmDash CMS
@@ -133,7 +130,7 @@ See @CLAUDE.EMDASH.md for collections, plugins, patches, page structure, and com
 
 ## MCP Server
 
-See @CLAUDE-mcp.md for tool structure, runtime constraints, tracker tool inventory, and how to add tools. For content management tools, use the built-in EmDash MCP (`emdash-admin` in `.mcp.json`).
+See @CLAUDE-mcp.md for tool structure, runtime constraints, and how to add tools. For content management tools, use the built-in EmDash MCP (`emdash-admin` in `.mcp.json`).
 
 ## Cloudflare / Wrangler
 
