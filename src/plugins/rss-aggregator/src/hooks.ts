@@ -31,7 +31,8 @@ const SEED_AGENTS: Array<Pick<Agent, "kind" | "name" | "instructions" | "locales
 		instructions:
 			"You are a skilled writer. Rewrite the supplied article as ORIGINAL content in a clear, neutral editorial voice. " +
 			"Preserve all facts faithfully. Do not copy phrasing from the source. " +
-			"Return clean HTML paragraphs (<p>…</p>) only, with no preamble, headings, or commentary.",
+			"Format the rewritten content using clean semantic HTML tags (such as <p>, <h3>, <strong>, <ul>, and <li>) as appropriate for rich text formatting. " +
+			"Return ONLY the HTML body with no preamble, commentary, or markdown code fences (like ```html).",
 	},
 	{
 		kind: "translate",

@@ -10,14 +10,15 @@ import {
 	Modal,
 	Input,
 } from "./ui";
-import type { FeedItem, Source, OutputProfile } from "../types";
+import type { FeedItem, Source, OutputProfile, Agent } from "../types";
 import { formatRelativeTime } from "./shared";
 
 export const ReaderPage: React.FC = () => {
 	const api = usePluginAPI();
 	const [items, setItems] = useState<Array<{ id: string } & FeedItem>>([]);
-	const [sources, setSources] = useState<Array<{ id: string; name: string; outputProfileId?: string }>>([]);
+	const [sources, setSources] = useState<Array<{ id: string; name: string; outputProfileId?: string; aiAgentIds?: string[]; aiModelId?: string }>>([]);
 	const [profiles, setProfiles] = useState<Array<{ id: string } & OutputProfile>>([]);
+	const [agents, setAgents] = useState<Array<{ id: string } & Agent>>([]);
 	const [loading, setLoading] = useState(true);
 	const [loadingItems, setLoadingItems] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -46,13 +47,21 @@ export const ReaderPage: React.FC = () => {
 	const loadInitialData = async () => {
 		try {
 			setLoading(true);
-			const [sourcesData, profilesData] = await Promise.all([
+			const [sourcesData, profilesData, agentsData] = await Promise.all([
 				api.get<{ items: Array<{ id: string } & Source> }>("sources"),
 				api.get<{ items: Array<{ id: string } & OutputProfile> }>("output-profiles"),
+				api.get<{ items: Array<{ id: string } & Agent> }>("agents"),
 			]);
 
-			setSources(sourcesData.items.map((s) => ({ id: s.id, name: s.name, outputProfileId: s.outputProfileId })));
+			setSources(sourcesData.items.map((s) => ({
+				id: s.id,
+				name: s.name,
+				outputProfileId: s.outputProfileId,
+				aiAgentIds: s.aiAgentIds,
+				aiModelId: s.aiModelId,
+			})));
 			setProfiles(profilesData.items);
+			setAgents(agentsData.items);
 
 			// Fetch items
 			await fetchItems("", "", undefined, true);
@@ -142,10 +151,10 @@ export const ReaderPage: React.FC = () => {
 		}
 	};
 
-	const handleAi = async (id: string) => {
+	const handleAi = async (id: string, agentId?: string) => {
 		setBusyId(id);
 		try {
-			const res = await api.post<{ item: FeedItem }>("items/ai", { id });
+			const res = await api.post<{ item: FeedItem }>("items/ai", { id, agentId });
 			const updated = { id, ...res.item };
 			setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
 			if (selectedItem?.id === id) {
@@ -629,14 +638,48 @@ export const ReaderPage: React.FC = () => {
 										</Button>
 									)}
 
-									<Button
-										variant="secondary"
-										size="sm"
-										loading={busyId === selectedItem.id}
-										onClick={() => handleAi(selectedItem.id)}
-									>
-										Re-run AI
-									</Button>
+									<div style={{ display: "inline-flex", gap: "4px" }}>
+										<Button
+											variant="secondary"
+											size="sm"
+											loading={busyId === selectedItem.id}
+											onClick={() => handleAi(selectedItem.id)}
+										>
+											Re-run AI
+										</Button>
+
+										{selectedItemSource?.aiAgentIds && selectedItemSource.aiAgentIds.length > 0 && (
+											<select
+												onChange={(e) => {
+													const val = e.target.value;
+													if (val) {
+														handleAi(selectedItem.id, val);
+														e.target.value = "";
+													}
+												}}
+												disabled={busyId === selectedItem.id}
+												style={{
+													padding: "4px 8px",
+													fontSize: "12px",
+													borderRadius: "4px",
+													background: "var(--color-bg-subtle, #141210)",
+													color: "var(--color-text, #fdfbf6)",
+													border: "1px solid var(--color-border-subtle, #231f1a)",
+													cursor: "pointer",
+												}}
+											>
+												<option value="">Specific Agent...</option>
+												{selectedItemSource.aiAgentIds.map((agentId) => {
+													const agent = agents.find((a) => a.id === agentId);
+													return agent ? (
+														<option key={agent.id} value={agent.id}>
+															{agent.name}
+														</option>
+													) : null;
+												})}
+											</select>
+										)}
+									</div>
 
 									<Button
 										variant="ghost"
@@ -840,9 +883,25 @@ export const ReaderPage: React.FC = () => {
 									{activeTab === "summary" && (
 										<div>
 											{selectedItem.summary ? (
-												<p style={{ fontSize: "16px", fontWeight: 400, color: "var(--color-text)" }}>
-													{selectedItem.summary}
-												</p>
+												<div>
+													<p style={{ fontSize: "16px", fontWeight: 400, color: "var(--color-text)" }}>
+														{selectedItem.summary}
+													</p>
+													<div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-end" }}>
+														<Button
+															variant="ghost"
+															size="sm"
+															loading={busyId === selectedItem.id}
+															onClick={() => {
+																const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
+																const summaryAgent = agents.find((a) => a.kind === "summary" && sourceObj?.aiAgentIds?.includes(a.id));
+																handleAi(selectedItem.id, summaryAgent?.id);
+															}}
+														>
+															Regenerate Summary
+														</Button>
+													</div>
+												</div>
 											) : (
 												<div style={{ textAlign: "center", padding: "30px 0" }}>
 													<p style={{ color: "var(--color-muted)" }}>No AI Summary generated.</p>
@@ -850,7 +909,11 @@ export const ReaderPage: React.FC = () => {
 														variant="secondary"
 														size="sm"
 														loading={busyId === selectedItem.id}
-														onClick={() => handleAi(selectedItem.id)}
+														onClick={() => {
+															const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
+															const summaryAgent = agents.find((a) => a.kind === "summary" && sourceObj?.aiAgentIds?.includes(a.id));
+															handleAi(selectedItem.id, summaryAgent?.id);
+														}}
 													>
 														Generate with AI
 													</Button>
@@ -862,7 +925,23 @@ export const ReaderPage: React.FC = () => {
 									{activeTab === "rewrite" && (
 										<div>
 											{selectedItem.rewrittenContent ? (
-												<div dangerouslySetInnerHTML={{ __html: selectedItem.rewrittenContent }} />
+												<div>
+													<div dangerouslySetInnerHTML={{ __html: selectedItem.rewrittenContent }} />
+													<div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-end" }}>
+														<Button
+															variant="ghost"
+															size="sm"
+															loading={busyId === selectedItem.id}
+															onClick={() => {
+																const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
+																const rewriteAgent = agents.find((a) => a.kind === "rewrite" && sourceObj?.aiAgentIds?.includes(a.id));
+																handleAi(selectedItem.id, rewriteAgent?.id);
+															}}
+														>
+															Regenerate Rewrite
+														</Button>
+													</div>
+												</div>
 											) : (
 												<div style={{ textAlign: "center", padding: "30px 0" }}>
 													<p style={{ color: "var(--color-muted)" }}>No AI Rewrite generated.</p>
@@ -870,7 +949,11 @@ export const ReaderPage: React.FC = () => {
 														variant="secondary"
 														size="sm"
 														loading={busyId === selectedItem.id}
-														onClick={() => handleAi(selectedItem.id)}
+														onClick={() => {
+															const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
+															const rewriteAgent = agents.find((a) => a.kind === "rewrite" && sourceObj?.aiAgentIds?.includes(a.id));
+															handleAi(selectedItem.id, rewriteAgent?.id);
+														}}
 													>
 														Generate with AI
 													</Button>
