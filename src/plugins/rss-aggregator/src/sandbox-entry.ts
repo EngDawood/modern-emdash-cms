@@ -17,6 +17,7 @@ import { agentRoutes } from "./routes/agents.js";
 import { profileRoutes } from "./routes/profiles.js";
 import { miscRoutes } from "./routes/misc.js";
 import { publicRoutes } from "./routes/public.js";
+import { mcpRoutes } from "./routes/mcp.js";
 
 export function createPlugin() {
 	return definePlugin({
@@ -52,6 +53,7 @@ export function createPlugin() {
 			...profileRoutes,
 			...miscRoutes,
 			...publicRoutes,
+			...mcpRoutes,
 		},
 	});
 }

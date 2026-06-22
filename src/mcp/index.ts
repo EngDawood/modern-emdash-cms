@@ -80,6 +80,9 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 	const upstreamFetch = (req: RequestInit & { url?: string }) =>
 		env.SELF.fetch(new Request(upstreamUrl, req));
 
+	// RSS Aggregator plugin MCP route (same-worker subrequest via Service Binding).
+	const rssMcpUrl = `${baseUrl}/_emdash/api/plugins/rss-aggregator/mcp`;
+
 	let rpc: JsonRpcRequest;
 	try {
 		rpc = await request.json();
@@ -128,8 +131,25 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 			console.error("Failed to fetch inbox plugin tools:", e);
 		}
 
+		// RSS Aggregator plugin tools. The plugin route returns a JSON-RPC
+		// envelope wrapped by the plugin API layer as `{ data: <envelope> }`.
+		let rssTools: unknown[] = [];
+		try {
+			const rssRes = await env.SELF.fetch(new Request(rssMcpUrl, {
+				method: "POST",
+				headers: upstreamHeaders,
+				body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+			}));
+			if (rssRes.ok) {
+				const rssData = (await rssRes.json()) as any;
+				rssTools = rssData.data?.result?.tools ?? rssData.result?.tools ?? [];
+			}
+		} catch (e) {
+			console.error("Failed to fetch rss-aggregator plugin tools:", e);
+		}
+
 		return Response.json(
-			{ jsonrpc: "2.0", id: rpc.id, result: { tools: [...upstreamTools, ...inboxTools] } },
+			{ jsonrpc: "2.0", id: rpc.id, result: { tools: [...upstreamTools, ...inboxTools, ...rssTools] } },
 			{ headers: CORS_HEADERS },
 		);
 	}
@@ -148,6 +168,31 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 			}
 			const inboxData = (await inboxRes.json()) as any;
 			return Response.json(inboxData, { headers: CORS_HEADERS });
+		} catch (e) {
+			const message = e instanceof Error ? e.message : String(e);
+			return Response.json(
+				{ jsonrpc: "2.0", id: rpc.id, result: { content: [{ type: "text", text: message }], isError: true } },
+				{ headers: CORS_HEADERS },
+			);
+		}
+	}
+
+	// tools/call for RSS Aggregator plugin tools (rss_ prefix)
+	if (rpc.method === "tools/call" && typeof rpc.params?.name === "string" && rpc.params.name.startsWith("rss_")) {
+		try {
+			const rssRes = await env.SELF.fetch(new Request(rssMcpUrl, {
+				method: "POST",
+				headers: upstreamHeaders,
+				body: JSON.stringify(rpc),
+			}));
+			if (!rssRes.ok) {
+				const body = await rssRes.text().catch(() => "<no body>");
+				throw new Error(`RSS plugin returned ${rssRes.status}: ${body}`);
+			}
+			const rssData = (await rssRes.json()) as any;
+			// Unwrap the plugin API layer's `{ data: <envelope> }` wrapper.
+			const envelope = rssData.data ?? rssData;
+			return Response.json(envelope, { headers: CORS_HEADERS });
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);
 			return Response.json(
