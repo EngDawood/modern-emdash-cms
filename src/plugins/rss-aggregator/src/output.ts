@@ -8,6 +8,7 @@ import type { PluginContext } from "emdash";
 import type { Source, FeedItem, OutputProfile, PluginSettings, Agent } from "./types.js";
 import { agents } from "./utils.js";
 import { slugify, resolveTemplate } from "./template.js";
+import { htmlToPortableText } from "./html-parser.js";
 
 export interface PublishResult {
 	action: "internal" | "created" | "updated" | "skipped";
@@ -103,7 +104,7 @@ export function buildPublishPayload(opts: {
 	const payload: Record<string, unknown> = {
 		title: item.title,
 		slug,
-		content: finalBody,
+		content: htmlToPortableText(finalBody),
 		status: profile.status,
 		publishedAt: item.publishedAt,
 		meta,

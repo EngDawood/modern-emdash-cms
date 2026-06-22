@@ -40,6 +40,74 @@ index d89831c9ae42aeba09d01a0111cd4987129fb54d..116f6b9fa4f38b3f8a2c1bdb205848e8
  		if (!providers[provider]) return redirect(`${errorRedirectBase}?error=provider_not_configured&message=${encodeURIComponent(`OAuth provider ${provider} is not configured. Set either EMDASH_OAUTH_${provider.toUpperCase()}_CLIENT_ID and EMDASH_OAUTH_${provider.toUpperCase()}_CLIENT_SECRET, or ${provider.toUpperCase()}_CLIENT_ID and ${provider.toUpperCase()}_CLIENT_SECRET.`)}`);
  		const { url: authUrl } = await createAuthorizationUrl({
  			baseUrl: `${getPublicOrigin(url, emdash?.config)}/_emdash`,
+diff --git a/dist/context-Ca0HkaIh.mjs b/dist/context-Ca0HkaIh.mjs
+index 7702ce1a1e7b7823a895f46b6e1d97cfcf674df8..3b0f214c3b4602fcab43407f326493de9d7ed89c 100644
+--- a/dist/context-Ca0HkaIh.mjs
++++ b/dist/context-Ca0HkaIh.mjs
+@@ -494,13 +494,32 @@ function createContentAccessWithWrite(db) {
+ 		...createContentAccess(db),
+ 		async create(collection, data) {
+ 			const { fields, seo } = splitSeoFromInput(data);
++			const {
++				slug,
++				status,
++				authorId,
++				primaryBylineId,
++				locale,
++				translationOf,
++				publishedAt,
++				createdAt,
++				...customFields
++			} = fields;
+ 			return withTransaction(db, async (trx) => {
+ 				const trxContentRepo = new ContentRepository(trx);
+ 				const trxSeoRepo = new SeoRepository(trx);
+ 				const hasSeo = await assertSeoEnabled(trxSeoRepo, collection, seo);
+ 				const item = await trxContentRepo.create({
+ 					type: collection,
+-					data: fields
++					slug,
++					status,
++					authorId,
++					primaryBylineId,
++					locale,
++					translationOf,
++					publishedAt,
++					createdAt,
++					data: customFields
+ 				});
+ 				const result = {
+ 					id: item.id,
+@@ -519,11 +538,28 @@ function createContentAccessWithWrite(db) {
+ 		},
+ 		async update(collection, id, data) {
+ 			const { fields, seo } = splitSeoFromInput(data);
++			const {
++				slug,
++				status,
++				publishedAt,
++				scheduledAt,
++				authorId,
++				primaryBylineId,
++				...customFields
++			} = fields;
+ 			return withTransaction(db, async (trx) => {
+ 				const trxContentRepo = new ContentRepository(trx);
+ 				const trxSeoRepo = new SeoRepository(trx);
+ 				const hasSeo = await assertSeoEnabled(trxSeoRepo, collection, seo);
+-				const item = Object.keys(fields).length > 0 ? await trxContentRepo.update(collection, id, { data: fields }) : await (async () => {
++				const item = Object.keys(fields).length > 0 ? await trxContentRepo.update(collection, id, {
++					slug,
++					status,
++					publishedAt,
++					scheduledAt,
++					authorId,
++					primaryBylineId,
++					data: customFields
++				}) : await (async () => {
+ 					const existing = await trxContentRepo.findById(collection, id);
+ 					if (!existing) throw new Error("Content not found");
+ 					return existing;
 diff --git a/src/astro/routes/api/auth/oauth/[provider]/callback.ts b/src/astro/routes/api/auth/oauth/[provider]/callback.ts
 index e49c2acdc30c00c61449ceb4e59b3ef7514f3572..e8c6c95d092774d76a4563779049f268c2803d7a 100644
 --- a/src/astro/routes/api/auth/oauth/[provider]/callback.ts
@@ -99,3 +167,75 @@ index a9706888fcac56cafca29ecf43fd5e5e0b04b38b..84a08c4e242d94044291f63c592f053a
  
  		if (!providers[provider]) {
  			return redirect(
+diff --git a/src/plugins/context.ts b/src/plugins/context.ts
+index dbbb6d33a85f9bab21b4070c5c6920873ce8254c..fe631c1c6c57b97f5a903a49e0296418816d8714 100644
+--- a/src/plugins/context.ts
++++ b/src/plugins/context.ts
+@@ -293,6 +293,17 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
+ 
+ 		async create(collection: string, data: ContentWriteInput): Promise<ContentItem> {
+ 			const { fields, seo } = splitSeoFromInput(data);
++			const {
++				slug,
++				status,
++				authorId,
++				primaryBylineId,
++				locale,
++				translationOf,
++				publishedAt,
++				createdAt,
++				...customFields
++			} = fields;
+ 
+ 			return withTransaction(db, async (trx) => {
+ 				const trxContentRepo = new ContentRepository(trx);
+@@ -302,7 +313,15 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
+ 
+ 				const item = await trxContentRepo.create({
+ 					type: collection,
+-					data: fields,
++					slug: slug as string | null | undefined,
++					status: status as string | undefined,
++					authorId: authorId as string | undefined,
++					primaryBylineId: primaryBylineId as string | null | undefined,
++					locale: locale as string | undefined,
++					translationOf: translationOf as string | undefined,
++					publishedAt: publishedAt as string | null | undefined,
++					createdAt: createdAt as string | null | undefined,
++					data: customFields,
+ 				});
+ 
+ 				const result: ContentItem = {
+@@ -330,6 +349,15 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
+ 
+ 		async update(collection: string, id: string, data: ContentWriteInput): Promise<ContentItem> {
+ 			const { fields, seo } = splitSeoFromInput(data);
++			const {
++				slug,
++				status,
++				publishedAt,
++				scheduledAt,
++				authorId,
++				primaryBylineId,
++				...customFields
++			} = fields;
+ 
+ 			return withTransaction(db, async (trx) => {
+ 				const trxContentRepo = new ContentRepository(trx);
+@@ -344,7 +372,15 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
+ 				// path by returning the current row.
+ 				const hasFieldUpdates = Object.keys(fields).length > 0;
+ 				const item = hasFieldUpdates
+-					? await trxContentRepo.update(collection, id, { data: fields })
++					? await trxContentRepo.update(collection, id, {
++							slug: slug as string | null | undefined,
++							status: status as string | undefined,
++							publishedAt: publishedAt as string | null | undefined,
++							scheduledAt: scheduledAt as string | null | undefined,
++							authorId: authorId as string | null | undefined,
++							primaryBylineId: primaryBylineId as string | null | undefined,
++							data: customFields,
++						})
+ 					: await (async () => {
+ 							const existing = await trxContentRepo.findById(collection, id);
+ 							if (!existing) throw new Error("Content not found");
