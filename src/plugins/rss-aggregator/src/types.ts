@@ -344,14 +344,23 @@ export interface Model {
 	name: string;
 	/** Full OpenAI-compatible chat-completions URL. */
 	endpoint: string;
-	/** Model identifier sent in the request body. */
+	/** Bare model identifier. In gateway mode it is prefixed with `provider/` at call time. */
 	modelId: string;
-	/** Display label only — no behavior. */
+	/**
+	 * Connection mode. "direct" (default) = a plain OpenAI-compatible endpoint.
+	 * "gateway" = a Cloudflare AI Gateway: the request body model becomes `provider/modelId`,
+	 * the provider API key is optional (may be stored on the gateway / BYOK), and an optional
+	 * gateway token is sent as cf-aig-authorization for an authenticated gateway.
+	 */
+	mode?: "direct" | "gateway";
+	/** Direct mode: display label only. Gateway mode: the routing provider slug (e.g. "groq", "custom-nividia-nvm"), prepended to modelId. */
 	provider?: string;
 	/** Extra request headers, e.g. cf-aig-authorization for an authenticated Gateway. */
 	headers?: Record<string, string>;
 	/** Whether a key is configured in KV (so the UI can show "configured"). */
 	hasKey?: boolean;
+	/** Gateway mode: whether a cf-aig-authorization token is configured in KV. */
+	hasGatewayToken?: boolean;
 	verifiedAt?: string;
 	lastTestStatus?: string;
 	createdAt: string;
@@ -397,7 +406,14 @@ export interface OutputProfile {
 	updatedAt: string;
 }
 
-export type CreateModelInput = Omit<Model, "hasKey" | "verifiedAt" | "lastTestStatus" | "createdAt" | "updatedAt"> & { apiKey?: string };
+export type CreateModelInput = Omit<Model, "hasKey" | "hasGatewayToken" | "verifiedAt" | "lastTestStatus" | "createdAt" | "updatedAt"> & {
+	/** Provider API key (Authorization: Bearer). Optional in gateway mode (BYOK on the gateway). */
+	apiKey?: string;
+	/** Gateway token (cf-aig-authorization). Gateway mode only; only for an authenticated gateway. */
+	gatewayToken?: string;
+	/** Client-supplied connection-test outcome; drives verifiedAt/lastTestStatus. */
+	testStatus?: "ok" | "failed" | "untested";
+};
 export type UpdateModelInput = Partial<CreateModelInput> & { id: string };
 export type CreateAgentInput = Omit<Agent, "createdAt" | "updatedAt">;
 export type UpdateAgentInput = Partial<Omit<Agent, "createdAt" | "updatedAt">> & { id: string };
