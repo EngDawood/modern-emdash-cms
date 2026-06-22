@@ -171,6 +171,57 @@ export const itemRoutes = {
 		},
 	},
 
+	"items/publish": {
+		handler: async (ctx: RouteContext) => {
+			const { id } = ctx.input as { id: string };
+			const item = await feedItems(ctx).get(id);
+			if (!item) {
+				throw PluginRouteError.notFound(`Item "${id}" not found`);
+			}
+
+			const settings = await loadSettings(ctx);
+			const src = await sources(ctx).get(item.sourceId);
+			if (!src?.outputProfileId) {
+				throw PluginRouteError.badRequest("No output profile configured for this feed source");
+			}
+
+			const profile = (await outputProfiles(ctx).get(src.outputProfileId)) as OutputProfile | null;
+			if (!profile) {
+				throw PluginRouteError.badRequest("The configured output profile was not found");
+			}
+			const result = await publishItem(ctx, settings, { source: src, item, profile });
+
+			if (result.action === "skipped") {
+				throw PluginRouteError.badRequest(`Publish skipped: ${result.error || "unknown reasons"}`);
+			}
+
+			// Update the item with the publishedContentId
+			const now = new Date().toISOString();
+			const updated: FeedItem = {
+				...item,
+				status: "approved",
+				approvedAt: item.approvedAt || now,
+				publishedContentId: result.contentId,
+			};
+			await feedItems(ctx).put(id, updated);
+
+			// Best effort sync back to the feed-items collection entry
+			const collectionName = settings.contentCollection || "feed-items";
+			if (updated.contentId && ctx.content?.update) {
+				try {
+					await ctx.content.update(collectionName, updated.contentId, {
+						status: "approved",
+						publishedContentId: result.contentId,
+					});
+				} catch (err) {
+					ctx.log.warn("Failed to sync publishedContentId to content entry", { id, error: String(err) });
+				}
+			}
+
+			return { success: true, item: updated };
+		},
+	},
+
 	credits: {
 		handler: async (ctx: RouteContext) => {
 			const settings = await loadSettings(ctx);

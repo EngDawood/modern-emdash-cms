@@ -7,6 +7,7 @@
 
 import { SourcesPage } from './components/SourcesPage';
 import { ItemsPage } from './components/ItemsPage';
+import { ReaderPage } from './components/ReaderPage';
 import { DisplaysPage } from './components/DisplaysPage';
 import { AiPage } from './components/AiPage';
 import { LogsPage } from './components/LogsPage';
@@ -16,6 +17,7 @@ import { StatsWidget } from './components/StatsWidget';
 export const pages = {
 	'/sources': SourcesPage,
 	'/items': ItemsPage,
+	'/reader': ReaderPage,
 	'/displays': DisplaysPage,
 	'/ai': AiPage,
 	'/logs': LogsPage,

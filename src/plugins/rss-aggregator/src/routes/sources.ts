@@ -263,4 +263,47 @@ export const sourceRoutes = {
 			};
 		},
 	},
+
+	"sources/preview": {
+		handler: async (ctx: RouteContext) => {
+			const { url } = ctx.input as { url: string };
+			if (!url) {
+				throw PluginRouteError.badRequest("URL is required");
+			}
+			if (!url.startsWith("http://") && !url.startsWith("https://")) {
+				throw PluginRouteError.badRequest("URL must start with http:// or https://");
+			}
+
+			const settings = await loadSettings(ctx);
+			if (!ctx.http) {
+				throw PluginRouteError.internal("HTTP fetch capability is not available");
+			}
+
+			const response = await ctx.http.fetch(url, {
+				headers: { "User-Agent": settings.userAgent },
+				signal: AbortSignal.timeout(settings.fetchTimeout),
+			});
+			const xml = await response.text();
+			const parsed = parseFeed(xml);
+
+			return {
+				success: true,
+				feed: {
+					title: parsed.title || "Untitled Feed",
+					link: parsed.link || url,
+					description: parsed.description || "",
+					format: parsed.format,
+					itemCount: parsed.items.length,
+				},
+				items: parsed.items.slice(0, 10).map((item) => ({
+					guid: item.guid || item.link,
+					title: item.title || "Untitled Item",
+					link: item.link,
+					pubDate: item.pubDate,
+					author: item.author,
+					description: item.description,
+				})),
+			};
+		},
+	},
 };
