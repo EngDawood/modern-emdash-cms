@@ -162,11 +162,32 @@ export async function publishItem(
 
 		// ── Create or update ──────────────────────────────────────────────
 		if (existingContentId) {
-			await ctx.content.update?.(profile.collection, existingContentId, payload);
+			try {
+				await ctx.content.update?.(profile.collection, existingContentId, payload);
+			} catch (err) {
+				const errMsg = String(err);
+				if (errMsg.includes("no such column") || errMsg.includes("categories")) {
+					const { categories, ...stripped } = payload;
+					await ctx.content.update?.(profile.collection, existingContentId, stripped);
+				} else {
+					throw err;
+				}
+			}
 			return { action: "updated", contentId: existingContentId };
 		}
 
-		const entry = await ctx.content.create?.(profile.collection, payload);
+		let entry;
+		try {
+			entry = await ctx.content.create?.(profile.collection, payload);
+		} catch (err) {
+			const errMsg = String(err);
+			if (errMsg.includes("no such column") || errMsg.includes("categories")) {
+				const { categories, ...stripped } = payload;
+				entry = await ctx.content.create?.(profile.collection, stripped);
+			} else {
+				throw err;
+			}
+		}
 		return { action: "created", contentId: entry?.id };
 
 	} catch (err) {
