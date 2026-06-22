@@ -67,6 +67,15 @@ export function rssAggregatorPlugin(options: RssAggregatorOptions = {}): PluginD
 			displays: {
 				indexes: ["name"],
 			},
+			models: {
+				indexes: ["createdAt"],
+			},
+			agents: {
+				indexes: ["kind", "createdAt"],
+			},
+			outputProfiles: {
+				indexes: ["createdAt"],
+			},
 			rejectList: {
 				indexes: ["guid", "sourceId", "createdAt"],
 			},

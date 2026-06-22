@@ -140,10 +140,10 @@ export const ItemsPage: React.FC = () => {
 		}
 	};
 
-	const handleAi = async (id: string, action: "summarize" | "rewrite" | "translate", locale?: string) => {
+	const handleAi = async (id: string) => {
 		setBusyId(id);
 		try {
-			const res = await api.post<{ item: FeedItem }>("items/ai", { id, action, locale });
+			const res = await api.post<{ item: FeedItem }>("items/ai", { id });
 			setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...res.item } : i)));
 			// Refresh credits after AI usage
 			try {
@@ -278,11 +278,8 @@ export const ItemsPage: React.FC = () => {
 							Approve
 						</Button>
 					)}
-					<Button variant="secondary" size="sm" loading={busyId === row.id} onClick={() => handleAi(row.id, "summarize")}>
-						Summarize
-					</Button>
-					<Button variant="secondary" size="sm" loading={busyId === row.id} onClick={() => handleAi(row.id, "rewrite")}>
-						Rewrite
+					<Button variant="secondary" size="sm" loading={busyId === row.id} onClick={() => handleAi(row.id)}>
+						Re-run AI
 					</Button>
 					<Button variant="ghost" size="sm" onClick={() => handleOpenReject({ id: row.id, title: row.title })}>
 						Reject

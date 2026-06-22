@@ -7,7 +7,6 @@ import {
 	Select,
 	Toggle,
 	NumberInput,
-	TextArea,
 	Card,
 	Alert,
 	Loading,
@@ -228,37 +227,6 @@ export const SettingsPage: React.FC = () => {
 					</div>
 				</Card>
 
-				{/* 4. Feed-to-Post */}
-				<Card title="Feed-to-Post Integration (Pro)">
-					<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-						<Toggle
-							label="Enable Feed-to-Post Globally"
-							checked={settings.enableFeedToPost}
-							onChange={(val) => updateSetting("enableFeedToPost", val)}
-							description="Allow automatic generation of CMS blog posts from feeds."
-						/>
-						{settings.enableFeedToPost && (
-							<>
-								<Input
-									label="Default Destination Collection"
-									value={settings.defaultPostCollection}
-									onChange={(val) => updateSetting("defaultPostCollection", val)}
-									description="E.g. posts, blog, articles"
-								/>
-								<Select
-									label="Default Post Status"
-									value={settings.defaultPostStatus}
-									onChange={(val) => updateSetting("defaultPostStatus", val)}
-									options={[
-										{ label: "Draft", value: "draft" },
-										{ label: "Published", value: "published" },
-									]}
-								/>
-							</>
-						)}
-					</div>
-				</Card>
-
 				{/* 5. Crawler Capabilities */}
 				<Card title="Advanced Settings" className="col-span-2">
 					<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -298,91 +266,22 @@ export const SettingsPage: React.FC = () => {
 					</div>
 				</Card>
 
-				{/* 6. AI Content Suite */}
-				<Card title="AI Content Suite" className="col-span-2">
-					<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-						<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-							<Toggle
-								label="Enable AI Content Suite"
-								checked={settings.aiEnabled}
-								onChange={(val) => updateSetting("aiEnabled", val)}
-								description="Master switch for AI summaries, rewriting and translation."
-							/>
-							<Input
-								label="AI API Endpoint"
-								value={settings.aiApiEndpoint}
-								onChange={(val) => updateSetting("aiApiEndpoint", val)}
-								description="OpenAI-compatible chat completions URL."
-							/>
-							<Input
-								label="AI API Key"
-								type="password"
-								value={settings.aiApiKey}
-								onChange={(val) => updateSetting("aiApiKey", val)}
-								description="Bearer token for the AI endpoint."
-							/>
-							<Input
-								label="AI Model"
-								value={settings.aiModel}
-								onChange={(val) => updateSetting("aiModel", val)}
-							/>
-							<NumberInput
-								label="Monthly AI Credit Limit"
-								value={settings.aiCreditMonthlyLimit}
-								onChange={(val) => updateSetting("aiCreditMonthlyLimit", val)}
-								min={0}
-								description="Max AI operations per month. 0 = unlimited."
-							/>
-						</div>
-						<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-							<Toggle
-								label="Auto-generate TL;DR Summaries"
-								checked={settings.aiSummaryEnabled}
-								onChange={(val) => updateSetting("aiSummaryEnabled", val)}
-								description="Summarize each imported item on import."
-							/>
-							<NumberInput
-								label="Summary Length (words)"
-								value={settings.aiSummaryWords}
-								onChange={(val) => updateSetting("aiSummaryWords", val)}
-								min={10}
-								max={200}
-							/>
-							<Toggle
-								label="Auto-rewrite in Owner Voice"
-								checked={settings.aiRewriteEnabled}
-								onChange={(val) => updateSetting("aiRewriteEnabled", val)}
-								description="Rewrite imported items as original content."
-							/>
-							<TextArea
-								label="Site Owner Voice"
-								value={settings.aiOwnerVoice}
-								onChange={(val) => updateSetting("aiOwnerVoice", val)}
-								rows={3}
-								placeholder="E.g. Warm, editorial, first-person, concise."
-							/>
-						</div>
-					</div>
-				</Card>
-
-				{/* 7. Multilingual Translation */}
-				<Card title="Multilingual Translation">
+				{/* 6. AI Pipeline */}
+				<Card title="AI Pipeline">
 					<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 						<Toggle
-							label="Enable Translation"
-							checked={settings.translationEnabled}
-							onChange={(val) => updateSetting("translationEnabled", val)}
-							description="Translate imported content into target locales (requires AI)."
+							label="Enable AI Pipeline"
+							checked={settings.aiEnabled}
+							onChange={(val) => updateSetting("aiEnabled", val)}
+							description="Master switch for models, agents and output profiles. Configure them on the AI page."
 						/>
-						{settings.translationEnabled && (
-							<Input
-								label="Target Locales"
-								value={settings.translationLocales}
-								onChange={(val) => updateSetting("translationLocales", val)}
-								placeholder="ar,fr,es"
-								description="Comma-separated BCP-47 locale codes."
-							/>
-						)}
+						<NumberInput
+							label="Monthly AI Credit Limit"
+							value={settings.aiCreditMonthlyLimit}
+							onChange={(val) => updateSetting("aiCreditMonthlyLimit", val)}
+							min={0}
+							description="Max AI operations per month. 0 = unlimited."
+						/>
 					</div>
 				</Card>
 

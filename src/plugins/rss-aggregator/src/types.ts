@@ -30,7 +30,15 @@ export interface Source {
 	contentMaxWords: number;
 	enableFullText: boolean;
 
-	// AI Content Suite (per-source overrides; require global aiEnabled)
+	// AI pipeline bindings — one model + a set of agents run on import.
+	aiModelId?: string;
+	aiAgentIds?: string[];
+
+	// Output: per-source slug prefix (feeds the {sourceSlug} token) + bound profile.
+	slug?: string;
+	outputProfileId?: string;
+
+	// AI Content Suite (DEPRECATED — replaced by aiModelId/aiAgentIds; kept inert)
 	enableAiSummary?: boolean;
 	enableAiRewrite?: boolean;
 	enableTranslation?: boolean;
@@ -44,10 +52,10 @@ export interface Source {
 	// Manual curation (premium: Manual Curation) — per-source override
 	requireApproval?: boolean;
 
-	// Post conversion (premium: Feed-to-Post)
-	feedToPost: boolean;
-	postCollection: string;
-	postStatus: "draft" | "published";
+	// Post conversion (DEPRECATED — replaced by outputProfileId; kept inert)
+	feedToPost?: boolean;
+	postCollection?: string;
+	postStatus?: "draft" | "published";
 
 	// Keyword filtering (premium)
 	keywordFilterEnabled: boolean;
@@ -118,14 +126,18 @@ export interface FeedItem {
 	// Link to the synced EmDash content entry (collection = settings.contentCollection)
 	contentId?: string;
 
+	// Link to the published post created by an output profile (profile.collection)
+	publishedContentId?: string;
+
 	// Manual curation state. "approved" when curation is disabled.
 	status?: ItemStatus;
 	approvedAt?: string;
 	approvedBy?: string;
 
 	// AI Content Suite outputs
-	summary?: string; // AI TL;DR
-	rewrittenContent?: string; // AI rewrite in the site owner's voice
+	summary?: string; // AI TL;DR (summary-kind agent)
+	rewrittenContent?: string; // AI rewrite (rewrite-kind agent)
+	aiOutputs?: Record<string, string>; // custom-kind agent outputs, keyed by agentId
 	aiProcessedAt?: string;
 
 	// Multilingual translations keyed by locale (e.g. "ar", "fr")
@@ -324,6 +336,74 @@ export interface ParsedItem {
 	raw?: string;
 }
 
+// ── AI Pipeline: Model ───────────────────────────────────────────────────
+
+/** A saved AI model endpoint — stored in the `models` storage collection.
+ * The API key is NEVER stored here; it lives in KV at `model-secret:<id>`. */
+export interface Model {
+	name: string;
+	/** Full OpenAI-compatible chat-completions URL. */
+	endpoint: string;
+	/** Model identifier sent in the request body. */
+	modelId: string;
+	/** Display label only — no behavior. */
+	provider?: string;
+	/** Extra request headers, e.g. cf-aig-authorization for an authenticated Gateway. */
+	headers?: Record<string, string>;
+	/** Whether a key is configured in KV (so the UI can show "configured"). */
+	hasKey?: boolean;
+	verifiedAt?: string;
+	lastTestStatus?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export type AgentKind = "summary" | "rewrite" | "translate" | "custom";
+
+/** A saved AI agent — stored in the `agents` storage collection. */
+export interface Agent {
+	name: string;
+	kind: AgentKind;
+	/** The system prompt driving this agent. */
+	instructions: string;
+	/** Sampling temperature. Default 0.4. */
+	temperature?: number;
+	/** translate-kind only: comma-separated BCP-47 locales (e.g. "ar,fr"). */
+	locales?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+/** A saved output profile — stored in the `outputProfiles` storage collection. */
+export interface OutputProfile {
+	name: string;
+	/** internal = keep on the item, never publish. */
+	mode: "internal" | "publish";
+	/** Target content collection (e.g. "posts"). */
+	collection: string;
+	/** Created entry status. draft = native CMS draft. */
+	status: "draft" | "published";
+	/** true = item stays pending; entry is created on approve. */
+	requireApproval: boolean;
+	/** Slug template, e.g. "{itemSlug}". */
+	slugPattern: string;
+	/** Which produced text becomes the body. Falls back rewrite→original when absent. */
+	bodySource: "rewrite" | "original" | "summary";
+	/** Which produced text becomes the excerpt. */
+	excerptSource?: "summary" | "original" | "none";
+	/** Trusted admin HTML appended to the body; supports {token} substitution. */
+	footerTemplate?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export type CreateModelInput = Omit<Model, "hasKey" | "verifiedAt" | "lastTestStatus" | "createdAt" | "updatedAt"> & { apiKey?: string };
+export type UpdateModelInput = Partial<CreateModelInput> & { id: string };
+export type CreateAgentInput = Omit<Agent, "createdAt" | "updatedAt">;
+export type UpdateAgentInput = Partial<Omit<Agent, "createdAt" | "updatedAt">> & { id: string };
+export type CreateOutputProfileInput = Omit<OutputProfile, "createdAt" | "updatedAt">;
+export type UpdateOutputProfileInput = Partial<Omit<OutputProfile, "createdAt" | "updatedAt">> & { id: string };
+
 // ── Plugin Settings ────────────────────────────────────────────────────
 
 /** All plugin settings (stored in KV under settings:* prefix). */
@@ -342,40 +422,17 @@ export interface PluginSettings {
 	customFeedFormat: "rss2" | "atom";
 	logRetentionDays: number;
 	contentCollection: string;
-	enableFeedToPost: boolean;
-	defaultPostCollection: string;
-	defaultPostStatus: "draft" | "published";
 	enableFullText: boolean;
 	enableKeywordFilter: boolean;
 	userAgent: string;
 	fetchTimeout: number;
 	enableYouTubeDetection: boolean;
 
-	// ── AI Content Suite ──────────────────────────────────────────────
-	/** Master switch for all AI features. */
+	// ── AI Pipeline ───────────────────────────────────────────────────
+	/** Master switch for all AI features (kill-switch). */
 	aiEnabled: boolean;
-	/** OpenAI-compatible chat completions endpoint. */
-	aiApiEndpoint: string;
-	/** Bearer API key for the AI endpoint (secret). */
-	aiApiKey: string;
-	/** Model identifier sent to the AI endpoint. */
-	aiModel: string;
-	/** Auto-generate a TL;DR summary for every imported item. */
-	aiSummaryEnabled: boolean;
-	/** Target length (words) for generated summaries. */
-	aiSummaryWords: number;
-	/** Auto-rewrite imported items in the site owner's voice. */
-	aiRewriteEnabled: boolean;
-	/** Description of the site owner's voice/tone used when rewriting. */
-	aiOwnerVoice: string;
 	/** Monthly AI credit allowance. 0 = unlimited. */
 	aiCreditMonthlyLimit: number;
-
-	// ── Multilingual translation ──────────────────────────────────────
-	/** Enable translating imported content into target locales. */
-	translationEnabled: boolean;
-	/** Comma-separated target locales, e.g. "ar,fr,es". */
-	translationLocales: string;
 
 	// ── Image import to media library ─────────────────────────────────
 	/** Download featured images into EmDash media storage (R2/local). */
@@ -420,29 +477,15 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	customFeedFormat: "rss2",
 	logRetentionDays: 30,
 	contentCollection: "feed-items",
-	enableFeedToPost: false,
-	defaultPostCollection: "posts",
-	defaultPostStatus: "draft",
 	enableFullText: false,
 	enableKeywordFilter: false,
 	userAgent: "EmDash RSS Aggregator/1.0",
 	fetchTimeout: 30000,
 	enableYouTubeDetection: true,
 
-	// AI Content Suite
+	// AI Pipeline
 	aiEnabled: false,
-	aiApiEndpoint: "https://api.openai.com/v1/chat/completions",
-	aiApiKey: "",
-	aiModel: "gpt-4o-mini",
-	aiSummaryEnabled: false,
-	aiSummaryWords: 50,
-	aiRewriteEnabled: false,
-	aiOwnerVoice: "",
 	aiCreditMonthlyLimit: 0,
-
-	// Multilingual translation
-	translationEnabled: false,
-	translationLocales: "",
 
 	// Image import
 	imageImportEnabled: false,

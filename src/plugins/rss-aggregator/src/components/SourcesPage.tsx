@@ -19,8 +19,10 @@ import {
 	Alert,
 	Loading,
 } from "./ui";
-import type { Source, SourceStatus, CreateSourceInput, UpdateSourceInput } from "../types";
+import type { Source, SourceStatus, Model, Agent, OutputProfile } from "../types";
 import { formatRelativeTime, getStatusVariant, truncateText } from "./shared";
+
+const FIXED_KINDS = ["summary", "rewrite", "translate"];
 
 export const SourcesPage: React.FC = () => {
 	const api = usePluginAPI();
@@ -42,6 +44,11 @@ export const SourcesPage: React.FC = () => {
 	// Form fields state
 	const [formFields, setFormFields] = useState<Partial<Source>>({});
 
+	// AI pipeline option lists (for the AI & Output tab)
+	const [models, setModels] = useState<Array<{ id: string } & Model>>([]);
+	const [agents, setAgents] = useState<Array<{ id: string } & Agent>>([]);
+	const [profiles, setProfiles] = useState<Array<{ id: string } & OutputProfile>>([]);
+
 	const fetchSources = async () => {
 		try {
 			setLoading(true);
@@ -55,9 +62,41 @@ export const SourcesPage: React.FC = () => {
 		}
 	};
 
+	const fetchAiOptions = async () => {
+		try {
+			const [m, a, p] = await Promise.all([
+				api.get<{ items: Array<{ id: string } & Model> }>("models"),
+				api.get<{ items: Array<{ id: string } & Agent> }>("agents"),
+				api.get<{ items: Array<{ id: string } & OutputProfile> }>("output-profiles"),
+			]);
+			setModels(m.items);
+			setAgents(a.items);
+			setProfiles(p.items);
+		} catch {
+			/* AI options are optional; ignore load failures */
+		}
+	};
+
 	useEffect(() => {
 		fetchSources();
+		fetchAiOptions();
 	}, []);
+
+	// Toggle an agent in the selection, enforcing at most one per fixed kind.
+	const toggleAgent = (agent: { id: string } & Agent) => {
+		setFormFields((prev) => {
+			const current = prev.aiAgentIds || [];
+			if (current.includes(agent.id)) {
+				return { ...prev, aiAgentIds: current.filter((x) => x !== agent.id) };
+			}
+			let next = current;
+			if (FIXED_KINDS.includes(agent.kind)) {
+				const sameKindIds = agents.filter((a) => a.kind === agent.kind).map((a) => a.id);
+				next = current.filter((x) => !sameKindIds.includes(x));
+			}
+			return { ...prev, aiAgentIds: [...next, agent.id] };
+		});
+	};
 
 	const handleOpenAdd = () => {
 		setEditingSource(null);
@@ -75,9 +114,10 @@ export const SourcesPage: React.FC = () => {
 			trimContent: false,
 			contentMaxWords: 150,
 			enableFullText: false,
-			feedToPost: false,
-			postCollection: "posts",
-			postStatus: "draft",
+			aiModelId: undefined,
+			aiAgentIds: [],
+			slug: "",
+			outputProfileId: undefined,
 			keywordFilterEnabled: false,
 			keywordFilterMode: "include",
 			keywords: [],
@@ -456,7 +496,7 @@ export const SourcesPage: React.FC = () => {
 		},
 		{
 			id: "filters",
-			label: "Filters & Feed-to-Post (Pro)",
+			label: "Filters",
 			content: (
 				<div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "12px 0" }}>
 					<Toggle
@@ -488,32 +528,64 @@ export const SourcesPage: React.FC = () => {
 							/>
 						</>
 					)}
-					<div style={{ borderTop: "1px solid #eee", marginTop: "12px", paddingTop: "12px" }}>
-						<Toggle
-							label="Enable Feed-to-Post"
-							checked={formFields.feedToPost || false}
-							onChange={(val) => handleUpdateField("feedToPost", val)}
-							description="Convert feed items into first-class CMS blog posts"
-						/>
-						{formFields.feedToPost && (
-							<>
-								<Input
-									label="Post Collection Name"
-									value={formFields.postCollection || "posts"}
-									onChange={(val) => handleUpdateField("postCollection", val)}
-								/>
-								<Select
-									label="Default Status"
-									value={formFields.postStatus || "draft"}
-									onChange={(val) => handleUpdateField("postStatus", val)}
-									options={[
-										{ label: "Draft", value: "draft" },
-										{ label: "Published", value: "published" },
-									]}
-								/>
-							</>
-						)}
+				</div>
+			),
+		},
+		{
+			id: "ai",
+			label: "AI & Output",
+			content: (
+				<div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "12px 0" }}>
+					<Select
+						label="AI Model"
+						value={formFields.aiModelId || ""}
+						onChange={(val) => handleUpdateField("aiModelId", val || undefined)}
+						options={[
+							{ label: "— none —", value: "" },
+							...models
+								.filter((m) => m.verifiedAt)
+								.map((m) => ({ label: m.name, value: m.id })),
+						]}
+					/>
+					<div>
+						<label style={{ fontSize: "13px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
+							Agents
+						</label>
+						<div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "6px" }}>
+							At most one summary / rewrite / translate agent; custom agents stack freely.
+						</div>
+						<div style={{ border: "1px solid #d1d5db", padding: "10px", borderRadius: "6px", maxHeight: "180px", overflowY: "auto" }}>
+							{agents.map((a) => (
+								<label key={a.id} style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0", cursor: "pointer" }}>
+									<input
+										type="checkbox"
+										checked={(formFields.aiAgentIds || []).includes(a.id)}
+										onChange={() => toggleAgent(a)}
+									/>
+									<span style={{ fontSize: "13px" }}>{a.name}</span>
+									<Badge variant="info">{a.kind}</Badge>
+								</label>
+							))}
+							{agents.length === 0 && (
+								<span style={{ fontSize: "13px", color: "#888" }}>No agents yet — create them on the AI page.</span>
+							)}
+						</div>
 					</div>
+					<Select
+						label="Output Profile"
+						value={formFields.outputProfileId || ""}
+						onChange={(val) => handleUpdateField("outputProfileId", val || undefined)}
+						options={[
+							{ label: "— none (keep internal) —", value: "" },
+							...profiles.map((p) => ({ label: p.name, value: p.id })),
+						]}
+					/>
+					<Input
+						label="Source slug (prefix / category)"
+						value={formFields.slug || ""}
+						onChange={(val) => handleUpdateField("slug", val)}
+						description="Used by the {sourceSlug} token and as the published post's category."
+					/>
 				</div>
 			),
 		},
