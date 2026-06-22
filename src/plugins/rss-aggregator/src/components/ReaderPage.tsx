@@ -13,6 +13,57 @@ import {
 import type { FeedItem, Source, OutputProfile, Agent } from "../types";
 import { formatRelativeTime } from "./shared";
 
+function formatMarkdownOrHtml(text: string | undefined): string {
+	if (!text) return "";
+
+	let html = text.replace(/\r\n/g, "\n");
+
+	// 1. Horizontal rules (---, ***, ___)
+	html = html.replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--color-border-subtle, #231f1a);" />');
+
+	// 2. Headings (# to ######)
+	html = html.replace(/^######\s+(.*?)$/gm, '<h6 style="font-size: 1.0em; font-weight: 600; margin-top: 12px; margin-bottom: 6px;">$1</h6>');
+	html = html.replace(/^#####\s+(.*?)$/gm, '<h5 style="font-size: 1.1em; font-weight: 600; margin-top: 14px; margin-bottom: 7px;">$1</h5>');
+	html = html.replace(/^####\s+(.*?)$/gm, '<h4 style="font-size: 1.15em; font-weight: 600; margin-top: 16px; margin-bottom: 8px;">$1</h4>');
+	html = html.replace(/^###\s+(.*?)$/gm, '<h3 style="font-size: 1.25em; font-weight: 600; margin-top: 18px; margin-bottom: 9px;">$1</h3>');
+	html = html.replace(/^##\s+(.*?)$/gm, '<h2 style="font-size: 1.4em; font-weight: 600; margin-top: 20px; margin-bottom: 10px;">$1</h2>');
+	html = html.replace(/^#\s+(.*?)$/gm, '<h1 style="font-size: 1.6em; font-weight: 700; margin-top: 24px; margin-bottom: 12px;">$1</h1>');
+
+	// 3. Bold: **text** or __text__
+	html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+	html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
+
+	// 4. Italic: *text* or _text_
+	html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+	html = html.replace(/_(.*?)_/g, "<em>$1</em>");
+
+	// 5. Code: `code`
+	html = html.replace(/`(.*?)`/g, '<code style="font-family: monospace; background: var(--color-bg-subtle, #141210); padding: 2px 4px; border-radius: 4px;">$1</code>');
+
+	// Check if the input already contains HTML block tags (like <p>, <div>, <h3>, etc.)
+	const hasHtmlParagraphs = /<p\b[^>]*>|<div\b[^>]*>/i.test(html);
+	if (!hasHtmlParagraphs) {
+		// Convert newlines to paragraph tags
+		const parts = html.split(/\n\s*\n/);
+		html = parts
+			.map((part) => {
+				const trimmed = part.trim();
+				if (!trimmed) return "";
+				// If it's already wrapped in a block-level tag (like <h1>-<h6> or <hr />), don't wrap in <p>
+				if (/^<(h[1-6]|hr|blockquote|ul|ol|li)\b[^>]*>/i.test(trimmed)) {
+					return trimmed;
+				}
+				// Replace single newlines inside paragraph with <br />
+				const withLineBreaks = trimmed.replace(/\n/g, "<br />");
+				return `<p style="margin-bottom: 16px; line-height: 1.6;">${withLineBreaks}</p>`;
+			})
+			.filter(Boolean)
+			.join("\n");
+	}
+
+	return html;
+}
+
 export const ReaderPage: React.FC = () => {
 	const api = usePluginAPI();
 	const [items, setItems] = useState<Array<{ id: string } & FeedItem>>([]);
@@ -894,8 +945,13 @@ export const ReaderPage: React.FC = () => {
 															loading={busyId === selectedItem.id}
 															onClick={() => {
 																const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
-																const summaryAgent = agents.find((a) => a.kind === "summary" && sourceObj?.aiAgentIds?.includes(a.id));
-																handleAi(selectedItem.id, summaryAgent?.id);
+																const summaryAgent = agents.find((a) => a.kind === "summary" && sourceObj?.aiAgentIds?.includes(a.id))
+																	|| agents.find((a) => a.kind === "summary");
+																if (summaryAgent) {
+																	handleAi(selectedItem.id, summaryAgent.id);
+																} else {
+																	alert("No summary agent found in the system. Please create a summary agent in Settings.");
+																}
 															}}
 														>
 															Regenerate Summary
@@ -911,8 +967,13 @@ export const ReaderPage: React.FC = () => {
 														loading={busyId === selectedItem.id}
 														onClick={() => {
 															const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
-															const summaryAgent = agents.find((a) => a.kind === "summary" && sourceObj?.aiAgentIds?.includes(a.id));
-															handleAi(selectedItem.id, summaryAgent?.id);
+															const summaryAgent = agents.find((a) => a.kind === "summary" && sourceObj?.aiAgentIds?.includes(a.id))
+																	|| agents.find((a) => a.kind === "summary");
+															if (summaryAgent) {
+																handleAi(selectedItem.id, summaryAgent.id);
+															} else {
+																alert("No summary agent found in the system. Please create a summary agent in Settings.");
+															}
 														}}
 													>
 														Generate with AI
@@ -926,7 +987,7 @@ export const ReaderPage: React.FC = () => {
 										<div>
 											{selectedItem.rewrittenContent ? (
 												<div>
-													<div dangerouslySetInnerHTML={{ __html: selectedItem.rewrittenContent }} />
+													<div dangerouslySetInnerHTML={{ __html: formatMarkdownOrHtml(selectedItem.rewrittenContent) }} />
 													<div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-end" }}>
 														<Button
 															variant="ghost"
@@ -934,8 +995,13 @@ export const ReaderPage: React.FC = () => {
 															loading={busyId === selectedItem.id}
 															onClick={() => {
 																const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
-																const rewriteAgent = agents.find((a) => a.kind === "rewrite" && sourceObj?.aiAgentIds?.includes(a.id));
-																handleAi(selectedItem.id, rewriteAgent?.id);
+																const rewriteAgent = agents.find((a) => a.kind === "rewrite" && sourceObj?.aiAgentIds?.includes(a.id))
+																	|| agents.find((a) => a.kind === "rewrite");
+																if (rewriteAgent) {
+																	handleAi(selectedItem.id, rewriteAgent.id);
+																} else {
+																	alert("No rewrite agent found in the system. Please create a rewrite agent in Settings.");
+																}
 															}}
 														>
 															Regenerate Rewrite
@@ -951,8 +1017,13 @@ export const ReaderPage: React.FC = () => {
 														loading={busyId === selectedItem.id}
 														onClick={() => {
 															const sourceObj = sources.find((s) => s.id === selectedItem.sourceId);
-															const rewriteAgent = agents.find((a) => a.kind === "rewrite" && sourceObj?.aiAgentIds?.includes(a.id));
-															handleAi(selectedItem.id, rewriteAgent?.id);
+															const rewriteAgent = agents.find((a) => a.kind === "rewrite" && sourceObj?.aiAgentIds?.includes(a.id))
+																	|| agents.find((a) => a.kind === "rewrite");
+															if (rewriteAgent) {
+																handleAi(selectedItem.id, rewriteAgent.id);
+															} else {
+																alert("No rewrite agent found in the system. Please create a rewrite agent in Settings.");
+															}
 														}}
 													>
 														Generate with AI
@@ -985,7 +1056,10 @@ export const ReaderPage: React.FC = () => {
 													>
 														Agent ID / Output Key: {key}
 													</div>
-													<div style={{ color: "var(--color-text)" }}>{val}</div>
+													<div
+														style={{ color: "var(--color-text)" }}
+														dangerouslySetInnerHTML={{ __html: formatMarkdownOrHtml(val) }}
+													/>
 												</div>
 											))}
 										</div>
@@ -1020,8 +1094,8 @@ export const ReaderPage: React.FC = () => {
 																	: "var(--color-text-secondary, #a89e8c)",
 															border: "none",
 															cursor: "pointer",
-															fontSize: "12px",
-															fontWeight: 600,
+															fontSize: "13px",
+															fontWeight: activeLang === lang ? 600 : 500,
 														}}
 													>
 														{lang.toUpperCase()}
@@ -1057,7 +1131,7 @@ export const ReaderPage: React.FC = () => {
 													{selectedItem.translations[activeLang].content ? (
 														<div
 															dangerouslySetInnerHTML={{
-																__html: selectedItem.translations[activeLang].content || "",
+																__html: formatMarkdownOrHtml(selectedItem.translations[activeLang].content) || "",
 															}}
 														/>
 													) : selectedItem.translations[activeLang].excerpt ? (

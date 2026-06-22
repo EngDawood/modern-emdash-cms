@@ -6,6 +6,58 @@
 
 import type { PortableTextBlock } from "emdash";
 
+export function markdownToHtml(text: string): string {
+	if (!text) return "";
+
+	let html = text.replace(/\r\n/g, "\n");
+
+	// 1. Horizontal rules (---, ***, ___)
+	html = html.replace(/^(?:---|\*\*\*|___)\s*$/gm, "<hr />");
+
+	// 2. Headings (# to ######)
+	html = html.replace(/^######\s+(.*?)$/gm, "<h6>$1</h6>");
+	html = html.replace(/^#####\s+(.*?)$/gm, "<h5>$1</h5>");
+	html = html.replace(/^####\s+(.*?)$/gm, "<h4>$1</h4>");
+	html = html.replace(/^###\s+(.*?)$/gm, "<h3>$1</h3>");
+	html = html.replace(/^##\s+(.*?)$/gm, "<h2>$1</h2>");
+	html = html.replace(/^#\s+(.*?)$/gm, "<h1>$1</h1>");
+
+	// 3. Bold: **text** or __text__
+	html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+	html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
+
+	// 4. Italic: *text* or _text_
+	html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+	html = html.replace(/_(.*?)_/g, "<em>$1</em>");
+
+	// 5. Code: `code`
+	html = html.replace(/`(.*?)`/g, "<code>$1</code>");
+
+	// Check if the input already contains HTML block tags (like <p>, <div>, <h3>, etc.)
+	const hasHtmlParagraphs = /<p\b[^>]*>|<div\b[^>]*>/i.test(html);
+	if (!hasHtmlParagraphs) {
+		// Convert newlines to paragraph tags
+		const parts = html.split(/\n\s*\n/);
+		html = parts
+			.map((part) => {
+				const trimmed = part.trim();
+				if (!trimmed) return "";
+				// If it's already wrapped in a block-level tag (like <h1>-<h6> or <hr />), don't wrap in <p>
+				if (/^<(h[1-6]|hr|blockquote|ul|ol|li)\b[^>]*>/i.test(trimmed)) {
+					return trimmed;
+				}
+				// Replace single newlines inside paragraph with <br />
+				const withLineBreaks = trimmed.replace(/\n/g, "<br />");
+				return `<p>${withLineBreaks}</p>`;
+			})
+			.filter(Boolean)
+			.join("\n");
+	}
+
+	return html;
+}
+
+
 interface HtmlNode {
 	type: "text" | "tag";
 	name?: string;
@@ -120,7 +172,8 @@ export function htmlToPortableText(html: string): PortableTextBlock[] {
 		return [];
 	}
 
-	const tokens = tokenizeHtml(html);
+	const processedHtml = markdownToHtml(html);
+	const tokens = tokenizeHtml(processedHtml);
 	const blocks: InternalBlock[] = [];
 
 	let currentBlock: InternalBlock | null = null;
