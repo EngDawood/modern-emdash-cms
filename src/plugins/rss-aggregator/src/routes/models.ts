@@ -2,7 +2,21 @@ import type { RouteContext } from "emdash";
 import { PluginRouteError } from "emdash";
 import type { Model, CreateModelInput, UpdateModelInput } from "../types.js";
 import { models, generateId } from "../utils.js";
-import { testModelConnection, setModelSecret, getModelSecret, deleteModelSecret } from "../ai-service.js";
+import {
+	testModelConnection,
+	resolveModelString,
+	setModelSecret,
+	getModelSecret,
+	deleteModelSecret,
+	setModelGatewaySecret,
+	getModelGatewaySecret,
+	deleteModelGatewaySecret,
+} from "../ai-service.js";
+
+/** Normalizes a client-supplied test outcome to a stored status. */
+function normalizeTestStatus(s: unknown): "ok" | "failed" | "untested" {
+	return s === "ok" ? "ok" : s === "failed" ? "failed" : "untested";
+}
 
 export const modelRoutes = {
 	models: {
@@ -19,7 +33,7 @@ export const modelRoutes = {
 
 	"models/create": {
 		handler: async (ctx: RouteContext) => {
-			const input = ctx.input as CreateModelInput & { apiKey?: string };
+			const input = ctx.input as CreateModelInput & { apiKey?: string; gatewayToken?: string };
 
 			if (!input.name?.trim()) {
 				throw PluginRouteError.badRequest("Model name is required");
@@ -30,39 +44,38 @@ export const modelRoutes = {
 			if (!input.modelId?.trim()) {
 				throw PluginRouteError.badRequest("Model modelId is required");
 			}
-			if (!input.apiKey?.trim()) {
+
+			const mode = input.mode === "gateway" ? "gateway" : "direct";
+			if (mode === "gateway") {
+				if (!input.provider?.trim()) {
+					throw PluginRouteError.badRequest("Provider slug is required for AI Gateway mode");
+				}
+			} else if (!input.apiKey?.trim()) {
 				throw PluginRouteError.badRequest("API key is required");
-			}
-
-			const test = await testModelConnection(ctx, {
-				endpoint: input.endpoint,
-				modelId: input.modelId,
-				apiKey: input.apiKey,
-				headers: input.headers,
-			});
-
-			if (!test.ok) {
-				throw PluginRouteError.badRequest("Model test failed: " + (test.error || ("HTTP " + test.status)));
 			}
 
 			const now = new Date().toISOString();
 			const id = generateId("mdl");
+			const testStatus = normalizeTestStatus(input.testStatus);
 
 			const record: Model = {
 				name: input.name,
 				endpoint: input.endpoint,
 				modelId: input.modelId,
+				mode,
 				provider: input.provider,
 				headers: input.headers,
-				hasKey: true,
-				verifiedAt: now,
-				lastTestStatus: "ok",
+				hasKey: !!input.apiKey?.trim(),
+				hasGatewayToken: !!input.gatewayToken?.trim(),
+				verifiedAt: testStatus === "ok" ? now : undefined,
+				lastTestStatus: testStatus,
 				createdAt: now,
 				updatedAt: now,
 			};
 
 			await models(ctx).put(id, record);
-			await setModelSecret(ctx, id, input.apiKey);
+			if (input.apiKey?.trim()) await setModelSecret(ctx, id, input.apiKey.trim());
+			if (input.gatewayToken?.trim()) await setModelGatewaySecret(ctx, id, input.gatewayToken.trim());
 
 			return { success: true, id, model: record };
 		},
@@ -70,65 +83,42 @@ export const modelRoutes = {
 
 	"models/update": {
 		handler: async (ctx: RouteContext) => {
-			const { id, ...updates } = ctx.input as UpdateModelInput & { id: string; apiKey?: string };
+			const { id, ...updates } = ctx.input as UpdateModelInput & { id: string; apiKey?: string; gatewayToken?: string };
 
 			const existing = await models(ctx).get(id);
 			if (!existing) {
 				throw PluginRouteError.notFound(`Model "${id}" not found`);
 			}
 
-			// Determine whether a connection field changed (requires re-test).
-			const endpointChanged = updates.endpoint !== undefined && updates.endpoint !== existing.endpoint;
-			const modelIdChanged = updates.modelId !== undefined && updates.modelId !== existing.modelId;
-			const headersChanged = updates.headers !== undefined && JSON.stringify(updates.headers) !== JSON.stringify(existing.headers);
 			const apiKeyChanged = updates.apiKey !== undefined && updates.apiKey.trim() !== "";
-			const connectionChanged = endpointChanged || modelIdChanged || headersChanged || apiKeyChanged;
+			const gatewayTokenChanged = updates.gatewayToken !== undefined && updates.gatewayToken.trim() !== "";
 
+			// Verification is client-driven: an explicit testStatus updates it; otherwise it is preserved.
 			let verifiedAt = existing.verifiedAt;
 			let lastTestStatus = existing.lastTestStatus;
-
-			if (connectionChanged) {
-				const effectiveApiKey = updates.apiKey?.trim() || await getModelSecret(ctx, id);
-				if (!effectiveApiKey) {
-					throw PluginRouteError.badRequest("No API key set");
-				}
-
-				const effectiveEndpoint = updates.endpoint ?? existing.endpoint;
-				const effectiveModelId = updates.modelId ?? existing.modelId;
-				const effectiveHeaders = updates.headers ?? existing.headers;
-
-				const test = await testModelConnection(ctx, {
-					endpoint: effectiveEndpoint,
-					modelId: effectiveModelId,
-					apiKey: effectiveApiKey,
-					headers: effectiveHeaders,
-				});
-
-				if (!test.ok) {
-					throw PluginRouteError.badRequest("Model test failed: " + (test.error || ("HTTP " + test.status)));
-				}
-
-				verifiedAt = new Date().toISOString();
-				lastTestStatus = "ok";
-
-				if (apiKeyChanged) {
-					await setModelSecret(ctx, id, updates.apiKey!.trim());
-				}
+			if (updates.testStatus !== undefined) {
+				const status = normalizeTestStatus(updates.testStatus);
+				verifiedAt = status === "ok" ? new Date().toISOString() : undefined;
+				lastTestStatus = status;
 			}
 
-			// Extract apiKey from updates before spreading into the record.
-			const { apiKey: _apiKey, ...safeUpdates } = updates as typeof updates & { apiKey?: string };
+			// Strip secrets + transient fields before spreading into the persisted record.
+			const { apiKey: _apiKey, gatewayToken: _gatewayToken, testStatus: _testStatus, ...safeUpdates } = updates;
 
 			const updated: Model = {
 				...existing,
 				...safeUpdates,
 				...(apiKeyChanged ? { hasKey: true } : {}),
+				...(gatewayTokenChanged ? { hasGatewayToken: true } : {}),
 				verifiedAt,
 				lastTestStatus,
 				updatedAt: new Date().toISOString(),
 			};
 
 			await models(ctx).put(id, updated);
+			if (apiKeyChanged) await setModelSecret(ctx, id, updates.apiKey!.trim());
+			if (gatewayTokenChanged) await setModelGatewaySecret(ctx, id, updates.gatewayToken!.trim());
+
 			return { success: true, model: updated };
 		},
 	},
@@ -138,6 +128,7 @@ export const modelRoutes = {
 			const { id } = ctx.input as { id: string };
 			await models(ctx).delete(id);
 			await deleteModelSecret(ctx, id);
+			await deleteModelGatewaySecret(ctx, id);
 			return { success: true };
 		},
 	},
@@ -146,38 +137,48 @@ export const modelRoutes = {
 		handler: async (ctx: RouteContext) => {
 			const input = ctx.input as {
 				id?: string;
+				mode?: string;
 				endpoint?: string;
 				modelId?: string;
+				provider?: string;
 				apiKey?: string;
+				gatewayToken?: string;
 				headers?: Record<string, string>;
 			};
 
-			// Resolve the API key: from input, or from KV if an id is given.
+			// Load the stored record when an id is given (MCP passes only id).
+			const record = input.id ? await models(ctx).get(input.id) : null;
+
+			const mode = (input.mode ?? record?.mode ?? "direct") === "gateway" ? "gateway" : "direct";
+			const endpoint = input.endpoint?.trim() || record?.endpoint || null;
+			const modelId = input.modelId?.trim() || record?.modelId || null;
+			const provider = input.provider?.trim() || record?.provider;
+
+			// Provider key: from input, else stored secret.
 			let apiKey = input.apiKey?.trim() || null;
 			if (!apiKey && input.id) {
 				apiKey = await getModelSecret(ctx, input.id);
 			}
 
-			// Resolve endpoint and modelId: from input, else from the stored record.
-			let endpoint = input.endpoint?.trim() || null;
-			let modelId = input.modelId?.trim() || null;
-
-			if (input.id && (!endpoint || !modelId)) {
-				const record = await models(ctx).get(input.id);
-				if (record) {
-					if (!endpoint) endpoint = record.endpoint;
-					if (!modelId) modelId = record.modelId;
-				}
+			// Gateway token: from input, else stored secret (gateway mode only).
+			let gatewayToken = input.gatewayToken?.trim() || null;
+			if (!gatewayToken && input.id && mode === "gateway") {
+				gatewayToken = await getModelGatewaySecret(ctx, input.id);
 			}
 
-			if (!endpoint || !modelId || !apiKey) {
-				return { ok: false, error: "Missing endpoint, modelId, or key" };
+			if (!endpoint || !modelId) {
+				return { ok: false, error: "Missing endpoint or modelId" };
+			}
+			// Direct mode requires a key; gateway mode may use a key stored on the gateway (BYOK).
+			if (mode !== "gateway" && !apiKey) {
+				return { ok: false, error: "Missing API key" };
 			}
 
 			return await testModelConnection(ctx, {
 				endpoint,
-				modelId,
-				apiKey,
+				modelId: resolveModelString({ mode, provider, modelId }),
+				apiKey: apiKey ?? undefined,
+				gatewayToken: gatewayToken ?? undefined,
 				headers: input.headers,
 			});
 		},

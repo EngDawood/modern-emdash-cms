@@ -44,6 +44,32 @@ export const SourcesPage: React.FC = () => {
 	// Form fields state
 	const [formFields, setFormFields] = useState<Partial<Source>>({});
 
+	// Preview states
+	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+	const [previewLoading, setPreviewLoading] = useState(false);
+	const [previewData, setPreviewData] = useState<any>(null);
+	const [previewError, setPreviewError] = useState<string | null>(null);
+
+	const handlePreviewFeed = async (url?: string) => {
+		if (!url) return;
+		setPreviewLoading(true);
+		setPreviewError(null);
+		setPreviewData(null);
+		setIsPreviewOpen(true);
+		try {
+			const res = await api.post<any>("sources/preview", { url });
+			if (res.success) {
+				setPreviewData(res);
+			} else {
+				setPreviewError("Failed to parse feed");
+			}
+		} catch (err) {
+			setPreviewError(err instanceof Error ? err.message : "Failed to load feed preview");
+		} finally {
+			setPreviewLoading(false);
+		}
+	};
+
 	// AI pipeline option lists (for the AI & Output tab)
 	const [models, setModels] = useState<Array<{ id: string } & Model>>([]);
 	const [agents, setAgents] = useState<Array<{ id: string } & Agent>>([]);
@@ -309,12 +335,23 @@ export const SourcesPage: React.FC = () => {
 						onChange={(val) => handleUpdateField("name", val)}
 						placeholder="E.g., TechCrunch Feed"
 					/>
-					<Input
-						label="Feed URL"
-						value={formFields.url || ""}
-						onChange={(val) => handleUpdateField("url", val)}
-						placeholder="https://example.com/feed"
-					/>
+					<div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+						<div style={{ flex: 1 }}>
+							<Input
+								label="Feed URL"
+								value={formFields.url || ""}
+								onChange={(val) => handleUpdateField("url", val)}
+								placeholder="https://example.com/feed"
+							/>
+						</div>
+						<Button
+							variant="secondary"
+							onClick={() => handlePreviewFeed(formFields.url)}
+							disabled={!formFields.url}
+						>
+							Preview
+						</Button>
+					</div>
 					<Input
 						label="Site Link (Optional)"
 						value={formFields.siteUrl || ""}
@@ -648,6 +685,82 @@ export const SourcesPage: React.FC = () => {
 				onConfirm={handleDelete}
 				onCancel={() => setIsDeleteOpen(false)}
 			/>
+
+			{/* Preview Modal */}
+			<Modal
+				open={isPreviewOpen}
+				onClose={() => setIsPreviewOpen(false)}
+				title="Feed Preview"
+				size="lg"
+			>
+				{previewLoading && <Loading />}
+				{previewError && <Alert variant="error" title="Preview Error">{previewError}</Alert>}
+				{previewData && (
+					<div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+						<div style={{ padding: "12px", background: "var(--color-bg-subtle, #f9fafb)", borderRadius: "6px", border: "1px solid var(--color-border, #eee)" }}>
+							<h3 style={{ margin: "0 0 4px", fontSize: "16px", color: "var(--color-text, #111)" }}>
+								{previewData.feed.title}
+							</h3>
+							{previewData.feed.description && (
+								<p style={{ margin: "0 0 8px", fontSize: "13px", color: "var(--color-text-secondary, #666)" }}>
+									{previewData.feed.description}
+								</p>
+							)}
+							<div style={{ display: "flex", gap: "16px", fontSize: "12px", color: "var(--color-muted, #888)", flexWrap: "wrap" }}>
+								<span>Format: <strong style={{ color: "var(--color-text, #111)" }}>{previewData.feed.format}</strong></span>
+								<span>Items: <strong style={{ color: "var(--color-text, #111)" }}>{previewData.feed.itemCount}</strong></span>
+								<span>Link: <a href={previewData.feed.link} target="_blank" rel="noreferrer" style={{ color: "var(--color-accent, #2563eb)", textDecoration: "underline" }}>{previewData.feed.link}</a></span>
+							</div>
+						</div>
+
+						<h4 style={{ margin: "8px 0 0", fontSize: "14px", fontWeight: 600 }}>Latest Items Preview (Max 10)</h4>
+						
+						<Table
+							columns={[
+								{
+									key: "title",
+									label: "Title",
+									render: (_, row: any) => {
+										const cleanDesc = row.description ? row.description.replace(/<[^>]+>/g, "") : "";
+										return (
+											<div>
+												<a href={row.link} target="_blank" rel="noreferrer" style={{ fontWeight: 600, color: "var(--color-accent, #2563eb)", textDecoration: "none" }}>
+													{row.title}
+												</a>
+												{cleanDesc && (
+													<div style={{ fontSize: "12px", color: "var(--color-text-secondary, #666)", marginTop: "4px" }}>
+														{truncateText(cleanDesc, 120)}
+													</div>
+												)}
+											</div>
+										);
+									}
+								},
+								{
+									key: "pubDate",
+									label: "Published Date",
+									width: "180px",
+									render: (val: any) => <span style={{ fontSize: "12px" }}>{val ? new Date(val).toLocaleString() : "N/A"}</span>
+								},
+								{
+									key: "author",
+									label: "Author",
+									width: "120px",
+									render: (val: any) => <span style={{ fontSize: "12px" }}>{val?.name || "N/A"}</span>
+								}
+							]}
+							data={previewData.items}
+							emptyMessage="No items found in this feed preview."
+						/>
+
+						<div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+							<Button variant="secondary" onClick={() => setIsPreviewOpen(false)}>
+								Close Preview
+							</Button>
+						</div>
+					</div>
+				)}
+			</Modal>
 		</div>
 	);
 };

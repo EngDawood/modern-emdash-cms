@@ -10,7 +10,7 @@
  */
 
 import type { PluginContext } from "emdash";
-import type { PluginSettings, FeedItem, Agent, AgentKind, ItemTranslation, CreditState } from "./types.js";
+import type { PluginSettings, FeedItem, Agent, AgentKind, ItemTranslation, CreditState, Model } from "./types.js";
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -146,20 +146,39 @@ async function creditGate(ctx: PluginContext, settings: PluginSettings): Promise
 // ── Model resolution ───────────────────────────────────────────────────
 
 /**
- * A fully-resolved model ready for calling: endpoint + modelId + live API key
- * loaded from KV, plus any custom headers.
+ * A fully-resolved model ready for calling: endpoint + the assembled model string
+ * + credentials loaded from KV, plus any custom headers. In gateway mode the
+ * provider key may be absent (BYOK on the gateway) and a gateway token may apply.
  */
 export interface ResolvedModel {
 	id: string;
 	endpoint: string;
+	/** The exact `model` value to send in the request body (already prefixed in gateway mode). */
 	modelId: string;
 	headers?: Record<string, string>;
-	apiKey: string;
+	apiKey?: string;
+	gatewayToken?: string;
+}
+
+/**
+ * Builds the `model` value sent in the request body. Gateway mode prefixes the
+ * provider slug (`provider/modelId`); direct mode sends the bare modelId.
+ */
+export function resolveModelString(record: { mode?: string; provider?: string; modelId: string }): string {
+	if (record.mode === "gateway" && record.provider?.trim()) {
+		return `${record.provider.trim()}/${record.modelId}`;
+	}
+	return record.modelId;
 }
 
 /** KV key for a model's API secret. */
 function modelSecretKey(id: string): string {
 	return `model-secret:${id}`;
+}
+
+/** KV key for a model's Cloudflare AI Gateway token (cf-aig-authorization). */
+function modelGatewaySecretKey(id: string): string {
+	return `model-gateway-secret:${id}`;
 }
 
 /** Stores an API key for the given model ID in KV. Never throws. */
@@ -190,6 +209,34 @@ export async function deleteModelSecret(ctx: PluginContext, id: string): Promise
 	}
 }
 
+/** Stores a gateway token (cf-aig-authorization) for the given model ID in KV. Never throws. */
+export async function setModelGatewaySecret(ctx: PluginContext, id: string, token: string): Promise<void> {
+	try {
+		await ctx.kv.set(modelGatewaySecretKey(id), token);
+	} catch (err) {
+		ctx.log.warn("Failed to set model gateway secret", { id, error: String(err) });
+	}
+}
+
+/** Retrieves the gateway token for the given model ID from KV, or null if absent. Never throws. */
+export async function getModelGatewaySecret(ctx: PluginContext, id: string): Promise<string | null> {
+	try {
+		return await ctx.kv.get<string>(modelGatewaySecretKey(id));
+	} catch (err) {
+		ctx.log.warn("Failed to get model gateway secret", { id, error: String(err) });
+		return null;
+	}
+}
+
+/** Removes the gateway token for the given model ID from KV. Never throws. */
+export async function deleteModelGatewaySecret(ctx: PluginContext, id: string): Promise<void> {
+	try {
+		await ctx.kv.delete(modelGatewaySecretKey(id));
+	} catch (err) {
+		ctx.log.warn("Failed to delete model gateway secret", { id, error: String(err) });
+	}
+}
+
 /**
  * Loads a saved model record from storage and its API key from KV, returning a
  * ready-to-call ResolvedModel, or null when the record or key is missing.
@@ -197,18 +244,22 @@ export async function deleteModelSecret(ctx: PluginContext, id: string): Promise
  */
 export async function resolveModel(ctx: PluginContext, modelId: string): Promise<ResolvedModel | null> {
 	try {
-		const record = await ctx.storage.models.get(modelId) as { endpoint: string; modelId: string; headers?: Record<string, string> } | null;
+		const record = await ctx.storage.models.get(modelId) as Model | null;
 		if (!record) return null;
 
 		const apiKey = await getModelSecret(ctx, modelId);
-		if (!apiKey) return null;
+		// Direct mode requires a provider key; gateway mode allows BYOK (key on the gateway).
+		if (!apiKey && record.mode !== "gateway") return null;
+
+		const gatewayToken = record.mode === "gateway" ? await getModelGatewaySecret(ctx, modelId) : null;
 
 		return {
 			id: modelId,
 			endpoint: record.endpoint,
-			modelId: record.modelId,
+			modelId: resolveModelString(record),
 			headers: record.headers,
-			apiKey,
+			apiKey: apiKey ?? undefined,
+			gatewayToken: gatewayToken ?? undefined,
 		};
 	} catch (err) {
 		ctx.log.warn("Failed to resolve model", { modelId, error: String(err) });
@@ -246,9 +297,10 @@ export async function callChat(
 		const response = await doFetch(model.endpoint, {
 			method: "POST",
 			headers: {
-				"Authorization": `Bearer ${model.apiKey}`,
 				"Content-Type": "application/json",
 				...model.headers,
+				...(model.apiKey ? { "Authorization": `Bearer ${model.apiKey}` } : {}),
+				...(model.gatewayToken ? { "cf-aig-authorization": `Bearer ${model.gatewayToken}` } : {}),
 			},
 			body: JSON.stringify(body),
 			signal: AbortSignal.timeout(30000),
@@ -281,16 +333,17 @@ export async function callChat(
  */
 export async function testModelConnection(
 	ctx: PluginContext,
-	candidate: { endpoint: string; modelId: string; apiKey: string; headers?: Record<string, string> },
+	candidate: { endpoint: string; modelId: string; apiKey?: string; gatewayToken?: string; headers?: Record<string, string> },
 ): Promise<{ ok: boolean; status?: number; error?: string }> {
 	try {
 		const doFetch = ctx.http?.fetch ?? fetch;
 		const response = await doFetch(candidate.endpoint, {
 			method: "POST",
 			headers: {
-				"Authorization": `Bearer ${candidate.apiKey}`,
 				"Content-Type": "application/json",
 				...candidate.headers,
+				...(candidate.apiKey ? { "Authorization": `Bearer ${candidate.apiKey}` } : {}),
+				...(candidate.gatewayToken ? { "cf-aig-authorization": `Bearer ${candidate.gatewayToken}` } : {}),
 			},
 			body: JSON.stringify({
 				model: candidate.modelId,

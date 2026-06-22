@@ -1,0 +1,1044 @@
+import React, { useState, useEffect } from "react";
+import {
+	usePluginAPI,
+	PageHeader,
+	Button,
+	Badge,
+	Select,
+	Alert,
+	Loading,
+	Modal,
+	Input,
+} from "./ui";
+import type { FeedItem, Source, OutputProfile } from "../types";
+import { formatRelativeTime } from "./shared";
+
+export const ReaderPage: React.FC = () => {
+	const api = usePluginAPI();
+	const [items, setItems] = useState<Array<{ id: string } & FeedItem>>([]);
+	const [sources, setSources] = useState<Array<{ id: string; name: string; outputProfileId?: string }>>([]);
+	const [profiles, setProfiles] = useState<Array<{ id: string } & OutputProfile>>([]);
+	const [loading, setLoading] = useState(true);
+	const [loadingItems, setLoadingItems] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	// Selected Feed Item
+	const [selectedItem, setSelectedItem] = useState<({ id: string } & FeedItem) | null>(null);
+
+	// Filters & Pagination
+	const [selectedSource, setSelectedSource] = useState<string>("");
+	const [statusFilter, setStatusFilter] = useState<string>("");
+	const [searchQuery, setSearchQuery] = useState<string>("");
+	const [cursor, setCursor] = useState<string | undefined>(undefined);
+	const [hasMore, setHasMore] = useState(false);
+
+	// Action states
+	const [busyId, setBusyId] = useState<string | null>(null);
+	const [rejectingItem, setRejectingItem] = useState<{ id: string; title: string } | null>(null);
+	const [rejectReason, setRejectReason] = useState("");
+	const [isRejectLoading, setIsRejectLoading] = useState(false);
+	const [publishingId, setPublishingId] = useState<string | null>(null);
+
+	// Right Panel Tab
+	const [activeTab, setActiveTab] = useState<"original" | "summary" | "rewrite" | "custom" | "translations">("original");
+	const [activeLang, setActiveLang] = useState<string>("");
+
+	const loadInitialData = async () => {
+		try {
+			setLoading(true);
+			const [sourcesData, profilesData] = await Promise.all([
+				api.get<{ items: Array<{ id: string } & Source> }>("sources"),
+				api.get<{ items: Array<{ id: string } & OutputProfile> }>("output-profiles"),
+			]);
+
+			setSources(sourcesData.items.map((s) => ({ id: s.id, name: s.name, outputProfileId: s.outputProfileId })));
+			setProfiles(profilesData.items);
+
+			// Fetch items
+			await fetchItems("", "", undefined, true);
+			setError(null);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to load initial reader data");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const fetchItems = async (
+		sourceId: string,
+		statusVal: string,
+		cursorVal?: string,
+		reset: boolean = false
+	) => {
+		setLoadingItems(true);
+		try {
+			let url = "items?limit=25";
+			if (sourceId) url += `&sourceId=${encodeURIComponent(sourceId)}`;
+			if (statusVal) url += `&status=${encodeURIComponent(statusVal)}`;
+			if (cursorVal) url += `&cursor=${encodeURIComponent(cursorVal)}`;
+
+			const data = await api.get<{
+				items: Array<{ id: string } & FeedItem>;
+				cursor?: string;
+				hasMore: boolean;
+				total: number;
+			}>(url);
+
+			const fetchedItems = data.items;
+
+			if (reset) {
+				setItems(fetchedItems);
+				// Automatically select first item if none is selected
+				if (fetchedItems.length > 0) {
+					setSelectedItem(fetchedItems[0]);
+				} else {
+					setSelectedItem(null);
+				}
+			} else {
+				setItems((prev) => [...prev, ...fetchedItems]);
+			}
+			setCursor(data.cursor);
+			setHasMore(data.hasMore);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to load feed items");
+		} finally {
+			setLoadingItems(false);
+		}
+	};
+
+	useEffect(() => {
+		loadInitialData();
+	}, []);
+
+	const handleSourceChange = (sourceId: string) => {
+		setSelectedSource(sourceId);
+		fetchItems(sourceId, statusFilter, undefined, true);
+	};
+
+	const handleStatusChange = (status: string) => {
+		setStatusFilter(status);
+		fetchItems(selectedSource, status, undefined, true);
+	};
+
+	const handleLoadMore = () => {
+		if (hasMore && cursor) {
+			fetchItems(selectedSource, statusFilter, cursor, false);
+		}
+	};
+
+	const handleApprove = async (id: string) => {
+		setBusyId(id);
+		try {
+			const res = await api.post<{ item: FeedItem }>("items/approve", { id });
+			const updated = { id, ...res.item };
+			setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+			if (selectedItem?.id === id) {
+				setSelectedItem(updated);
+			}
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "Failed to approve item");
+		} finally {
+			setBusyId(null);
+		}
+	};
+
+	const handleAi = async (id: string) => {
+		setBusyId(id);
+		try {
+			const res = await api.post<{ item: FeedItem }>("items/ai", { id });
+			const updated = { id, ...res.item };
+			setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+			if (selectedItem?.id === id) {
+				setSelectedItem(updated);
+			}
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "AI action failed");
+		} finally {
+			setBusyId(null);
+		}
+	};
+
+	const handlePublish = async (id: string) => {
+		setPublishingId(id);
+		try {
+			const res = await api.post<{ item: FeedItem }>("items/publish", { id });
+			const updated = { id, ...res.item };
+			setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+			if (selectedItem?.id === id) {
+				setSelectedItem(updated);
+			}
+			alert("Item successfully published!");
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "Failed to publish item");
+		} finally {
+			setPublishingId(null);
+		}
+	};
+
+	const handleOpenReject = (item: { id: string; title: string }) => {
+		setRejectingItem(item);
+		setRejectReason("Irrelevant/Off-topic");
+	};
+
+	const handleRejectSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!rejectingItem) return;
+
+		setIsRejectLoading(true);
+		try {
+			await api.post("items/reject", {
+				id: rejectingItem.id,
+				reason: rejectReason,
+			});
+			// Remove item from view
+			const nextItems = items.filter((i) => i.id !== rejectingItem.id);
+			setItems(nextItems);
+			if (selectedItem?.id === rejectingItem.id) {
+				setSelectedItem(nextItems.length > 0 ? nextItems[0] : null);
+			}
+			setRejectingItem(null);
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "Failed to reject item");
+		} finally {
+			setIsRejectLoading(false);
+		}
+	};
+
+	if (loading) return <Loading size="lg" />;
+
+	const sourceOptions = [{ label: "All Sources", value: "" }].concat(
+		sources.map((s) => ({ label: s.name, value: s.id }))
+	);
+
+	// Client-side search filtering on the title
+	const filteredItems = items.filter((item) =>
+		item.title?.toLowerCase().includes(searchQuery.toLowerCase())
+	);
+
+	// Get corresponding source and output profile for the selected item
+	const selectedItemSource = selectedItem
+		? sources.find((s) => s.id === selectedItem.sourceId)
+		: null;
+	const selectedItemProfile = selectedItemSource?.outputProfileId
+		? profiles.find((p) => p.id === selectedItemSource.outputProfileId)
+		: null;
+
+	// Extract translations locales
+	const translationLocales = selectedItem?.translations
+		? Object.keys(selectedItem.translations)
+		: [];
+
+	// Set initial language tab when selectedItem changes
+	if (translationLocales.length > 0 && !activeLang) {
+		setActiveLang(translationLocales[0]);
+	}
+
+	return (
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				height: "calc(100vh - 70px)",
+				gap: "12px",
+				padding: "16px",
+				background: "var(--color-bg, #0e0d0b)",
+				color: "var(--color-text, #f4efe3)",
+				fontFamily: "var(--font-sans, sans-serif)",
+			}}
+		>
+			<PageHeader
+				title="Feed Reader"
+				description="Audit, approve, and curate imported items with AI-assisted outputs."
+			/>
+
+			{error && <Alert variant="error" title="Error">{error}</Alert>}
+
+			{/* Main Split Screen Container */}
+			<div
+				style={{
+					display: "flex",
+					flex: 1,
+					gap: "16px",
+					minHeight: 0,
+				}}
+			>
+				{/* LEFT COLUMN: Feed Items List */}
+				<div
+					style={{
+						width: "350px",
+						display: "flex",
+						flexDirection: "column",
+						background: "var(--color-surface, #18130e)",
+						border: "1px solid var(--color-border, #2a2721)",
+						borderRadius: "8px",
+						padding: "12px",
+						gap: "12px",
+						minHeight: 0,
+					}}
+				>
+					{/* Filters */}
+					<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+						<div style={{ display: "flex", gap: "8px" }}>
+							<div style={{ flex: 1 }}>
+								<Select
+									label="Source"
+									value={selectedSource}
+									onChange={handleSourceChange}
+									options={sourceOptions}
+								/>
+							</div>
+							<div style={{ width: "110px" }}>
+								<Select
+									label="Status"
+									value={statusFilter}
+									onChange={handleStatusChange}
+									options={[
+										{ label: "All Status", value: "" },
+										{ label: "Pending", value: "pending" },
+										{ label: "Approved", value: "approved" },
+										{ label: "Rejected", value: "rejected" },
+									]}
+								/>
+							</div>
+						</div>
+						<Input
+							placeholder="Search titles..."
+							value={searchQuery}
+							onChange={(val) => setSearchQuery(val)}
+						/>
+					</div>
+
+					{/* List area */}
+					<div
+						style={{
+							flex: 1,
+							overflowY: "auto",
+							display: "flex",
+							flexDirection: "column",
+							gap: "8px",
+							paddingRight: "4px",
+						}}
+					>
+						{loadingItems && items.length === 0 ? (
+							<Loading size="sm" />
+						) : filteredItems.length === 0 ? (
+							<div
+								style={{
+									textAlign: "center",
+									padding: "40px 20px",
+									color: "var(--color-muted, #80796a)",
+									fontSize: "14px",
+								}}
+							>
+								No feed items found.
+							</div>
+						) : (
+							filteredItems.map((item) => {
+								const isSelected = selectedItem?.id === item.id;
+								const itemStatus = item.status || "approved";
+
+								return (
+									<div
+										key={item.id}
+										onClick={() => {
+											setSelectedItem(item);
+											// Reset lang tab if new item doesn't have current lang
+											const nextLangs = item.translations ? Object.keys(item.translations) : [];
+											if (nextLangs.length > 0 && (!nextLangs.includes(activeLang) || !activeLang)) {
+												setActiveLang(nextLangs[0]);
+											}
+										}}
+										style={{
+											padding: "12px",
+											borderRadius: "6px",
+											background: isSelected
+												? "var(--color-bg-subtle, #141210)"
+												: "transparent",
+											border: isSelected
+												? "1px solid var(--color-accent, #9b2346)"
+												: "1px solid var(--color-border-subtle, #231f1a)",
+											cursor: "pointer",
+											transition: "all 0.15s ease",
+											display: "flex",
+											flexDirection: "column",
+											gap: "6px",
+										}}
+									>
+										<div
+											style={{
+												fontSize: "11px",
+												color: "var(--color-muted, #80796a)",
+												display: "flex",
+												justifyContent: "space-between",
+											}}
+										>
+											<span style={{ fontWeight: 600 }}>{item.sourceName}</span>
+											<span>{formatRelativeTime(item.publishedAt)}</span>
+										</div>
+
+										<h4
+											style={{
+												margin: 0,
+												fontSize: "14px",
+												fontWeight: isSelected ? 600 : 500,
+												color: isSelected
+													? "var(--color-text, #f4efe3)"
+													: "var(--color-text-secondary, #a89e8c)",
+												lineHeight: 1.3,
+											}}
+										>
+											{item.title}
+										</h4>
+
+										<div
+											style={{
+												display: "flex",
+												justifyContent: "space-between",
+												alignItems: "center",
+												marginTop: "4px",
+											}}
+										>
+											<Badge
+												variant={
+													itemStatus === "approved"
+														? "success"
+														: itemStatus === "pending"
+															? "warning"
+															: "error"
+												}
+											>
+												{itemStatus}
+											</Badge>
+
+											<div style={{ display: "flex", gap: "4px" }}>
+												{item.summary && (
+													<span
+														style={{
+															fontSize: "9px",
+															background: "rgba(37, 99, 235, 0.15)",
+															color: "#60a5fa",
+															padding: "1px 4px",
+															borderRadius: "3px",
+															border: "1px solid rgba(37, 99, 235, 0.3)",
+														}}
+														title="Summary available"
+													>
+														TL;DR
+													</span>
+												)}
+												{item.rewrittenContent && (
+													<span
+														style={{
+															fontSize: "9px",
+															background: "rgba(124, 58, 237, 0.15)",
+															color: "#a78bfa",
+															padding: "1px 4px",
+															borderRadius: "3px",
+															border: "1px solid rgba(124, 58, 237, 0.3)",
+														}}
+														title="Rewrite available"
+													>
+														RW
+													</span>
+												)}
+											</div>
+										</div>
+									</div>
+								);
+							})
+						)}
+
+						{hasMore && (
+							<div
+								style={{
+									display: "flex",
+									justifyContent: "center",
+									padding: "8px 0",
+								}}
+							>
+								<Button
+									variant="secondary"
+									size="sm"
+									loading={loadingItems}
+									onClick={handleLoadMore}
+								>
+									Load more
+								</Button>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* RIGHT COLUMN: Selected Item Detail View */}
+				<div
+					style={{
+						flex: 1,
+						background: "var(--color-surface, #18130e)",
+						border: "1px solid var(--color-border, #2a2721)",
+						borderRadius: "8px",
+						display: "flex",
+						flexDirection: "column",
+						minHeight: 0,
+					}}
+				>
+					{selectedItem ? (
+						<div
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								height: "100%",
+								minHeight: 0,
+							}}
+						>
+							{/* 1. Header Toolbar */}
+							<div
+								style={{
+									padding: "16px",
+									borderBottom: "1px solid var(--color-border, #2a2721)",
+									display: "flex",
+									flexDirection: "column",
+									gap: "12px",
+								}}
+							>
+								<div
+									style={{
+										display: "flex",
+										justifyContent: "space-between",
+										alignItems: "flex-start",
+									}}
+								>
+									<div>
+										<div
+											style={{
+												fontSize: "12px",
+												color: "var(--color-muted, #80796a)",
+												marginBottom: "4px",
+												display: "flex",
+												gap: "12px",
+											}}
+										>
+											<span>
+												Source: <strong>{selectedItem.sourceName}</strong>
+											</span>
+											{selectedItem.author?.name && (
+												<span>
+													Author: <strong>{selectedItem.author.name}</strong>
+												</span>
+											)}
+											<span>
+												Published: <strong>{new Date(selectedItem.publishedAt).toLocaleString()}</strong>
+											</span>
+										</div>
+										<h2
+											style={{
+												margin: 0,
+												fontSize: "20px",
+												fontWeight: 600,
+												color: "var(--color-text, #f4efe3)",
+												lineHeight: 1.3,
+											}}
+										>
+											{selectedItem.title}
+										</h2>
+									</div>
+
+									{/* Status Badge */}
+									<Badge
+										variant={
+											(selectedItem.status || "approved") === "approved"
+												? "success"
+												: selectedItem.status === "pending"
+													? "warning"
+													: "error"
+										}
+									>
+										{selectedItem.status || "approved"}
+									</Badge>
+								</div>
+
+								{/* Output Profile info row */}
+								{selectedItemSource && (
+									<div
+										style={{
+											fontSize: "12px",
+											padding: "8px 12px",
+											borderRadius: "6px",
+											background: "var(--color-bg-subtle, #141210)",
+											border: "1px solid var(--color-border-subtle, #231f1a)",
+											display: "flex",
+											justifyContent: "space-between",
+											alignItems: "center",
+											flexWrap: "wrap",
+											gap: "8px",
+										}}
+									>
+										<div>
+											<span style={{ color: "var(--color-muted, #80796a)" }}>Bound Profile: </span>
+											<strong>
+												{selectedItemProfile
+													? `${selectedItemProfile.name} (mode: ${selectedItemProfile.mode}, body: ${selectedItemProfile.bodySource})`
+													: "None"}
+											</strong>
+										</div>
+										{selectedItem.publishedContentId && selectedItemProfile && (
+											<a
+												href={`/_emdash/admin/content/${selectedItemProfile.collection}/${selectedItem.publishedContentId}`}
+												target="_blank"
+												rel="noreferrer"
+												style={{
+													color: "var(--color-accent, #9b2346)",
+													fontWeight: 600,
+													textDecoration: "underline",
+												}}
+											>
+												View published CMS entry
+											</a>
+										)}
+									</div>
+								)}
+
+								{/* Actions Toolbar */}
+								<div
+									style={{
+										display: "flex",
+										gap: "8px",
+										flexWrap: "wrap",
+										borderTop: "1px solid var(--color-border-subtle, #231f1a)",
+										paddingTop: "12px",
+									}}
+								>
+									{selectedItem.status === "pending" && (
+										<Button
+											variant="primary"
+											size="sm"
+											loading={busyId === selectedItem.id}
+											onClick={() => handleApprove(selectedItem.id)}
+										>
+											Approve
+										</Button>
+									)}
+
+									{selectedItemSource?.outputProfileId && (
+										<Button
+											variant="primary"
+											size="sm"
+											loading={publishingId === selectedItem.id}
+											onClick={() => handlePublish(selectedItem.id)}
+										>
+											Publish Now
+										</Button>
+									)}
+
+									<Button
+										variant="secondary"
+										size="sm"
+										loading={busyId === selectedItem.id}
+										onClick={() => handleAi(selectedItem.id)}
+									>
+										Re-run AI
+									</Button>
+
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() =>
+											handleOpenReject({ id: selectedItem.id, title: selectedItem.title })
+										}
+									>
+										Reject
+									</Button>
+
+									<a
+										href={selectedItem.url}
+										target="_blank"
+										rel="noreferrer"
+										style={{ textDecoration: "none" }}
+									>
+										<Button variant="ghost" size="sm">
+											Open Original
+										</Button>
+									</a>
+								</div>
+							</div>
+
+							{/* 2. Detail Body area (Tabs + Content) */}
+							<div
+								style={{
+									flex: 1,
+									display: "flex",
+									flexDirection: "column",
+									minHeight: 0,
+									padding: "16px",
+								}}
+							>
+								{/* Custom Tab Headers */}
+								<div
+									style={{
+										display: "flex",
+										gap: "16px",
+										borderBottom: "1px solid var(--color-border-subtle, #231f1a)",
+										marginBottom: "16px",
+									}}
+								>
+									<button
+										type="button"
+										onClick={() => setActiveTab("original")}
+										style={{
+											padding: "8px 0",
+											background: "none",
+											border: "none",
+											cursor: "pointer",
+											color:
+												activeTab === "original"
+													? "var(--color-accent, #9b2346)"
+													: "var(--color-muted, #80796a)",
+											borderBottom:
+												activeTab === "original"
+													? "2px solid var(--color-accent, #9b2346)"
+													: "2px solid transparent",
+											fontWeight: activeTab === "original" ? 600 : 500,
+											fontSize: "14px",
+										}}
+									>
+										Original Content
+									</button>
+									<button
+										type="button"
+										onClick={() => setActiveTab("summary")}
+										style={{
+											padding: "8px 0",
+											background: "none",
+											border: "none",
+											cursor: "pointer",
+											color:
+												activeTab === "summary"
+													? "var(--color-accent, #9b2346)"
+													: "var(--color-muted, #80796a)",
+											borderBottom:
+												activeTab === "summary"
+													? "2px solid var(--color-accent, #9b2346)"
+													: "2px solid transparent",
+											fontWeight: activeTab === "summary" ? 600 : 500,
+											fontSize: "14px",
+										}}
+									>
+										AI Summary (TL;DR)
+									</button>
+									<button
+										type="button"
+										onClick={() => setActiveTab("rewrite")}
+										style={{
+											padding: "8px 0",
+											background: "none",
+											border: "none",
+											cursor: "pointer",
+											color:
+												activeTab === "rewrite"
+													? "var(--color-accent, #9b2346)"
+													: "var(--color-muted, #80796a)",
+											borderBottom:
+												activeTab === "rewrite"
+													? "2px solid var(--color-accent, #9b2346)"
+													: "2px solid transparent",
+											fontWeight: activeTab === "rewrite" ? 600 : 500,
+											fontSize: "14px",
+										}}
+									>
+										AI Rewrite
+									</button>
+									{selectedItem.aiOutputs && Object.keys(selectedItem.aiOutputs).length > 0 && (
+										<button
+											type="button"
+											onClick={() => setActiveTab("custom")}
+											style={{
+												padding: "8px 0",
+												background: "none",
+												border: "none",
+												cursor: "pointer",
+												color:
+													activeTab === "custom"
+														? "var(--color-accent, #9b2346)"
+														: "var(--color-muted, #80796a)",
+												borderBottom:
+													activeTab === "custom"
+														? "2px solid var(--color-accent, #9b2346)"
+														: "2px solid transparent",
+												fontWeight: activeTab === "custom" ? 600 : 500,
+												fontSize: "14px",
+											}}
+										>
+											Custom AI
+										</button>
+									)}
+									{translationLocales.length > 0 && (
+										<button
+											type="button"
+											onClick={() => setActiveTab("translations")}
+											style={{
+												padding: "8px 0",
+												background: "none",
+												border: "none",
+												cursor: "pointer",
+												color:
+													activeTab === "translations"
+														? "var(--color-accent, #9b2346)"
+														: "var(--color-muted, #80796a)",
+												borderBottom:
+													activeTab === "translations"
+														? "2px solid var(--color-accent, #9b2346)"
+														: "2px solid transparent",
+												fontWeight: activeTab === "translations" ? 600 : 500,
+												fontSize: "14px",
+											}}
+										>
+											Translations ({translationLocales.length})
+										</button>
+									)}
+								</div>
+
+								{/* Scrollable Content Pane */}
+								<div
+									style={{
+										flex: 1,
+										overflowY: "auto",
+										fontSize: "15px",
+										lineHeight: 1.6,
+										color: "var(--color-text-secondary, #a89e8c)",
+										paddingRight: "8px",
+									}}
+								>
+									{/* Featured Image display */}
+									{selectedItem.imageUrl && activeTab !== "custom" && (
+										<div style={{ marginBottom: "16px", borderRadius: "6px", overflow: "hidden" }}>
+											<img
+												src={selectedItem.imageUrl}
+												alt={selectedItem.title}
+												style={{
+													width: "100%",
+													maxHeight: "300px",
+													objectFit: "cover",
+												}}
+											/>
+										</div>
+									)}
+
+									{/* Render active tab content */}
+									{activeTab === "original" && (
+										<div>
+											{selectedItem.content ? (
+												<div dangerouslySetInnerHTML={{ __html: selectedItem.content }} />
+											) : selectedItem.excerpt ? (
+												<p>{selectedItem.excerpt}</p>
+											) : (
+												<p style={{ fontStyle: "italic", color: "var(--color-muted)" }}>
+													No content body retrieved from feed.
+												</p>
+											)}
+										</div>
+									)}
+
+									{activeTab === "summary" && (
+										<div>
+											{selectedItem.summary ? (
+												<p style={{ fontSize: "16px", fontWeight: 400, color: "var(--color-text)" }}>
+													{selectedItem.summary}
+												</p>
+											) : (
+												<div style={{ textAlign: "center", padding: "30px 0" }}>
+													<p style={{ color: "var(--color-muted)" }}>No AI Summary generated.</p>
+													<Button
+														variant="secondary"
+														size="sm"
+														loading={busyId === selectedItem.id}
+														onClick={() => handleAi(selectedItem.id)}
+													>
+														Generate with AI
+													</Button>
+												</div>
+											)}
+										</div>
+									)}
+
+									{activeTab === "rewrite" && (
+										<div>
+											{selectedItem.rewrittenContent ? (
+												<div dangerouslySetInnerHTML={{ __html: selectedItem.rewrittenContent }} />
+											) : (
+												<div style={{ textAlign: "center", padding: "30px 0" }}>
+													<p style={{ color: "var(--color-muted)" }}>No AI Rewrite generated.</p>
+													<Button
+														variant="secondary"
+														size="sm"
+														loading={busyId === selectedItem.id}
+														onClick={() => handleAi(selectedItem.id)}
+													>
+														Generate with AI
+													</Button>
+												</div>
+											)}
+										</div>
+									)}
+
+									{activeTab === "custom" && selectedItem.aiOutputs && (
+										<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+											{Object.entries(selectedItem.aiOutputs).map(([key, val]) => (
+												<div
+													key={key}
+													style={{
+														padding: "12px",
+														background: "var(--color-bg-subtle, #141210)",
+														border: "1px solid var(--color-border-subtle, #231f1a)",
+														borderRadius: "6px",
+													}}
+												>
+													<div
+														style={{
+															fontSize: "11px",
+															fontWeight: 600,
+															textTransform: "uppercase",
+															color: "var(--color-muted, #80796a)",
+															marginBottom: "4px",
+														}}
+													>
+														Agent ID / Output Key: {key}
+													</div>
+													<div style={{ color: "var(--color-text)" }}>{val}</div>
+												</div>
+											))}
+										</div>
+									)}
+
+									{activeTab === "translations" && selectedItem.translations && (
+										<div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+											{/* Translation Language Tab bar */}
+											<div
+												style={{
+													display: "flex",
+													gap: "8px",
+													borderBottom: "1px solid var(--color-border-subtle, #231f1a)",
+													paddingBottom: "8px",
+												}}
+											>
+												{translationLocales.map((lang) => (
+													<button
+														key={lang}
+														type="button"
+														onClick={() => setActiveLang(lang)}
+														style={{
+															padding: "4px 10px",
+															borderRadius: "4px",
+															background:
+																activeLang === lang
+																	? "var(--color-accent, #9b2346)"
+																	: "var(--color-bg-subtle, #141210)",
+															color:
+																activeLang === lang
+																	? "var(--color-on-accent, #fdfbf6)"
+																	: "var(--color-text-secondary, #a89e8c)",
+															border: "none",
+															cursor: "pointer",
+															fontSize: "12px",
+															fontWeight: 600,
+														}}
+													>
+														{lang.toUpperCase()}
+													</button>
+												))}
+											</div>
+
+											{/* Render Selected Translation */}
+											{activeLang && selectedItem.translations[activeLang] && (
+												<div
+													style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+													dir={activeLang === "ar" ? "rtl" : "ltr"}
+												>
+													{selectedItem.translations[activeLang].title && (
+														<h3 style={{ margin: "0 0 8px", color: "var(--color-text)" }}>
+															{selectedItem.translations[activeLang].title}
+														</h3>
+													)}
+													{selectedItem.translations[activeLang].summary && (
+														<div
+															style={{
+																padding: "12px",
+																background: "var(--color-bg-subtle, #141210)",
+																borderRadius: "6px",
+																fontStyle: "italic",
+																marginBottom: "12px",
+															}}
+														>
+															<strong>TL;DR ({activeLang}): </strong>
+															{selectedItem.translations[activeLang].summary}
+														</div>
+													)}
+													{selectedItem.translations[activeLang].content ? (
+														<div
+															dangerouslySetInnerHTML={{
+																__html: selectedItem.translations[activeLang].content || "",
+															}}
+														/>
+													) : selectedItem.translations[activeLang].excerpt ? (
+														<p>{selectedItem.translations[activeLang].excerpt}</p>
+													) : (
+														<p style={{ fontStyle: "italic", color: "var(--color-muted)" }}>
+															No translated content available.
+														</p>
+													)}
+												</div>
+											)}
+										</div>
+									)}
+								</div>
+							</div>
+						</div>
+					) : (
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								flex: 1,
+								color: "var(--color-muted, #80796a)",
+								fontSize: "14px",
+							}}
+						>
+							Select a feed item from the list to start reading.
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* Reject Modal */}
+			<Modal
+				open={rejectingItem !== null}
+				onClose={() => setRejectingItem(null)}
+				title="Reject Feed Item"
+				size="md"
+			>
+				{rejectingItem && (
+					<form onSubmit={handleRejectSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+						<p style={{ fontSize: "14px", margin: 0 }}>
+							Are you sure you want to reject <strong>{rejectingItem.title}</strong>?
+							This will remove the item and block its GUID from being imported in the future.
+						</p>
+						<Input
+							label="Reason for rejection"
+							value={rejectReason}
+							onChange={setRejectReason}
+							placeholder="E.g., Off-topic, Duplicate, Spam"
+						/>
+						<div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
+							<Button variant="secondary" onClick={() => setRejectingItem(null)}>
+								Cancel
+							</Button>
+							<Button variant="danger" type="submit" loading={isRejectLoading}>
+								Reject and Block
+							</Button>
+						</div>
+					</form>
+				)}
+			</Modal>
+		</div>
+	);
+};
+export default ReaderPage;
