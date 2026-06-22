@@ -15,22 +15,15 @@ import type {
 	ParsedItem,
 	MediaType,
 	AuthorInfo,
-	Enclosure,
-	ItemTranslation,
 } from "./types.js";
 import { parseFeed, extractYouTubeVideoId } from "./feed-parser.js";
 import { fetchFullText } from "./full-text.js";
 import { importImages } from "./image-importer.js";
 import { applyFieldMappings } from "./field-mapper.js";
-import { summarize, rewriteInVoice, translate } from "./ai-service.js";
-
-// ── Helpers ────────────────────────────────────────────────────────────
-
-function generateId(prefix: string = ""): string {
-	const timestamp = Date.now().toString(36);
-	const random = Math.random().toString(36).slice(2, 10);
-	return prefix ? `${prefix}_${timestamp}${random}` : `${timestamp}${random}`;
-}
+import { applyAgents } from "./ai-service.js";
+import { publishItem } from "./output.js";
+import { generateId, outputProfiles } from "./utils.js";
+import type { OutputProfile } from "./types.js";
 
 export function applyKeywordFilter(items: ParsedItem[], source: Source): ParsedItem[] {
 	if (!source.keywordFilterEnabled || !source.keywords || source.keywords.length === 0) {
@@ -157,7 +150,7 @@ export async function fetchAndImportFeed(
 		itemsRejected = preRejectCount - filteredItems.length;
 
 		// 5. Load existing items for this source to deduplicate
-		const existingItems = new Map<string, { id: string; contentId?: string }>();
+		const existingItems = new Map<string, { id: string; contentId?: string; publishedContentId?: string }>();
 		let itemCursor: string | undefined;
 		do {
 			const res = await feedItems.query({
@@ -168,7 +161,7 @@ export async function fetchAndImportFeed(
 			for (const item of res.items) {
 				const key = source.uniqueBy === "title" ? item.data.title : item.data.guid;
 				if (key) {
-					existingItems.set(key, { id: item.id, contentId: (item.data as any).contentId });
+					existingItems.set(key, { id: item.id, contentId: (item.data as any).contentId, publishedContentId: (item.data as any).publishedContentId });
 				}
 			}
 			itemCursor = res.cursor;
@@ -272,38 +265,26 @@ export async function fetchAndImportFeed(
 			// ── Custom Field Mapping (premium) ───────────────────────────
 			const customFields = applyFieldMappings(source.fieldMappings, parsed);
 
-			// ── AI Content Suite ─────────────────────────────────────────
-			let summary: string | undefined;
-			let rewrittenContent: string | undefined;
-			let translations: Record<string, ItemTranslation> | undefined;
-			let aiProcessedAt: string | undefined;
-			if (settings.aiEnabled) {
-				try {
-					if ((source.enableAiSummary ?? settings.aiSummaryEnabled) && content) {
-						const r = await summarize(ctx, settings, { title: parsed.title, content });
-						if (r.ok) { summary = r.value; aiProcessedAt = now; }
-					}
-					if ((source.enableAiRewrite ?? settings.aiRewriteEnabled) && content) {
-						const r = await rewriteInVoice(ctx, settings, { title: parsed.title, content, voice: settings.aiOwnerVoice });
-						if (r.ok) { rewrittenContent = r.value; aiProcessedAt = now; }
-					}
-					if (settings.translationEnabled && (source.enableTranslation ?? true) && settings.translationLocales.trim()) {
-						const locales = settings.translationLocales.split(",").map((s) => s.trim()).filter(Boolean);
-						for (const locale of locales) {
-							const r = await translate(ctx, settings, { title: parsed.title, excerpt, content, summary, targetLocale: locale });
-							if (r.ok && r.value) {
-								translations = { ...(translations || {}), [locale]: r.value };
-								aiProcessedAt = now;
-							}
-						}
-					}
-				} catch (aiErr) {
-					ctx.log.warn("AI processing failed", { guid: parsed.guid, error: String(aiErr) });
-				}
-			}
+			// ── AI Pipeline ──────────────────────────────────────────────
+			// Run the feed's bound agents on its bound model. applyAgents is
+			// defensive: returns {} when AI is off, unbound, or out of credits.
+			const aiInput = { title: parsed.title, content, excerpt } as unknown as FeedItem;
+			const aiFields = await applyAgents(ctx, settings, {
+				item: aiInput,
+				modelId: source.aiModelId,
+				agentIds: source.aiAgentIds,
+			});
+			const summary = aiFields.summary;
+			const rewrittenContent = aiFields.rewrittenContent;
+			const translations = aiFields.translations;
+			const aiOutputs = aiFields.aiOutputs;
+			const aiProcessedAt = aiFields.aiProcessedAt;
 
-			// ── Manual Curation (premium) ────────────────────────────────
-			const requireApproval = source.requireApproval ?? settings.curationEnabled;
+			// ── Output profile + approval gate ───────────────────────────
+			const profile = source.outputProfileId
+				? ((await outputProfiles(ctx).get(source.outputProfileId)) as OutputProfile | null)
+				: null;
+			const requireApproval = profile?.requireApproval ?? source.requireApproval ?? settings.curationEnabled;
 			const status: "pending" | "approved" = requireApproval ? "pending" : "approved";
 
 			const feedItemData: FeedItem = {
@@ -328,6 +309,7 @@ export async function fetchAndImportFeed(
 				approvedAt: status === "approved" ? now : undefined,
 				summary,
 				rewrittenContent,
+				aiOutputs,
 				aiProcessedAt,
 				translations,
 				mediaIds: mediaIds.length ? mediaIds : undefined,
@@ -357,28 +339,20 @@ export async function fetchAndImportFeed(
 				}
 			}
 
-			// Feed to Post conversion (premium) — only for approved items.
-			// Pending items create their post later, via the items/approve route.
-			if (status === "approved" && source.feedToPost && source.postCollection && ctx.content) {
-				try {
-					const postData = {
-						title: parsed.title,
-						content: rewrittenContent ?? content,
-						excerpt,
-						publishedAt: parsed.pubDate || now,
-						status: source.postStatus || "draft",
-						author: authorInfo.name,
-						featuredImage: imageUrl,
-						meta: {
-							rssSourceId: sourceId,
-							rssSourceUrl: source.url,
-							rssGuid: parsed.guid,
-						},
-					};
-					// Create content in custom postCollection
-					await ctx.content.create?.(source.postCollection, postData);
-				} catch (postErr) {
-					ctx.log.warn("Failed to create post content for Feed-to-Post", { guid: parsed.guid, collection: source.postCollection, error: String(postErr) });
+			// Publish via the output profile. Auto-publish only for approved
+			// items; items pending approval are published later by items/approve.
+			// Idempotent: reuse the prior published post id to update, not duplicate.
+			let publishedContentId = existing?.publishedContentId;
+			if (status === "approved" && profile && profile.mode === "publish") {
+				const result = await publishItem(ctx, settings, {
+					source,
+					item: { ...feedItemData, contentId },
+					profile,
+					existingContentId: publishedContentId,
+				});
+				if (result.action === "created") publishedContentId = result.contentId;
+				else if (result.action === "skipped") {
+					ctx.log.warn("Publish skipped", { guid: parsed.guid, error: result.error });
 				}
 			}
 
@@ -386,6 +360,7 @@ export async function fetchAndImportFeed(
 			const storedItem: FeedItem = {
 				...feedItemData,
 				contentId,
+				publishedContentId,
 			};
 			await feedItems.put(targetItemId, storedItem);
 

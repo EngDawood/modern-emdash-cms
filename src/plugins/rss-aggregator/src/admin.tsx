@@ -8,6 +8,7 @@
 import { SourcesPage } from './components/SourcesPage';
 import { ItemsPage } from './components/ItemsPage';
 import { DisplaysPage } from './components/DisplaysPage';
+import { AiPage } from './components/AiPage';
 import { LogsPage } from './components/LogsPage';
 import { SettingsPage } from './components/SettingsPage';
 import { StatsWidget } from './components/StatsWidget';
@@ -16,6 +17,7 @@ export const pages = {
 	'/sources': SourcesPage,
 	'/items': ItemsPage,
 	'/displays': DisplaysPage,
+	'/ai': AiPage,
 	'/logs': LogsPage,
 	'/settings': SettingsPage,
 };
