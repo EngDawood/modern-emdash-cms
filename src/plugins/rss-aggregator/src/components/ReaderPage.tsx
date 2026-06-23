@@ -295,17 +295,91 @@ export const ReaderPage: React.FC = () => {
 
 	return (
 		<div
+			className="feed-reader-container"
 			style={{
 				display: "flex",
 				flexDirection: "column",
 				height: "calc(100vh - 70px)",
 				gap: "12px",
 				padding: "16px",
-				background: "var(--color-bg, #0e0d0b)",
-				color: "var(--color-text, #f4efe3)",
-				fontFamily: "var(--font-sans, sans-serif)",
+				background: "var(--color-bg)",
+				color: "var(--color-text)",
+				fontFamily: "'Outfit', sans-serif",
 			}}
 		>
+			<link rel="preconnect" href="https://fonts.googleapis.com" />
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+			<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet" />
+			<style dangerouslySetInnerHTML={{ __html: `
+				.feed-reader-container {
+					/* ===== Reading Room design tokens ===== */
+					--rr-bg: #F3EEE2;
+					--rr-surface: #EAE2CE;
+					--rr-surface-2: #E2D8C0;
+					--rr-ink: #2a2620;
+					--rr-ink-soft: #564d3f;
+					--rr-muted: #9a8d78;
+					--rr-line: #ddd3bb;
+					--rr-line-strong: #c8bda1;
+					--rr-accent: #B85A3A;
+					--rr-accent-soft: rgba(184,90,58,.12);
+					--rr-onaccent: #F8F4EA;
+					
+					--color-bg: var(--rr-bg);
+					--color-bg-subtle: var(--rr-surface-2);
+					--color-surface: var(--rr-surface);
+					--color-border: var(--rr-line);
+					--color-border-subtle: var(--rr-line-strong);
+					--color-text: var(--rr-ink);
+					--color-text-secondary: var(--rr-ink-soft);
+					--color-muted: var(--rr-muted);
+					--color-accent: var(--rr-accent);
+					--color-on-accent: var(--rr-onaccent);
+				}
+
+				:root.dark .feed-reader-container {
+					--rr-bg: #16130f;
+					--rr-surface: #211c16;
+					--rr-surface-2: #2b251d;
+					--rr-ink: #efe7d7;
+					--rr-ink-soft: #c9bda7;
+					--rr-muted: #8a7d68;
+					--rr-line: #342c22;
+					--rr-line-strong: #443a2c;
+					--rr-accent: #D9824E;
+					--rr-accent-soft: rgba(217,130,78,.16);
+					--rr-onaccent: #1a140f;
+				}
+
+				@media (prefers-color-scheme: dark) {
+					:root:not(.light) .feed-reader-container {
+						--rr-bg: #16130f;
+						--rr-surface: #211c16;
+						--rr-surface-2: #2b251d;
+						--rr-ink: #efe7d7;
+						--rr-ink-soft: #c9bda7;
+						--rr-muted: #8a7d68;
+						--rr-line: #342c22;
+						--rr-line-strong: #443a2c;
+						--rr-accent: #D9824E;
+						--rr-accent-soft: rgba(217,130,78,.16);
+						--rr-onaccent: #1a140f;
+					}
+				}
+
+				/* Scrollbar Styling to match mockup */
+				.feed-reader-scrollable::-webkit-scrollbar {
+					width: 7px;
+					height: 7px;
+				}
+				.feed-reader-scrollable::-webkit-scrollbar-thumb {
+					background: var(--rr-line-strong);
+					border-radius: 99px;
+				}
+				.feed-reader-scrollable::-webkit-scrollbar-thumb:hover {
+					background: var(--rr-accent);
+				}
+			` }} />
 			<PageHeader
 				title="Feed Reader"
 				description="Audit, approve, and curate imported items with AI-assisted outputs."
@@ -318,20 +392,23 @@ export const ReaderPage: React.FC = () => {
 				style={{
 					display: "flex",
 					flex: 1,
-					gap: "16px",
 					minHeight: 0,
+					border: "1px solid var(--color-border)",
+					borderRadius: "8px",
+					background: "var(--color-bg)",
+					overflow: "hidden",
 				}}
 			>
 				{/* LEFT COLUMN: Feed Items List */}
 				<div
 					style={{
-						width: "350px",
+						width: "372px",
+						flex: "none",
 						display: "flex",
 						flexDirection: "column",
-						background: "var(--color-surface, #18130e)",
-						border: "1px solid var(--color-border, #2a2721)",
-						borderRadius: "8px",
-						padding: "12px",
+						background: "var(--color-surface)",
+						borderRight: "1px solid var(--color-border)",
+						padding: "16px 14px",
 						gap: "12px",
 						minHeight: 0,
 					}}
@@ -370,6 +447,7 @@ export const ReaderPage: React.FC = () => {
 
 					{/* List area */}
 					<div
+						className="feed-reader-scrollable"
 						style={{
 							flex: 1,
 							overflowY: "auto",
@@ -409,27 +487,34 @@ export const ReaderPage: React.FC = () => {
 											}
 										}}
 										style={{
-											padding: "12px",
-											borderRadius: "6px",
+											padding: "15px 15px",
+											borderRadius: "12px",
 											background: isSelected
-												? "var(--color-bg-subtle, #141210)"
+												? "var(--rr-accent-soft)"
 												: "transparent",
-											border: isSelected
-												? "1px solid var(--color-accent, #9b2346)"
-												: "1px solid var(--color-border-subtle, #231f1a)",
+											border: "none",
+											borderLeft: isSelected
+												? "3px solid var(--rr-accent)"
+												: "3px solid transparent",
 											cursor: "pointer",
 											transition: "all 0.15s ease",
 											display: "flex",
 											flexDirection: "column",
 											gap: "6px",
+											marginBottom: "4px",
 										}}
 									>
 										<div
 											style={{
-												fontSize: "11px",
-												color: "var(--color-muted, #80796a)",
+												fontSize: "9px",
+												fontFamily: "'Fira Code', monospace",
+												color: isSelected
+													? "var(--color-accent)"
+													: "var(--color-muted)",
 												display: "flex",
 												justifyContent: "space-between",
+												textTransform: "uppercase",
+												letterSpacing: "0.06em",
 											}}
 										>
 											<span style={{ fontWeight: 600 }}>{item.sourceName}</span>
@@ -439,16 +524,31 @@ export const ReaderPage: React.FC = () => {
 										<h4
 											style={{
 												margin: 0,
-												fontSize: "14px",
-												fontWeight: isSelected ? 600 : 500,
-												color: isSelected
-													? "var(--color-text, #f4efe3)"
-													: "var(--color-text-secondary, #a89e8c)",
+												fontSize: "16px",
+												fontFamily: "'Newsreader', serif",
+												fontWeight: 600,
+												color: "var(--color-text)",
 												lineHeight: 1.3,
 											}}
 										>
 											{item.title}
 										</h4>
+
+										{item.excerpt && (
+											<div
+												style={{
+													fontSize: "12px",
+													color: "var(--color-text-secondary)",
+													lineHeight: 1.5,
+													display: "-webkit-box",
+													WebkitLineClamp: 2,
+													WebkitBoxOrient: "vertical",
+													overflow: "hidden",
+												}}
+											>
+												{item.excerpt}
+											</div>
+										)}
 
 										<div
 											style={{
@@ -533,9 +633,7 @@ export const ReaderPage: React.FC = () => {
 				<div
 					style={{
 						flex: 1,
-						background: "var(--color-surface, #18130e)",
-						border: "1px solid var(--color-border, #2a2721)",
-						borderRadius: "8px",
+						background: "var(--color-bg)",
 						display: "flex",
 						flexDirection: "column",
 						minHeight: 0,
@@ -553,8 +651,8 @@ export const ReaderPage: React.FC = () => {
 							{/* 1. Header Toolbar */}
 							<div
 								style={{
-									padding: "16px",
-									borderBottom: "1px solid var(--color-border, #2a2721)",
+									padding: "24px 28px 16px",
+									borderBottom: "1px solid var(--color-border)",
 									display: "flex",
 									flexDirection: "column",
 									gap: "12px",
@@ -570,32 +668,38 @@ export const ReaderPage: React.FC = () => {
 									<div>
 										<div
 											style={{
-												fontSize: "12px",
-												color: "var(--color-muted, #80796a)",
-												marginBottom: "4px",
+												fontSize: "10px",
+												fontFamily: "'Fira Code', monospace",
+												color: "var(--color-accent)",
+												marginBottom: "8px",
 												display: "flex",
-												gap: "12px",
+												gap: "8px",
+												textTransform: "uppercase",
+												letterSpacing: "0.12em",
+												alignItems: "center",
 											}}
 										>
-											<span>
-												Source: <strong>{selectedItem.sourceName}</strong>
-											</span>
+											<span>{selectedItem.sourceName}</span>
 											{selectedItem.author?.name && (
-												<span>
-													Author: <strong>{selectedItem.author.name}</strong>
-												</span>
+												<>
+													<span style={{ color: "var(--color-muted)" }}>•</span>
+													<span>{selectedItem.author.name}</span>
+												</>
 											)}
-											<span>
-												Published: <strong>{new Date(selectedItem.publishedAt).toLocaleString()}</strong>
+											<span style={{ color: "var(--color-muted)" }}>•</span>
+											<span style={{ color: "var(--color-muted)" }}>
+												{new Date(selectedItem.publishedAt).toLocaleString()}
 											</span>
 										</div>
 										<h2
 											style={{
 												margin: 0,
-												fontSize: "20px",
-												fontWeight: 600,
-												color: "var(--color-text, #f4efe3)",
-												lineHeight: 1.3,
+												fontSize: "32px",
+												fontFamily: "'Newsreader', serif",
+												fontWeight: 700,
+												color: "var(--color-text)",
+												lineHeight: 1.15,
+												letterSpacing: "-0.015em",
 											}}
 										>
 											{selectedItem.title}
@@ -713,10 +817,11 @@ export const ReaderPage: React.FC = () => {
 													padding: "4px 8px",
 													fontSize: "12px",
 													borderRadius: "4px",
-													background: "var(--color-bg-subtle, #141210)",
-													color: "var(--color-text, #fdfbf6)",
-													border: "1px solid var(--color-border-subtle, #231f1a)",
+													background: "var(--color-bg-subtle)",
+													color: "var(--color-text)",
+													border: "1px solid var(--color-border-subtle)",
 													cursor: "pointer",
+													fontFamily: "'Outfit', sans-serif",
 												}}
 											>
 												<option value="">Specific Agent...</option>
@@ -762,15 +867,15 @@ export const ReaderPage: React.FC = () => {
 									display: "flex",
 									flexDirection: "column",
 									minHeight: 0,
-									padding: "16px",
+									padding: "16px 28px",
 								}}
 							>
 								{/* Custom Tab Headers */}
 								<div
 									style={{
 										display: "flex",
-										gap: "16px",
-										borderBottom: "1px solid var(--color-border-subtle, #231f1a)",
+										gap: "24px",
+										borderBottom: "1px solid var(--color-border-subtle)",
 										marginBottom: "16px",
 									}}
 								>
@@ -784,14 +889,17 @@ export const ReaderPage: React.FC = () => {
 											cursor: "pointer",
 											color:
 												activeTab === "original"
-													? "var(--color-accent, #9b2346)"
-													: "var(--color-muted, #80796a)",
+													? "var(--color-accent)"
+													: "var(--color-muted)",
 											borderBottom:
 												activeTab === "original"
-													? "2px solid var(--color-accent, #9b2346)"
+													? "2px solid var(--color-accent)"
 													: "2px solid transparent",
 											fontWeight: activeTab === "original" ? 600 : 500,
-											fontSize: "14px",
+											fontSize: "13px",
+											fontFamily: "'Outfit', sans-serif",
+											letterSpacing: "0.05em",
+											textTransform: "uppercase",
 										}}
 									>
 										Original Content
@@ -806,14 +914,17 @@ export const ReaderPage: React.FC = () => {
 											cursor: "pointer",
 											color:
 												activeTab === "summary"
-													? "var(--color-accent, #9b2346)"
-													: "var(--color-muted, #80796a)",
+													? "var(--color-accent)"
+													: "var(--color-muted)",
 											borderBottom:
 												activeTab === "summary"
-													? "2px solid var(--color-accent, #9b2346)"
+													? "2px solid var(--color-accent)"
 													: "2px solid transparent",
 											fontWeight: activeTab === "summary" ? 600 : 500,
-											fontSize: "14px",
+											fontSize: "13px",
+											fontFamily: "'Outfit', sans-serif",
+											letterSpacing: "0.05em",
+											textTransform: "uppercase",
 										}}
 									>
 										AI Summary (TL;DR)
@@ -828,14 +939,17 @@ export const ReaderPage: React.FC = () => {
 											cursor: "pointer",
 											color:
 												activeTab === "rewrite"
-													? "var(--color-accent, #9b2346)"
-													: "var(--color-muted, #80796a)",
+													? "var(--color-accent)"
+													: "var(--color-muted)",
 											borderBottom:
 												activeTab === "rewrite"
-													? "2px solid var(--color-accent, #9b2346)"
+													? "2px solid var(--color-accent)"
 													: "2px solid transparent",
 											fontWeight: activeTab === "rewrite" ? 600 : 500,
-											fontSize: "14px",
+											fontSize: "13px",
+											fontFamily: "'Outfit', sans-serif",
+											letterSpacing: "0.05em",
+											textTransform: "uppercase",
 										}}
 									>
 										AI Rewrite
@@ -851,14 +965,17 @@ export const ReaderPage: React.FC = () => {
 												cursor: "pointer",
 												color:
 													activeTab === "custom"
-														? "var(--color-accent, #9b2346)"
-														: "var(--color-muted, #80796a)",
+														? "var(--color-accent)"
+														: "var(--color-muted)",
 												borderBottom:
 													activeTab === "custom"
-														? "2px solid var(--color-accent, #9b2346)"
+														? "2px solid var(--color-accent)"
 														: "2px solid transparent",
 												fontWeight: activeTab === "custom" ? 600 : 500,
-												fontSize: "14px",
+												fontSize: "13px",
+												fontFamily: "'Outfit', sans-serif",
+												letterSpacing: "0.05em",
+												textTransform: "uppercase",
 											}}
 										>
 											Custom AI
@@ -875,14 +992,17 @@ export const ReaderPage: React.FC = () => {
 												cursor: "pointer",
 												color:
 													activeTab === "translations"
-														? "var(--color-accent, #9b2346)"
-														: "var(--color-muted, #80796a)",
+														? "var(--color-accent)"
+														: "var(--color-muted)",
 												borderBottom:
 													activeTab === "translations"
-														? "2px solid var(--color-accent, #9b2346)"
+														? "2px solid var(--color-accent)"
 														: "2px solid transparent",
 												fontWeight: activeTab === "translations" ? 600 : 500,
-												fontSize: "14px",
+												fontSize: "13px",
+												fontFamily: "'Outfit', sans-serif",
+												letterSpacing: "0.05em",
+												textTransform: "uppercase",
 											}}
 										>
 											Translations ({translationLocales.length})
@@ -892,12 +1012,14 @@ export const ReaderPage: React.FC = () => {
 
 								{/* Scrollable Content Pane */}
 								<div
+									className="feed-reader-scrollable"
 									style={{
 										flex: 1,
 										overflowY: "auto",
-										fontSize: "15px",
-										lineHeight: 1.6,
-										color: "var(--color-text-secondary, #a89e8c)",
+										fontSize: "17px",
+										lineHeight: 1.78,
+										color: "var(--color-text-secondary)",
+										fontFamily: "'Newsreader', Georgia, serif",
 										paddingRight: "8px",
 									}}
 								>
