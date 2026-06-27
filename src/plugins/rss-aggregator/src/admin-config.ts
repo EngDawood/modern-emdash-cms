@@ -2,6 +2,7 @@ export const adminPages = [
 	{ path: "/sources", label: "Feed Sources", icon: "rss" },
 	{ path: "/items", label: "Feed Items", icon: "list" },
 	{ path: "/reader", label: "Feed Reader", icon: "book-open" },
+	{ path: "/profiles", label: "Output Profiles", icon: "share" },
 	{ path: "/displays", label: "Displays", icon: "layout" },
 	{ path: "/ai", label: "AI", icon: "sparkles" },
 	{ path: "/logs", label: "Import Log", icon: "file-text" },
