@@ -47,14 +47,25 @@ export const ItemsPage: React.FC = () => {
 	const [isRejectLoading, setIsRejectLoading] = useState(false);
 
 	// Delete state
+	const [sourcesMap, setSourcesMap] = useState<Record<string, Source>>({});
+	const [profilesMap, setProfilesMap] = useState<Record<string, OutputProfile>>({});
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 
 	const loadInitialData = async () => {
 		try {
 			setLoading(true);
-			// Fetch sources for dropdown filter
-			const sourcesData = await api.get<{ items: Array<{ id: string } & Source> }>("sources");
+			// Fetch sources and output profiles
+			const [sourcesData, profilesData] = await Promise.all([
+				api.get<{ items: Array<{ id: string } & Source> }>("sources"),
+				api.get<{ items: Array<{ id: string } & OutputProfile> }>("output-profiles").catch(() => ({ items: [] })),
+			]);
 			setSources(sourcesData.items.map((s) => ({ id: s.id, name: s.name })));
+			const sMap: Record<string, Source> = {};
+			for (const s of sourcesData.items) sMap[s.id] = s;
+			setSourcesMap(sMap);
+			const pMap: Record<string, OutputProfile> = {};
+			for (const p of profilesData.items) pMap[p.id] = p;
+			setProfilesMap(pMap);
 
 			// Fetch stats
 			const statsData = await api.get<PluginStats>("stats");
@@ -135,6 +146,28 @@ export const ItemsPage: React.FC = () => {
 			setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...res.item } : i)));
 		} catch (err) {
 			alert(err instanceof Error ? err.message : "Failed to approve item");
+		} finally {
+			setBusyId(null);
+		}
+	};
+
+	const handlePublish = async (id: string) => {
+		setBusyId(id);
+		try {
+			const res = await api.post<{ item: FeedItem; publishedContentId?: string }>("items/publish", { id });
+			setItems((prev) =>
+				prev.map((i) =>
+					i.id === id
+						? {
+								...i,
+								...res.item,
+								publishedContentId: res.publishedContentId ?? res.item?.publishedContentId ?? i.publishedContentId,
+							}
+						: i
+				)
+			);
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "Publish failed");
 		} finally {
 			setBusyId(null);
 		}
@@ -256,7 +289,25 @@ export const ItemsPage: React.FC = () => {
 				const s = (val as string) || "approved";
 				return (
 					<div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-						<Badge variant={s === "approved" ? "success" : s === "pending" ? "warning" : "error"}>{s}</Badge>
+						<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+							<Badge variant={s === "approved" ? "success" : s === "pending" ? "warning" : "error"}>{s}</Badge>
+							{row.publishedContentId && (() => {
+								const src = sourcesMap[row.sourceId];
+								const prof = src?.outputProfileId ? profilesMap[src.outputProfileId] : null;
+								const col = prof?.collection || "posts";
+								return (
+									<a
+										href={`/_emdash/admin/content/${col}/${row.publishedContentId}`}
+										target="_blank"
+										rel="noreferrer"
+										style={{ textDecoration: "none" }}
+										title="View published CMS entry"
+									>
+										<Badge variant="info" style={{ cursor: "pointer" }}>Published ↗</Badge>
+									</a>
+								);
+							})()}
+						</div>
 						{row.summary && (
 							<span style={{ fontSize: "10px", color: "#2563eb" }}>TL;DR ✓</span>
 						)}
@@ -276,6 +327,11 @@ export const ItemsPage: React.FC = () => {
 					{row.status === "pending" && (
 						<Button variant="primary" size="sm" loading={busyId === row.id} onClick={() => handleApprove(row.id)}>
 							Approve
+						</Button>
+					)}
+					{row.status === "approved" && !row.publishedContentId && (
+						<Button variant="primary" size="sm" loading={busyId === row.id} onClick={() => handlePublish(row.id)}>
+							Publish
 						</Button>
 					)}
 					<Button variant="secondary" size="sm" loading={busyId === row.id} onClick={() => handleAi(row.id)}>
