@@ -168,34 +168,47 @@ export async function publishItem(
 			return { action: "skipped", error: "no content access" };
 		}
 
-		// ── Create or update ──────────────────────────────────────────────
-		if (existingContentId) {
-			try {
-				await ctx.content.update?.(profile.collection, existingContentId, payload);
-			} catch (err) {
-				const errMsg = String(err);
-				if (errMsg.includes("no such column") || errMsg.includes("categories")) {
-					const { categories, ...stripped } = payload;
-					await ctx.content.update?.(profile.collection, existingContentId, stripped);
-				} else {
+		// ── Helper for operations with dynamic missing column recovery ─────
+		const executeWithFallback = async <T>(
+			op: (p: Record<string, unknown>) => Promise<T>
+		): Promise<T> => {
+			let cur = { ...payload };
+			const stripped = new Set<string>();
+			while (true) {
+				try {
+					return await op(cur);
+				} catch (err) {
+					const errMsg = String(err);
+					const match =
+						errMsg.match(/has no column named ([a-zA-Z0-9_]+)/i) ||
+						errMsg.match(/no such column:?\s*(?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)/i);
+
+					let fieldToStrip: string | null = null;
+					if (match && match[1]) {
+						fieldToStrip = match[1];
+					} else if (errMsg.includes("categories") && "categories" in cur) {
+						fieldToStrip = "categories";
+					}
+
+					if (fieldToStrip && fieldToStrip in cur && !stripped.has(fieldToStrip)) {
+						if (fieldToStrip !== "title" && fieldToStrip !== "slug") {
+							stripped.add(fieldToStrip);
+							delete cur[fieldToStrip];
+							continue;
+						}
+					}
 					throw err;
 				}
 			}
+		};
+
+		// ── Create or update ──────────────────────────────────────────────
+		if (existingContentId) {
+			await executeWithFallback((p) => ctx.content!.update!(profile.collection, existingContentId, p));
 			return { action: "updated", contentId: existingContentId };
 		}
 
-		let entry;
-		try {
-			entry = await ctx.content.create?.(profile.collection, payload);
-		} catch (err) {
-			const errMsg = String(err);
-			if (errMsg.includes("no such column") || errMsg.includes("categories")) {
-				const { categories, ...stripped } = payload;
-				entry = await ctx.content.create?.(profile.collection, stripped);
-			} else {
-				throw err;
-			}
-		}
+		const entry = await executeWithFallback((p) => ctx.content!.create!(profile.collection, p));
 		return { action: "created", contentId: entry?.id };
 
 	} catch (err) {
