@@ -1,6 +1,8 @@
-.env
 .dev.vars
 .env.local
 .env.*
 **/.claude/settings.local.json
 CLAUDE*
+node_modules
+.mcp.json
+data.db

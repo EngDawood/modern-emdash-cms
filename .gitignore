@@ -43,3 +43,4 @@ temp/*
 .claude\settings.local.json
 **/_archive/**
 .claude\worktrees
+backup_temp

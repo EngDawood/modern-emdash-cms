@@ -236,7 +236,7 @@ export function NumberInput({ label, value, onChange, min, max, description }: {
 		<div>
 			<FieldLabel label={label} description={description} />
 			<input
-				type="number" value={value} min={min} max={max}
+				type="number" value={value} min={min} max={max} step="any"
 				onChange={(e) => onChange(Number(e.target.value))}
 				style={INPUT_BASE}
 			/>
