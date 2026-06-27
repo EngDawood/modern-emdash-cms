@@ -8,8 +8,7 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  Release:
-    name: Release
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
