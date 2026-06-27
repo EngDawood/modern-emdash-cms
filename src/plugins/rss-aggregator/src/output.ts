@@ -89,7 +89,7 @@ export function buildPublishPayload(opts: {
 			break;
 	}
 
-	// ── Meta ──────────────────────────────────────────────────────────────
+	// ── Meta & SEO ────────────────────────────────────────────────────────
 	const meta: Record<string, unknown> = {
 		rssSourceId: item.sourceId,
 		rssSourceUrl: source.url,
@@ -100,6 +100,14 @@ export function buildPublishPayload(opts: {
 	if (item.youtubeVideoId !== undefined) meta.rssYoutubeId = item.youtubeVideoId;
 	if (item.mediaType !== undefined) meta.rssMediaType = item.mediaType;
 
+	const seo = {
+		title: item.title,
+		description: excerpt ?? item.summary ?? item.excerpt ?? "",
+		image: item.imageUrl ?? null,
+		canonical: item.url ?? null,
+		noIndex: false,
+	};
+
 	// ── Payload ───────────────────────────────────────────────────────────
 	const payload: Record<string, unknown> = {
 		title: item.title,
@@ -108,6 +116,7 @@ export function buildPublishPayload(opts: {
 		status: profile.status,
 		publishedAt: item.publishedAt,
 		meta,
+		seo,
 	};
 
 	if (excerpt !== undefined) payload.excerpt = excerpt;
@@ -122,6 +131,43 @@ export function buildPublishPayload(opts: {
 	if (categories.length > 0) {
 		payload.categories = Array.from(new Set(categories));
 	}
+
+	// ── Custom Fields & Generic Schema Aliases ────────────────────────────
+	const data: Record<string, unknown> = {
+		title: item.title,
+	};
+
+	if (item.customFields) {
+		for (const [key, val] of Object.entries(item.customFields)) {
+			if (typeof val === "string" && (/<[a-z][\s\S]*>/i.test(val) || key.includes("description") || key.includes("content"))) {
+				data[key] = htmlToPortableText(val);
+				payload[key] = data[key];
+			} else {
+				data[key] = val;
+				payload[key] = val;
+			}
+		}
+	}
+
+	// Dynamic schema fallback aliases for custom collections (e.g. jobs, events)
+	if (data.job_descriptions === undefined) {
+		data.job_descriptions = htmlToPortableText(finalBody);
+		payload.job_descriptions = data.job_descriptions;
+	}
+	if (data.original_url === undefined) {
+		data.original_url = item.url;
+		payload.original_url = data.original_url;
+	}
+	if (data.deadline === undefined) {
+		data.deadline = item.publishedAt;
+		payload.deadline = data.deadline;
+	}
+	if (data.job_posting === undefined) {
+		data.job_posting = item.publishedAt;
+		payload.job_posting = data.job_posting;
+	}
+
+	payload.data = data;
 
 	return payload;
 }
@@ -190,10 +236,13 @@ export async function publishItem(
 						fieldToStrip = "categories";
 					}
 
-					if (fieldToStrip && fieldToStrip in cur && !stripped.has(fieldToStrip)) {
+					if (fieldToStrip && !stripped.has(fieldToStrip)) {
 						if (fieldToStrip !== "title" && fieldToStrip !== "slug") {
 							stripped.add(fieldToStrip);
 							delete cur[fieldToStrip];
+							if (cur.data && typeof cur.data === "object") {
+								delete (cur.data as Record<string, unknown>)[fieldToStrip];
+							}
 							continue;
 						}
 					}
@@ -203,13 +252,25 @@ export async function publishItem(
 		};
 
 		// ── Create or update ──────────────────────────────────────────────
+		let contentId = existingContentId;
+		let action: "created" | "updated" = "updated";
 		if (existingContentId) {
 			await executeWithFallback((p) => ctx.content!.update!(profile.collection, existingContentId, p));
-			return { action: "updated", contentId: existingContentId };
+		} else {
+			const entry = await executeWithFallback((p) => ctx.content!.create!(profile.collection, p));
+			contentId = entry?.id;
+			action = "created";
 		}
 
-		const entry = await executeWithFallback((p) => ctx.content!.create!(profile.collection, p));
-		return { action: "created", contentId: entry?.id };
+		if (contentId && profile.status === "published" && (ctx.content as any).publish) {
+			try {
+				await (ctx.content as any).publish(profile.collection, contentId, { publishedAt: item.publishedAt });
+			} catch (pubErr) {
+				ctx.log.warn("Failed to set live published revision", { contentId, error: String(pubErr) });
+			}
+		}
+
+		return { action, contentId };
 
 	} catch (err) {
 		ctx.log.warn("publishItem failed", { sourceId: item.sourceId, guid: item.guid, error: String(err) });

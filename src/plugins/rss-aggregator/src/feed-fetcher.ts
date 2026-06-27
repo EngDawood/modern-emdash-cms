@@ -318,7 +318,53 @@ export async function fetchAndImportFeed(
 
 			// Content entry payload: custom-mapped fields are promoted to top-level
 			// so they can map onto collection fields.
-			const contentPayload = { ...feedItemData, ...customFields };
+			const contentPayload: Record<string, unknown> = {
+				...feedItemData,
+				...customFields,
+				seo: {
+					title: parsed.title,
+					description: excerpt,
+					image: imageUrl ?? null,
+					canonical: parsed.link ?? null,
+					noIndex: false,
+				},
+			};
+
+			const data: Record<string, unknown> = {
+				title: parsed.title,
+			};
+
+			if (customFields) {
+				for (const [key, val] of Object.entries(customFields)) {
+					if (typeof val === "string" && (/<[a-z][\s\S]*>/i.test(val) || key.includes("description") || key.includes("content"))) {
+						data[key] = htmlToPortableText(val);
+						contentPayload[key] = data[key];
+					} else {
+						data[key] = val;
+						contentPayload[key] = val;
+					}
+				}
+			}
+
+			if (data.job_descriptions === undefined) {
+				data.job_descriptions = htmlToPortableText(content);
+				contentPayload.job_descriptions = data.job_descriptions;
+			}
+			if (data.original_url === undefined) {
+				data.original_url = parsed.link;
+				contentPayload.original_url = data.original_url;
+			}
+			if (data.deadline === undefined) {
+				data.deadline = parsed.pubDate || now;
+				contentPayload.deadline = data.deadline;
+			}
+			if (data.job_posting === undefined) {
+				data.job_posting = parsed.pubDate || now;
+				contentPayload.job_posting = data.job_posting;
+			}
+
+			contentPayload.data = data;
+			contentPayload.status = "published";
 
 			let targetItemId = existing ? existing.id : generateId("itm");
 			let contentId = existing?.contentId;
@@ -333,6 +379,13 @@ export async function fetchAndImportFeed(
 						// Create CMS entry
 						const contentEntry = await ctx.content.create?.(collectionName, contentPayload);
 						contentId = contentEntry?.id;
+					}
+					if (contentId && (ctx.content as any).publish) {
+						try {
+							await (ctx.content as any).publish(collectionName, contentId, { publishedAt: contentPayload.publishedAt });
+						} catch (pubErr) {
+							// Ignore
+						}
 					}
 				} catch (contentErr) {
 					ctx.log.warn("Failed to sync content entry for feed item", { guid: parsed.guid, error: String(contentErr) });
