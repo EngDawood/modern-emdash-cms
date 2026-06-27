@@ -312,6 +312,18 @@ export function htmlToPortableText(html: string): PortableTextBlock[] {
 					marks: [...activeMarks],
 				};
 				block.children.push(span);
+			} else if (name === "img" && !token.isClose) {
+				const src = token.attributes?.src;
+				if (src) {
+					closeBlock();
+					blocks.push({
+						_type: "image",
+						_key: generateKey(),
+						url: src,
+						src: src,
+						alt: token.attributes?.alt || "",
+					} as any);
+				}
 			}
 		} else if (token.type === "text") {
 			const isWhitespace = !token.text || !token.text.trim();
