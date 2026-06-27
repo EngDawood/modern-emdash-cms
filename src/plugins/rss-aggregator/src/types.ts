@@ -402,6 +402,10 @@ export interface OutputProfile {
 	excerptSource?: "summary" | "original" | "none";
 	/** Trusted admin HTML appended to the body; supports {token} substitution. */
 	footerTemplate?: string;
+	/** Default category term IDs or slugs to assign on publish. */
+	defaultCategories?: string[];
+	/** Whether to dynamically map feed categories / sourceSlug to EmDash taxonomy terms. */
+	mapFeedCategories?: boolean;
 	createdAt: string;
 	updatedAt: string;
 }
