@@ -112,8 +112,16 @@ export function buildPublishPayload(opts: {
 
 	if (excerpt !== undefined) payload.excerpt = excerpt;
 	if (item.author?.name !== undefined) payload.author = item.author.name;
-	if (item.imageUrl !== undefined) payload.featuredImage = item.imageUrl;
-	if (sourceSlug) payload.categories = [sourceSlug];
+	const categories: string[] = [];
+	if (profile.defaultCategories && Array.isArray(profile.defaultCategories)) {
+		categories.push(...profile.defaultCategories);
+	}
+	if (profile.mapFeedCategories !== false) {
+		if (sourceSlug) categories.push(sourceSlug);
+	}
+	if (categories.length > 0) {
+		payload.categories = Array.from(new Set(categories));
+	}
 
 	return payload;
 }
