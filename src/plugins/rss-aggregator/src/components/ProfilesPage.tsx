@@ -96,7 +96,7 @@ export const ProfilesPage: React.FC = () => {
 			...form,
 			defaultCategories: categoriesArray,
 		};
-		delete payload.defaultCategoriesText;
+		delete (payload as any).defaultCategoriesText;
 
 		try {
 			if (editing) {

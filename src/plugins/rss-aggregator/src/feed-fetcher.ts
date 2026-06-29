@@ -23,6 +23,7 @@ import { applyFieldMappings } from "./field-mapper.js";
 import { applyAgents } from "./ai-service.js";
 import { publishItem } from "./output.js";
 import { generateId, outputProfiles } from "./utils.js";
+import { htmlToPortableText } from "./html-parser.js";
 import type { OutputProfile } from "./types.js";
 
 export function applyKeywordFilter(items: ParsedItem[], source: Source): ParsedItem[] {

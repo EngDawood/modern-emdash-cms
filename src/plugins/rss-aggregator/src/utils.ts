@@ -66,3 +66,5 @@ export function importLogs(ctx: PluginContext): StorageCollection<ImportLog> {
 export function folders(ctx: PluginContext): StorageCollection<Folder> {
 	return ctx.storage.folders as StorageCollection<Folder>;
 }
+
+export { htmlToPortableText } from "./html-parser.js";

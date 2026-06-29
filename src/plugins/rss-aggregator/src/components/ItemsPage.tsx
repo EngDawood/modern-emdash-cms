@@ -16,7 +16,7 @@ import {
 	Input,
 	ConfirmDialog,
 } from "./ui";
-import type { FeedItem, Source, PluginStats, CreditState } from "../types";
+import type { FeedItem, Source, PluginStats, CreditState, OutputProfile } from "../types";
 import { formatRelativeTime, truncateText } from "./shared";
 
 export const ItemsPage: React.FC = () => {
@@ -303,7 +303,7 @@ export const ItemsPage: React.FC = () => {
 										style={{ textDecoration: "none" }}
 										title="View published CMS entry"
 									>
-										<Badge variant="info" style={{ cursor: "pointer" }}>Published ↗</Badge>
+										<span style={{ cursor: "pointer" }}><Badge variant="info">Published ↗</Badge></span>
 									</a>
 								);
 							})()}

@@ -345,4 +345,8 @@ export function htmlToPortableText(html: string): PortableTextBlock[] {
 	closeBlock();
 
 	return blocks as unknown as PortableTextBlock[];
+};
+
+if (typeof globalThis !== "undefined") {
+	(globalThis as any).htmlToPortableText = htmlToPortableText;
 }

@@ -237,7 +237,8 @@ export async function publishItem(
 					}
 
 					if (fieldToStrip && !stripped.has(fieldToStrip)) {
-						if (fieldToStrip !== "title" && fieldToStrip !== "slug") {
+						const protectedFields = new Set(["title", "slug", "data", "job_descriptions", "original_url", "deadline", "job_posting"]);
+						if (!protectedFields.has(fieldToStrip)) {
 							stripped.add(fieldToStrip);
 							delete cur[fieldToStrip];
 							if (cur.data && typeof cur.data === "object") {
