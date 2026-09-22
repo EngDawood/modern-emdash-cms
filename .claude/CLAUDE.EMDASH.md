@@ -107,7 +107,7 @@ One package is patched via `pnpm patch` (applied automatically after `pnpm insta
 
 | Package | Patch | What it fixes |
 |---------|-------|---------------|
-| `emdash@0.31.1` | `patches/emdash@0.31.1.patch` | `createContentAccessWithWrite` in `src/plugins/context.ts` puts the whole payload into `data`. The patch promotes reserved columns (`slug`, `status`, `publishedAt`, `scheduledAt`, `authorId`, `primaryBylineId`, `locale`, `translationOf`, `createdAt`) to real columns on `create`/`update` — required by the RSS aggregator's publish flow. Still unfixed upstream as of 0.31.1 |
+| `emdash@0.38.0` | `patches/emdash@0.38.0.patch` | `createContentAccessWithWrite` in `src/plugins/context.ts` puts the whole payload into `data`. The patch promotes reserved columns (`slug`, `status`, `publishedAt`, `scheduledAt`, `authorId`, `primaryBylineId`, `locale`, `translationOf`, `createdAt`) to real columns on `create`/`update` — required by the RSS aggregator's publish flow. Since 0.36 `create()` takes `locale` via `options`; the patch falls back to `data.locale` when no option is given. Still unfixed upstream as of 0.38.0 (reserved snake_case keys in `data` are now silently dropped instead) |
 
 Declared in `package.json` under `pnpm.patchedDependencies`. If you upgrade emdash, re-apply or update the patch against the new version.
 
