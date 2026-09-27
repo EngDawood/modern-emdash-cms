@@ -1,46 +1,49 @@
-diff --git a/dist/context-DOurRIrb.mjs b/dist/context-DOurRIrb.mjs
-index 426fcd8bab357ec0d4fe38c0f23190e28b55265f..f7e02f7af072e2e8ffeb85ed3b09646dac627377 100644
---- a/dist/context-DOurRIrb.mjs
-+++ b/dist/context-DOurRIrb.mjs
-@@ -570,6 +570,7 @@ function createContentAccessWithWrite(db) {
+diff --git a/dist/context-C9PB8vGd.mjs b/dist/context-C9PB8vGd.mjs
+index f61523476ede6c9de51332e5ac83631a6276df62..c63d340eb97427ed1d9ff4551ef497621c781ddd 100644
+--- a/dist/context-C9PB8vGd.mjs
++++ b/dist/context-C9PB8vGd.mjs
+@@ -831,9 +831,10 @@ function createContentAccessWithWrite(db, beforeContentWrite) {
+ 	return {
  		...createContentAccess(db),
- 		async create(collection, data) {
+ 		async create(collection, data, options) {
+-			const locale = resolveContentCreateLocale(options?.locale);
+ 			await beforeContentWrite?.();
  			const { fields, seo } = splitSeoFromInput(data);
-+			const { slug, status, authorId, primaryBylineId, locale, translationOf, publishedAt, createdAt, ...customFields } = fields;
++			const { slug, status, authorId, primaryBylineId, locale: dataLocale, translationOf, publishedAt, createdAt, ...customFields } = fields;
++			const locale = resolveContentCreateLocale(options?.locale ?? dataLocale);
  			let contentMutated = false;
  			try {
  				const created = await withTransaction(db, async (trx) => {
-@@ -578,7 +579,15 @@ function createContentAccessWithWrite(db) {
+@@ -842,7 +843,14 @@ function createContentAccessWithWrite(db, beforeContentWrite) {
  					const hasSeo = await assertSeoEnabled(trxSeoRepo, collection, seo);
  					const item = await trxContentRepo.create({
  						type: collection,
--						data: fields
+-						data: fields,
 +						slug,
 +						status,
 +						authorId,
 +						primaryBylineId,
-+						locale,
 +						translationOf,
 +						publishedAt,
 +						createdAt,
-+						data: customFields
++						data: customFields,
+ 						locale
  					});
  					contentMutated = true;
- 					const result = {
-@@ -605,6 +614,7 @@ function createContentAccessWithWrite(db) {
- 		},
+@@ -871,6 +879,7 @@ function createContentAccessWithWrite(db, beforeContentWrite) {
  		async update(collection, id, data) {
+ 			await beforeContentWrite?.();
  			const { fields, seo } = splitSeoFromInput(data);
 +			const { slug, status, publishedAt, scheduledAt, authorId, primaryBylineId, ...customFields } = fields;
  			const hasFieldUpdates = Object.keys(fields).length > 0;
  			let contentMutated = false;
  			try {
-@@ -612,7 +622,15 @@ function createContentAccessWithWrite(db) {
+@@ -878,7 +887,15 @@ function createContentAccessWithWrite(db, beforeContentWrite) {
  					const trxContentRepo = new ContentRepository(trx);
  					const trxSeoRepo = new SeoRepository(trx);
  					const hasSeo = await assertSeoEnabled(trxSeoRepo, collection, seo);
--					const item = hasFieldUpdates ? await trxContentRepo.update(collection, id, { data: fields }) : await (async () => {
-+					const item = hasFieldUpdates ? await trxContentRepo.update(collection, id, {
+-					const item = hasFieldUpdates ? await trxContentRepo.updateDraftAware(collection, id, { data: fields }) : await (async () => {
++					const item = hasFieldUpdates ? await trxContentRepo.updateDraftAware(collection, id, {
 +						slug,
 +						status,
 +						publishedAt,
@@ -53,28 +56,32 @@ index 426fcd8bab357ec0d4fe38c0f23190e28b55265f..f7e02f7af072e2e8ffeb85ed3b09646d
  						if (!existing) throw new Error("Content not found");
  						return existing;
 diff --git a/src/plugins/context.ts b/src/plugins/context.ts
-index 233a6e16a5f1558ecca1dda99173efd4ffe730f9..4c65c669e7ffad1d45136c450e1974b107061034 100644
+index 281dea566e800043b1899c9e1dacb37d985a3883..13c6667728bd5713478fcfa966b40e3fe52feca4 100644
 --- a/src/plugins/context.ts
 +++ b/src/plugins/context.ts
-@@ -375,6 +375,17 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
- 
- 		async create(collection: string, data: ContentWriteInput): Promise<ContentItem> {
+@@ -401,9 +401,20 @@ export function createContentAccessWithWrite(
+ 			data: ContentWriteInput,
+ 			options?: ContentCreateOptions,
+ 		): Promise<ContentItem> {
+-			const locale = resolveContentCreateLocale(options?.locale);
+ 			await beforeContentWrite?.();
  			const { fields, seo } = splitSeoFromInput(data);
 +			const {
 +				slug,
 +				status,
 +				authorId,
 +				primaryBylineId,
-+				locale,
++				locale: dataLocale,
 +				translationOf,
 +				publishedAt,
 +				createdAt,
 +				...customFields
 +			} = fields;
++			const locale = resolveContentCreateLocale(options?.locale ?? dataLocale);
  			let contentMutated = false;
  
  			try {
-@@ -386,7 +397,15 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
+@@ -415,7 +426,14 @@ export function createContentAccessWithWrite(
  
  					const item = await trxContentRepo.create({
  						type: collection,
@@ -83,17 +90,16 @@ index 233a6e16a5f1558ecca1dda99173efd4ffe730f9..4c65c669e7ffad1d45136c450e1974b1
 +						status: status as string | undefined,
 +						authorId: authorId as string | undefined,
 +						primaryBylineId: primaryBylineId as string | null | undefined,
-+						locale: locale as string | undefined,
 +						translationOf: translationOf as string | undefined,
 +						publishedAt: publishedAt as string | null | undefined,
 +						createdAt: createdAt as string | null | undefined,
 +						data: customFields,
+ 						locale,
  					});
  					contentMutated = true;
- 
-@@ -424,6 +443,15 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
- 
+@@ -455,6 +473,15 @@ export function createContentAccessWithWrite(
  		async update(collection: string, id: string, data: ContentWriteInput): Promise<ContentItem> {
+ 			await beforeContentWrite?.();
  			const { fields, seo } = splitSeoFromInput(data);
 +			const {
 +				slug,
@@ -107,12 +113,12 @@ index 233a6e16a5f1558ecca1dda99173efd4ffe730f9..4c65c669e7ffad1d45136c450e1974b1
  			const hasFieldUpdates = Object.keys(fields).length > 0;
  			let contentMutated = false;
  
-@@ -440,7 +468,15 @@ export function createContentAccessWithWrite(db: Kysely<Database>): ContentAcces
- 					// only the SEO table. ContentRepository.update handles the no-op
- 					// path by returning the current row.
+@@ -471,7 +498,15 @@ export function createContentAccessWithWrite(
+ 					// only the SEO table. updateDraftAware delegates no-op writes to
+ 					// ContentRepository.update.
  					const item = hasFieldUpdates
--						? await trxContentRepo.update(collection, id, { data: fields })
-+						? await trxContentRepo.update(collection, id, {
+-						? await trxContentRepo.updateDraftAware(collection, id, { data: fields })
++						? await trxContentRepo.updateDraftAware(collection, id, {
 +								slug: slug as string | null | undefined,
 +								status: status as string | undefined,
 +								publishedAt: publishedAt as string | null | undefined,

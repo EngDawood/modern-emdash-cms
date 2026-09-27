@@ -45,3 +45,6 @@ temp/*
 .claude\worktrees
 backup_temp
 rss-publish-issues.md
+
+# emdash build output (migration manifest)
+.emdash/
