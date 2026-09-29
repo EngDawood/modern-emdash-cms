@@ -42,11 +42,10 @@ if (Astro.request.method === "POST") {
 			email: emailVal,
 			company,
 			message,
+			_hp: formData?.get("_hp")?.toString() || "",
 		});
 		formStatus = result.status;
-		formMessage =
-			result.message ??
-			t(result.status === "success" ? "contact.form.success" : "contact.form.error", locale);
+		formMessage = t(result.status === "success" ? "contact.form.success" : "contact.form.error", locale);
 	}
 }
 
@@ -111,6 +110,7 @@ const pageContent = page?.data.content;
 							</div>
 						) : (
 							<form method="POST" class="contact-form">
+								<div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><input type="text" name="_hp" tabindex="-1" autocomplete="off" /></div>
 								{formStatus === "error" && (
 									<div class="form-error">
 										<p>{formMessage}</p>
