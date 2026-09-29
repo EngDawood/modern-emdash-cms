@@ -63,6 +63,7 @@ const { locale, email, github, linkedin, telegram, twitter, formStatus, formMess
 					</div>
 				) : (
 					<form method="POST" class="contact-form">
+						<div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><input type="text" name="_hp" tabindex="-1" autocomplete="off" /></div>
 						{formStatus === "error" && (
 							<div class="form-error">{formMessage}</div>
 						)}

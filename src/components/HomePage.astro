@@ -61,11 +61,10 @@ if (Astro.request.method === "POST") {
 			name,
 			email: emailVal,
 			message,
+			_hp: formData?.get("_hp")?.toString() || "",
 		});
 		formStatus = result.status;
-		formMessage =
-			result.message ??
-			t(result.status === "success" ? "contact.form.success" : "contact.form.error", locale);
+		formMessage = t(result.status === "success" ? "contact.form.success" : "contact.form.error", locale);
 	}
 }
 ---

@@ -6,14 +6,11 @@ const SUBMIT_ENDPOINT = "/_emdash/api/plugins/emdash-forms/submit";
  */
 interface SubmitResponse {
 	success?: boolean;
-	data?: { message?: string };
 	error?: { code?: string; message?: string };
 }
 
 export interface ContactFormOutcome {
 	status: "success" | "error";
-	/** Confirmation message configured in EmDash, or null to use a translated fallback */
-	message: string | null;
 }
 
 /**
@@ -21,7 +18,8 @@ export interface ContactFormOutcome {
  *
  * The plugin's real error (missing form, validation failure, paused form) is
  * logged for Cloudflare observability; callers get a flag they can pair with a
- * translated, visitor-safe message.
+ * translated, visitor-safe message. The plugin's own confirmation message is
+ * ignored so visitors always see the translated one.
  */
 export async function submitContactForm(
 	requestUrl: URL,
@@ -49,15 +47,15 @@ export async function submitContactForm(
 				code: body?.error?.code ?? null,
 				message: body?.error?.message ?? null,
 			});
-			return { status: "error", message: null };
+			return { status: "error" };
 		}
 
-		return { status: "success", message: body.data?.message ?? null };
+		return { status: "success" };
 	} catch (err) {
 		console.error("[contact-form] submission failed", {
 			formId,
 			error: err instanceof Error ? err.message : String(err),
 		});
-		return { status: "error", message: null };
+		return { status: "error" };
 	}
 }
