@@ -29,11 +29,16 @@ export async function submitContactForm(
 	data: Record<string, string>,
 ): Promise<ContactFormOutcome> {
 	try {
-		const res = await fetch(new URL(SUBMIT_ENDPOINT, requestUrl), {
+		// A Worker fetching its own public URL fails (522); go through the SELF
+		// service binding, falling back to plain fetch where it's unavailable (dev).
+		const req = new Request(new URL(SUBMIT_ENDPOINT, requestUrl), {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ formId, data }),
 		});
+		const { env } = await import("cloudflare:workers");
+		const self = (env as { SELF?: { fetch(r: Request): Promise<Response> } }).SELF;
+		const res = await (self ? self.fetch(req) : fetch(req));
 
 		const body = (await res.json().catch(() => null)) as SubmitResponse | null;
 
