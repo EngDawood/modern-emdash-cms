@@ -252,7 +252,7 @@ const contentAfter = markerIndex >= 0 ? contentBlocks!.slice(markerIndex + 1) : 
 								title={p.data.title ?? "Untitled"}
 								summary={p.data.summary}
 								featuredImage={p.data.featured_image ?? ""}
-								href={`/${locale}/projects/${p.id}`}
+								href={`/${locale}/projects/${p.data.slug || p.id}`}
 								client={p.data.client}
 								year={p.data.year}
 								locale={locale}

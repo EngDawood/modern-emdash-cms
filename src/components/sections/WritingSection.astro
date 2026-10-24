@@ -22,7 +22,7 @@ const { recentPosts, locale } = Astro.props;
 		</div>
 		{recentPosts.length > 0 && (
 			<div class="writing-grid">
-				<a href={`/${locale}/blog/${recentPosts[0].id}`} class="writing-card feature-card reveal-item" style="--delay: 0">
+				<a href={`/${locale}/blog/${recentPosts[0].data.slug || recentPosts[0].id}`} class="writing-card feature-card reveal-item" style="--delay: 0">
 					<div class="writing-meta">
 						{recentPosts[0].data.publishedAt && (
 							<span class="writing-date">{recentPosts[0].data.publishedAt.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
@@ -33,7 +33,7 @@ const { recentPosts, locale } = Astro.props;
 				</a>
 				<div class="writing-side">
 					{recentPosts.slice(1).map((post, i) => (
-						<a href={`/${locale}/blog/${post.id}`} class="writing-card side-card reveal-item" style={`--delay: ${i + 1}`}>
+						<a href={`/${locale}/blog/${post.data.slug || post.id}`} class="writing-card side-card reveal-item" style={`--delay: ${i + 1}`}>
 							<div class="writing-meta">
 								{post.data.publishedAt && (
 									<span class="writing-date">{post.data.publishedAt.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { month: "short", year: "numeric" })}</span>

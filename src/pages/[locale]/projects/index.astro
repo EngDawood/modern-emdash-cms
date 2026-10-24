@@ -100,7 +100,7 @@ Astro.cache.set(cacheHint);
 							title={project.data.title ?? "Untitled"}
 							summary={project.data.summary}
 							featuredImage={project.data.featured_image ?? ""}
-							href={`/${entryLocale}/projects/${project.id}`}
+							href={`/${entryLocale}/projects/${project.data.slug || project.id}`}
 							client={project.data.client}
 							year={project.data.year}
 							tags={projectTags.map((t) => t.label)}

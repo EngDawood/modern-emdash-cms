@@ -23,7 +23,7 @@ const { featuredProjects, locale } = Astro.props;
 		</div>
 		<div class="project-rows">
 			{featuredProjects.map(({ entry: project, locale: entryLocale }, i) => (
-				<a href={`/${entryLocale}/projects/${project.id}`} class="project-row reveal-item" style={`--delay: ${i}`}>
+				<a href={`/${entryLocale}/projects/${project.data.slug || project.id}`} class="project-row reveal-item" style={`--delay: ${i}`}>
 					<div class="row-meta">
 						<span class="row-num">0{i + 1}</span>
 						<span class="row-year">{project.data.year}</span>

@@ -284,7 +284,7 @@ const coverAlt = post.data.featured_image?.alt;
 							<h2 class="rail-label">{t("writing.readAlso", locale)}</h2>
 							<div class="read-also-list">
 								{readAlso.map((p) => (
-									<a href={`/${locale}/blog/${p.id}`} class="read-also-row">
+									<a href={`/${locale}/blog/${p.data.slug || p.id}`} class="read-also-row">
 										<div class="read-also-thumb">
 											{p.data.featured_image && <Image image={p.data.featured_image} />}
 										</div>
@@ -337,7 +337,7 @@ const coverAlt = post.data.featured_image?.alt;
 									title={p.data.title}
 									excerpt={p.data.excerpt}
 									featuredImage={p.data.featured_image}
-									href={`/${locale}/blog/${p.id}`}
+									href={`/${locale}/blog/${p.data.slug || p.id}`}
 									date={p.data.publishedAt ?? undefined}
 									readingTime={getReadingTime(p.data.content)}
 									tags={postTags.map((tag) => ({ slug: tag.slug, label: t(`taxonomy.${tag.slug}`, locale) !== `taxonomy.${tag.slug}` ? t(`taxonomy.${tag.slug}`, locale) : tag.label }))}
