@@ -86,6 +86,10 @@ export default defineConfig({
 		react(),
 		emdash({
 			mcp:true ,
+			// Admin is served from cms.engdawood.com. siteUrl stays the public origin so
+			// the passkey rpId remains engdawood.com (valid on the subdomain too).
+			siteUrl: "https://engdawood.com",
+			allowedOrigins: ["https://cms.engdawood.com"],
 			database: d1({ binding: "DB", session: "auto" }),
 			storage: r2({ binding: "MEDIA" }),
 			// Adds a "From URL" tab to the media picker that downloads what you

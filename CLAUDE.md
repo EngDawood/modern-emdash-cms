@@ -26,6 +26,17 @@ Cloudflare Worker (src/worker.ts)
 
 `src/worker.ts` is the Worker entry point. It routes `/mcp` requests to `handleMcp(request, env)` (stateless proxy in `src/mcp/index.ts`). All other requests fall through to Astro's server handler.
 
+### Domains
+
+One Worker serves two hosts:
+
+- **`engdawood.com`** (+ `www`) — public site.
+- **`cms.engdawood.com`** — admin at `https://cms.engdawood.com/_emdash/admin`.
+
+`src/worker.ts` redirects `/_emdash/admin*` on the apex hosts to the CMS host, and on the CMS host sends `/` to the admin and every non-CMS path back to the apex. `/_emdash/*` (incl. `/_emdash/api/*`, which public pages call), `/mcp` and `/.well-known/*` work on both hosts. `localhost` and `workers.dev` are not redirected.
+
+`astro.config.mjs` pins `siteUrl: "https://engdawood.com"` and `allowedOrigins: ["https://cms.engdawood.com"]`, so the passkey rpId stays `engdawood.com` and passkeys work on both hosts. Do not change `siteUrl` to the CMS host: it also drives sitemaps, canonicals, hreflang and emails. Session cookies are per host, so admin sessions live on the CMS host only. Both wrangler configs list all three custom domains.
+
 ### i18n Routing
 
 Two locales: **`ar`** (default, RTL) and **`en`** (LTR). Default locale routes are served without a prefix (`/`), non-default locale routes are prefixed (`/en/...`).
@@ -119,7 +130,7 @@ Local dev uses `.dev.vars` (not committed). Required vars:
 - `EMDASH_TOKEN` — Bearer token for MCP endpoint auth
 - `EMDASH_URL` — (optional) override base URL for EmDashClient (defaults to `https://engdawood.com`)
 
-The jobs Worker API base URL is **not** an env var — it is a `jobs-board` plugin setting (KV `settings:apiBaseUrl`), editable at `/_emdash/admin` → Jobs → Settings.
+The jobs Worker API base URL is **not** an env var — it is a `jobs-board` plugin setting (KV `settings:apiBaseUrl`), editable at `cms.engdawood.com/_emdash/admin` → Jobs → Settings.
 
 
 ## Reference Files (`.claude/`)

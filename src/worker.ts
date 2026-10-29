@@ -8,6 +8,10 @@ interface WorkerEnv extends Cloudflare.Env {
 export { PluginBridge } from "@emdash-cms/cloudflare/sandbox";
 export { EmDashMCP };
 
+const CMS_HOST = "cms.engdawood.com";
+const SITE_ORIGIN = "https://engdawood.com";
+const SITE_HOSTS = new Set(["engdawood.com", "www.engdawood.com"]);
+
 // `caches.default` is a Cloudflare Workers runtime API not present on the DOM `CacheStorage` type.
 const edgeCache = (caches as unknown as { default: Cache }).default;
 
@@ -37,6 +41,22 @@ async function renderAndStore(
 export default {
 	async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext) {
 		const url = new URL(request.url);
+
+		// The admin lives on the CMS subdomain; the public site stays on the apex.
+		// Only the admin UI redirects: /_emdash/api/* is still called from public pages.
+		if (url.hostname === CMS_HOST) {
+			const isCmsPath =
+				url.pathname.startsWith("/_emdash/") ||
+				url.pathname === "/mcp" ||
+				url.pathname.startsWith("/.well-known/");
+			if (!isCmsPath) {
+				return url.pathname === "/"
+					? Response.redirect(`${url.origin}/_emdash/admin`, 302)
+					: Response.redirect(`${SITE_ORIGIN}${url.pathname}${url.search}`, 301);
+			}
+		} else if (SITE_HOSTS.has(url.hostname) && url.pathname.startsWith("/_emdash/admin")) {
+			return Response.redirect(`https://${CMS_HOST}${url.pathname}${url.search}`, 302);
+		}
 
 		if (url.pathname === "/mcp") {
 			return handleMcp(request, env, ctx);
