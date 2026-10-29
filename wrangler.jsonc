@@ -21,6 +21,10 @@
 		{
 			"pattern": "www.engdawood.com",
 			"custom_domain": true
+		},
+		{
+			"pattern": "cms.engdawood.com",
+			"custom_domain": true
 		}
 	],
 	"r2_buckets": [
