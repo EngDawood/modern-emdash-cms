@@ -118,6 +118,10 @@ The site uses a warm editorial palette (oxblood `#6b1438` accent, bone `#f8f5ef`
 
 Homepage sections follow an editorial numbered structure: Hero (bilingual lockup + ticker), §01 Work (project rows), §02 Writing (magazine grid), §03 About (with skills matrix), §04 Contact.
 
+### Code Blocks and Mermaid
+
+Portable Text `code` blocks in articles and projects go through `src/components/CodeBlock.astro`. A block with `language: "mermaid"` is rendered server-side to inline SVG by [Pele](https://github.com/obsidianmd/pele) (synchronous, no DOM, no client JS), themed with the site's `--color-*` variables; invalid Mermaid falls back to the normal code block. All other code blocks use EmDash's `Code` component, wrapped in `dir="ltr"` so the Arabic page direction does not scramble them.
+
 ### Base Layout
 
 `src/layouts/Base.astro` is the root layout. It fetches site settings, primary menu, and pages from EmDash on every request. It uses EmDash UI primitives (`EmDashHead`, `EmDashBodyStart`, `EmDashBodyEnd`, `WidgetArea`) alongside custom components.

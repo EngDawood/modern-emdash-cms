@@ -20,6 +20,7 @@ import {
 } from "emdash/ui";
 import Base from "../layouts/Base.astro";
 import CustomBlock from "./CustomBlock.astro";
+import CodeBlock from "./CodeBlock.astro";
 import PostCard from "./PostCard.astro";
 import NewsletterSignup from "./NewsletterSignup.astro";
 import { getReadingTime } from "../utils/reading-time";
@@ -263,7 +264,7 @@ const coverAlt = post.data.featured_image?.alt;
 				<div class="article-content" dir="auto">
 					<PortableText
 						value={post.data.content}
-						components={{ type: { customBlock: CustomBlock } }}
+						components={{ type: { customBlock: CustomBlock, code: CodeBlock } }}
 					/>
 				</div>
 
