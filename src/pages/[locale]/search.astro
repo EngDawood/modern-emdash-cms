@@ -5,6 +5,7 @@ import { getEmDashEntry, search } from "emdash";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
+import { listRoutableCollections } from "../../utils/routable-collection";
 import { t, locales, type Locale, defaultLocale } from "../../i18n/utils";
 
 const { locale: localeParam } = Astro.params;
@@ -18,17 +19,26 @@ if (!locales.includes(localeParam as Locale)) {
 
 const query = Astro.url.searchParams.get("q")?.trim() || "";
 
+// Blog posts plus every collection served by the catch-all routes, which
+// share the blog's fields and render with the same card.
+const sections = new Map<string, string>([["posts", "blog"]]);
+if (query) {
+	const dynamic = await listRoutableCollections().catch(() => []);
+	for (const c of dynamic) sections.set(c.slug, c.slug);
+}
+
 const searchRes = query
-	? await search(query, { collections: ["posts"], locale, limit: 100 })
+	? await search(query, { collections: [...sections.keys()], locale, limit: 100 })
 	: { items: [] };
 
 const results = [];
 if (query && searchRes.items.length > 0) {
 	for (const item of searchRes.items) {
-		if (item.collection === "posts" && item.slug) {
-			const { entry } = await getEmDashEntry("posts", item.slug, { locale });
+		const section = sections.get(item.collection);
+		if (section && item.slug) {
+			const { entry } = await getEmDashEntry(item.collection as "posts", item.slug, { locale });
 			if (entry) {
-				results.push(entry);
+				results.push({ entry, section });
 			}
 		}
 	}
@@ -68,12 +78,12 @@ if (query && searchRes.items.length > 0) {
 		{
 			results.length > 0 && (
 				<div class="search-results">
-					{results.map((post) => (
+					{results.map(({ entry: post, section }) => (
 						<PostCard
 							title={post.data.title}
 							excerpt={post.data.excerpt}
 							featuredImage={post.data.featured_image}
-							href={`/${locale}/blog/${post.id}`}
+							href={`/${locale}/${section}/${post.id}`}
 							date={post.data.publishedAt ?? undefined}
 							readingTime={getReadingTime(post.data.content)}
 							locale={locale}

@@ -37,6 +37,8 @@ Two locales: **`ar`** (default, RTL) and **`en`** (LTR). Default locale routes a
 
 When adding translated UI strings, add keys to both JSON files.
 
+**Catch-all collection routes:** `src/pages/[locale]/[collection]/` serves any collection created in the admin with a URL pattern at `/{locale}/{collection-slug}` (listing) and `/{locale}/{collection-slug}/{slug}` (article), using the blog templates (`src/components/ArchivePage.astro`, `ArticlePage.astro`). New collections need no route file, but should carry the blog's fields (title, featured_image, content, excerpt). They are also picked up automatically by `/sitemap.xml`, `/llms.txt`, `/rss.xml`, `/rss/{collection}.xml` and site search, via `listRoutableCollections()` in `src/utils/routable-collection.ts` (uses `getDb()` from `emdash/runtime`; `Astro.locals.emdash.db` is undefined on public routes). Hand-written routes (blog, projects, pages…) win because Astro matches static segments first. The collection's URL segment is its slug, so a collection named `mcp` would sit at `/ar/mcp/...`, and plain `/mcp` is still the MCP endpoint (`src/worker.ts`).
+
 Key i18n namespaces: `nav`, `hero` (includes `location`, `role`, `metrics`), `writing`, `projects` (includes `kicker`), `about` (includes `kicker`), `skills`, `contact`, `footer` (includes `tagline`).
 
 ### EmDash CMS Integration
@@ -131,6 +133,11 @@ Detailed subsystem docs live in `.claude/`. Claude Code loads these on-demand vi
 | `.claude/CLAUDE.CLOUDFLARE.md` | Cloudflare / Wrangler — dual-config setup, sandbox behavior, adapter gotchas |
 | `.claude/CLAUDE-mcp.md` | MCP server — tool structure, runtime constraints, tool inventory, how to add tools |
 | `.claude/rules/dep-pinning.md` | Dependency pinning — Cloudflare adapter/vite-plugin/wrangler triad, upgrade rules, failure signatures |
+| `.claude/memory/` | Persistent memories (user, feedback, project, reference); index in `MEMORY.md` |
+
+## Memory
+
+See @.claude/memory/MEMORY.md for saved context from past sessions. Cloud sessions run in throwaway containers, so save new memories here (one file per memory, typed frontmatter, linked from `MEMORY.md`) and commit them, not to `~/.claude/projects/`.
 
 ## EmDash CMS
 

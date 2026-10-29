@@ -1,0 +1,49 @@
+---
+import { getEmDashCollection } from "emdash";
+import ArchivePage from "../../../components/ArchivePage.astro";
+import { getRoutableCollection } from "../../../utils/routable-collection";
+import { t, locales, type Locale, defaultLocale } from "../../../i18n/utils";
+
+// Catch-all listing for collections without their own route files.
+const { locale: localeParam, collection } = Astro.params;
+
+// `/{collection}/{slug}` without a locale prefix (the collection's urlPattern,
+// as the admin builds it) lands here too, since both are two dynamic segments.
+// Send it to the default locale like the hand-written root redirects do.
+if (!locales.includes(localeParam as Locale)) {
+	const info = await getRoutableCollection(localeParam);
+	if (!info) {
+		return Astro.rewrite("/404");
+	}
+	return Astro.redirect(
+		`/${defaultLocale}/${info.slug}/${collection}${Astro.url.search}`,
+		302,
+	);
+}
+const locale = localeParam as Locale;
+
+const info = await getRoutableCollection(collection);
+if (!info) {
+	return Astro.rewrite("/404");
+}
+
+const { entries: posts, cacheHint } = await getEmDashCollection(info.slug as "posts", {
+	locale,
+});
+
+Astro.cache.set(cacheHint);
+
+// Prefer a translated `nav.<slug>` label; fall back to the admin label.
+const navKey = `nav.${info.slug}`;
+const title = t(navKey, locale) !== navKey ? t(navKey, locale) : info.label;
+---
+
+<ArchivePage
+	posts={posts}
+	collection={info.slug}
+	section={info.slug}
+	locale={locale}
+	title={title}
+	description={info.description}
+	rssHref={`/rss/${info.slug}.xml`}
+/>

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { getSiteSettings } from "emdash";
 import { collectFeedEntries } from "../utils/feed";
+import { listRoutableCollections } from "../utils/routable-collection";
 
 export const GET: APIRoute = async ({ site, url }) => {
 	const siteUrl = site?.toString() || url.origin;
@@ -8,12 +9,16 @@ export const GET: APIRoute = async ({ site, url }) => {
 	const siteTitle = settings?.title || "Studio";
 	const siteDescription = settings?.tagline || "Design & Development";
 
-	const [projects, posts] = await Promise.all([
+	// Collections added in the admin, served by the catch-all routes.
+	const dynamic = await listRoutableCollections().catch(() => []);
+
+	const [projects, posts, ...others] = await Promise.all([
 		collectFeedEntries("projects", "/projects", siteUrl, 20),
 		collectFeedEntries("posts", "/blog", siteUrl, 20),
+		...dynamic.map((c) => collectFeedEntries(c.slug, `/${c.slug}`, siteUrl, 20)),
 	]);
 
-	const items = [...projects, ...posts]
+	const items = [...projects, ...posts, ...others.flat()]
 		.sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime())
 		.map(
 			(entry) => `    <item>

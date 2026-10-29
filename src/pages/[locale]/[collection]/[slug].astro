@@ -1,0 +1,45 @@
+---
+import ArticlePage from "../../../components/ArticlePage.astro";
+import { resolveLocalizedEntry } from "../../../utils/i18n-content";
+import { getRoutableCollection } from "../../../utils/routable-collection";
+import { locales, type Locale } from "../../../i18n/utils";
+
+// Catch-all article page for collections without their own route files.
+const { locale: localeParam, collection, slug } = Astro.params;
+
+if (!locales.includes(localeParam as Locale) || !slug) {
+	return Astro.rewrite("/404");
+}
+const locale = localeParam as Locale;
+
+const info = await getRoutableCollection(collection);
+if (!info) {
+	return Astro.rewrite("/404");
+}
+
+// Generic collections are expected to carry the blog's fields (title,
+// featured_image, content, excerpt), so render them with the blog template.
+const { entry, cacheHint, foundIn } = await resolveLocalizedEntry(
+	info.slug as "posts",
+	slug,
+	locale,
+);
+
+if (!entry) {
+	if (foundIn) {
+		return Astro.redirect(`/${foundIn}/${info.slug}/${slug}${Astro.url.search}`, 301);
+	}
+	return Astro.rewrite("/404");
+}
+
+Astro.cache.set(cacheHint);
+---
+
+<ArticlePage
+	entry={entry}
+	collection={info.slug}
+	section={info.slug}
+	locale={locale}
+	slug={slug}
+	comments={info.commentsEnabled}
+/>
