@@ -37,6 +37,8 @@ Two locales: **`ar`** (default, RTL) and **`en`** (LTR). Default locale routes a
 
 When adding translated UI strings, add keys to both JSON files.
 
+**Catch-all collection routes:** `src/pages/[locale]/[collection]/` serves any collection created in the admin with a URL pattern at `/{locale}/{collection-slug}` (listing) and `/{locale}/{collection-slug}/{slug}` (article), using the blog templates (`src/components/ArchivePage.astro`, `ArticlePage.astro`). New collections need no route file, but should carry the blog's fields (title, featured_image, content, excerpt). Hand-written routes (blog, projects, pages…) win because Astro matches static segments first. The collection's URL segment is its slug, so a collection named `mcp` would sit at `/ar/mcp/...`, and plain `/mcp` is still the MCP endpoint (`src/worker.ts`).
+
 Key i18n namespaces: `nav`, `hero` (includes `location`, `role`, `metrics`), `writing`, `projects` (includes `kicker`), `about` (includes `kicker`), `skills`, `contact`, `footer` (includes `tagline`).
 
 ### EmDash CMS Integration
