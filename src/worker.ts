@@ -11,6 +11,7 @@ export { EmDashMCP };
 const CMS_HOST = "cms.engdawood.com";
 const SITE_ORIGIN = "https://engdawood.com";
 const SITE_HOSTS = new Set(["engdawood.com", "www.engdawood.com"]);
+const MAGIC_LINK_VERIFY_PATH = "/_emdash/api/auth/magic-link/verify";
 
 // `caches.default` is a Cloudflare Workers runtime API not present on the DOM `CacheStorage` type.
 const edgeCache = (caches as unknown as { default: Cache }).default;
@@ -54,7 +55,12 @@ export default {
 					? Response.redirect(`${url.origin}/_emdash/admin`, 302)
 					: Response.redirect(`${SITE_ORIGIN}${url.pathname}${url.search}`, 301);
 			}
-		} else if (SITE_HOSTS.has(url.hostname) && url.pathname.startsWith("/_emdash/admin")) {
+		} else if (
+			SITE_HOSTS.has(url.hostname) &&
+			(url.pathname.startsWith("/_emdash/admin") || url.pathname === MAGIC_LINK_VERIFY_PATH)
+		) {
+			// Emails link to siteUrl (the apex). Verifying there would set the session
+			// cookie on the wrong host, so hand the link to the CMS host unused.
 			return Response.redirect(`https://${CMS_HOST}${url.pathname}${url.search}`, 302);
 		}
 
