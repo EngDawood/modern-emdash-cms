@@ -7,6 +7,7 @@ import {
 import { Image, PortableText } from "emdash/ui";
 import Base from "../../../layouts/Base.astro";
 import CustomBlock from "../../../components/CustomBlock.astro";
+import CodeBlock from "../../../components/CodeBlock.astro";
 import FontDownloader from "../../../components/FontDownloader.astro";
 import ProjectCard from "../../../components/ProjectCard.astro";
 import { locales, type Locale, defaultLocale, t } from "../../../i18n/utils";
@@ -197,14 +198,14 @@ const contentAfter = markerIndex >= 0 ? contentBlocks!.slice(markerIndex + 1) : 
 				<div class="project-content" dir="auto">
 					<PortableText
 						value={contentBefore}
-						components={{ type: { customBlock: CustomBlock } }}
+						components={{ type: { customBlock: CustomBlock, code: CodeBlock } }}
 					/>
 					{markerIndex >= 0 && <FontDownloader locale={locale} />}
 					{
 						contentAfter && (
 							<PortableText
 								value={contentAfter}
-								components={{ type: { customBlock: CustomBlock } }}
+								components={{ type: { customBlock: CustomBlock, code: CodeBlock } }}
 							/>
 						)
 					}

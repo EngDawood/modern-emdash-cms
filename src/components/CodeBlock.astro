@@ -1,0 +1,50 @@
+---
+/**
+ * Portable Text `code` block. ```mermaid blocks are rendered to inline SVG on
+ * the server with Pele (synchronous, no DOM), so no diagram JavaScript reaches
+ * the reader. Every other language, and any Mermaid source Pele cannot parse,
+ * falls back to EmDash's default code block, forced left-to-right.
+ */
+import { Code } from "emdash/ui";
+import { render } from "pele";
+
+interface Props {
+	node: { _type: "code"; _key: string; code: string; language?: string; filename?: string };
+}
+
+const { node } = Astro.props;
+
+let svg: string | null = null;
+if (node?.language?.toLowerCase() === "mermaid" && node.code) {
+	try {
+		svg = render(node.code).svg;
+	} catch (error) {
+		console.warn("[mermaid] render failed, showing source instead:", error);
+	}
+}
+---
+
+{/* Code is always left-to-right; inheriting the Arabic page's RTL direction scrambles punctuation (`{"a": 1}` shows as `{a": 1"}`). */}
+{svg ? <figure class="mermaid-diagram" dir="ltr" set:html={svg} /> : <div dir="ltr"><Code node={node} /></div>}
+
+<style>
+	.mermaid-diagram {
+		margin: 2rem 0;
+		padding: 1.25rem;
+		overflow-x: auto;
+		text-align: center;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		/* Pele reads these at paint time, so diagrams follow the site's light/dark theme. */
+		--pele-bg: var(--color-surface);
+		--pele-fg: var(--color-text);
+		--pele-muted: var(--color-muted);
+		--pele-line: var(--color-text-secondary);
+		--pele-surface: var(--color-bg-subtle);
+		--pele-surface-alt: var(--color-bg);
+		--pele-border: var(--color-border);
+		--pele-accent: var(--color-accent);
+		--pele-font: var(--font-arabic-sans, sans-serif);
+	}
+</style>
