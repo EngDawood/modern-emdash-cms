@@ -24,6 +24,7 @@ npm-debug.log*
 .DS_Store
 .agents/*
 .claude/*
+!.claude/memory/
 dist/*
 .mcp.json
 reports/*

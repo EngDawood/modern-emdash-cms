@@ -133,6 +133,11 @@ Detailed subsystem docs live in `.claude/`. Claude Code loads these on-demand vi
 | `.claude/CLAUDE.CLOUDFLARE.md` | Cloudflare / Wrangler — dual-config setup, sandbox behavior, adapter gotchas |
 | `.claude/CLAUDE-mcp.md` | MCP server — tool structure, runtime constraints, tool inventory, how to add tools |
 | `.claude/rules/dep-pinning.md` | Dependency pinning — Cloudflare adapter/vite-plugin/wrangler triad, upgrade rules, failure signatures |
+| `.claude/memory/` | Persistent memories (user, feedback, project, reference); index in `MEMORY.md` |
+
+## Memory
+
+See @.claude/memory/MEMORY.md for saved context from past sessions. Cloud sessions run in throwaway containers, so save new memories here (one file per memory, typed frontmatter, linked from `MEMORY.md`) and commit them, not to `~/.claude/projects/`.
 
 ## EmDash CMS
 
