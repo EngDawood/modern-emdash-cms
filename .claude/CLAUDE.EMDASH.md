@@ -10,7 +10,7 @@ When working on EmDash-related tasks, load the relevant skill first:
 
 ## What EmDash Is
 
-EmDash is a CMS that runs inside the Astro site. It stores schema and content in a Cloudflare D1 database and exposes a full admin UI at `/_emdash/admin`. There is no separate CMS server — it's all part of the same Cloudflare Worker.
+EmDash is a CMS that runs inside the Astro site. It stores schema and content in a Cloudflare D1 database and exposes a full admin UI at `/_emdash/admin` (served from `cms.engdawood.com` in production, see CLAUDE.md → Domains). There is no separate CMS server — it's all part of the same Cloudflare Worker.
 
 ## Bindings (declared in `wrangler.jsonc`)
 
