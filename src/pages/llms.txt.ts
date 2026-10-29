@@ -1,17 +1,25 @@
 import type { APIRoute } from "astro";
 import { getEmDashCollection, getSiteSettings } from "emdash";
 import { buildLlmsTxt, type LlmsTxtEntry } from "../plugins/seo/llms";
+import { listRoutableCollections } from "../utils/routable-collection";
 
 // One llms.txt covers the whole site. Spec: https://llmstxt.org/
 const LOCALES = ["ar", "en"] as const;
 
-const SECTIONS = [
+const HANDWRITTEN_SECTIONS = [
 	{ type: "posts", label: "Writing", basePath: "/blog" },
 	{ type: "projects", label: "Work", basePath: "/projects" },
 	{ type: "pages", label: "Pages", basePath: "/pages" },
 ] as const;
 
 export const GET: APIRoute = async ({ url }) => {
+	// Collections added in the admin, served by the catch-all routes.
+	const dynamic = await listRoutableCollections().catch(() => []);
+	const SECTIONS = [
+		...HANDWRITTEN_SECTIONS,
+		...dynamic.map((c) => ({ type: c.slug as "posts", label: c.label, basePath: `/${c.slug}` })),
+	];
+
 	// Query per locale and prefix each entry with the locale it actually lives
 	// in. A single unscoped query returns both locales' rows, and listing them
 	// all under /ar/ pointed crawlers at URLs that redirect (or, before the

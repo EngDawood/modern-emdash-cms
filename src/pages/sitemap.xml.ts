@@ -1,10 +1,11 @@
 import type { APIRoute } from "astro";
 import { getEmDashCollection } from "emdash";
+import { listRoutableCollections } from "../utils/routable-collection";
 
 const LOCALES = ["ar", "en"] as const;
 
 // Content collections and the locale-agnostic path they are served under.
-const SECTIONS = [
+const HANDWRITTEN_SECTIONS = [
 	{ type: "posts", basePath: "/blog" },
 	{ type: "projects", basePath: "/projects" },
 	{ type: "pages", basePath: "/pages" },
@@ -32,6 +33,14 @@ function urlEntry(loc: string, lastmod?: string, alternates?: string): string {
 export const GET: APIRoute = async ({ url: reqUrl }) => {
 	const origin = reqUrl.origin;
 
+	// Collections added in the admin are served by the catch-all routes at
+	// /{locale}/{collection-slug}/…, so list them too, plus their listing page.
+	const dynamic = await listRoutableCollections().catch(() => []);
+	const SECTIONS = [
+		...HANDWRITTEN_SECTIONS,
+		...dynamic.map((c) => ({ type: c.slug as "posts", basePath: `/${c.slug}` })),
+	];
+
 	// Query per locale. A single unscoped query returns every locale's rows,
 	// and cross-multiplying those by LOCALES advertised URLs that do not exist
 	// (an English-only post listed under /ar/blog/…, and every translated entry
@@ -58,9 +67,12 @@ export const GET: APIRoute = async ({ url: reqUrl }) => {
 			`    <xhtml:link rel="alternate" hreflang="${lang}" href="${localeUrl(origin, lang, "")}"/>`,
 	).join("\n");
 
-	const staticUrls = LOCALES.map((locale) =>
-		urlEntry(localeUrl(origin, locale, ""), today, homeAlternates),
-	);
+	const staticUrls = [
+		...LOCALES.map((locale) => urlEntry(localeUrl(origin, locale, ""), today, homeAlternates)),
+		...LOCALES.flatMap((locale) =>
+			dynamic.map((c) => urlEntry(localeUrl(origin, locale, `/${c.slug}`), today)),
+		),
+	];
 
 	const contentUrls = results.flatMap((result) => {
 		if (result.status !== "fulfilled") return [];
