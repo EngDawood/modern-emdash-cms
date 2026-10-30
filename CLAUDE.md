@@ -169,7 +169,7 @@ See @CLAUDE.CLOUDFLARE.md for the dual-config setup, sandbox plugin behavior, an
 ## Patches
 
 One package is patched via `pnpm patch`:
-- `emdash@0.38.0` — `patches/emdash@0.38.0.patch`
+- `emdash@1.4.0` — `patches/emdash@1.4.0.patch` (plugin `content.update` promotes `slug`/`status`/etc. out of `data`; create is handled upstream)
 
 Declared in `package.json` under `pnpm.patchedDependencies`. Applied automatically after `pnpm install`. If you upgrade emdash, re-apply or update the patch against the new version.
 

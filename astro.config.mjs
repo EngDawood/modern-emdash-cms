@@ -205,9 +205,6 @@ export default defineConfig({
 			sandboxed: [...(process.env.NODE_ENV !== "production" ? [webhookNotifier] : [])],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
-			// emdash 0.38 only enables the plugin registry via experimental.registry;
-			// the top-level `registry` option and hosted default arrive in 1.x.
-			experimental: { registry: { aggregatorUrl: "https://registry.emdashcms.com" } },
 		}),
 	],
 	devToolbar: { enabled: false },
@@ -221,12 +218,12 @@ export default defineConfig({
 			include: [
 				"spark-emdash/middleware",
 				"emdash/middleware",
-				"emdash/middleware/redirect",
-				"emdash/middleware/setup",
-				"emdash/middleware/auth",
-				"emdash/middleware/request-context",
+				"emdash/internal/middleware/redirect",
+				"emdash/internal/middleware/setup",
+				"emdash/internal/middleware/auth",
+				"emdash/internal/middleware/request-context",
 				"@emdash-cms/cloudflare/db/d1",
-				"emdash/media/local-runtime",
+				"emdash/internal/media/local-runtime",
 				"@emdash-cms/plugin-forms",
 				"@emdash-cms/cloudflare/storage/r2",
 				"emdash/ui",

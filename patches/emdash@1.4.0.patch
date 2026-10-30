@@ -1,0 +1,58 @@
+diff --git a/dist/context-CzjejcsE.mjs b/dist/context-CzjejcsE.mjs
+index ecaa6975422758a546016ffb446092df42a9c970..5cdc8fb1499bf08c66804af5d75869b25564bc91 100644
+--- a/dist/context-CzjejcsE.mjs
++++ b/dist/context-CzjejcsE.mjs
+@@ -1555,6 +1555,7 @@ function createContentAccessWithWrite(db, beforeContentWrite, accessOptions, con
+ 		async update(collection, id, data) {
+ 			const recordWrite = await beforeContentWrite?.();
+ 			const { fields, seo } = splitSeoFromInput(data);
++			const { slug, status, publishedAt, scheduledAt, authorId, primaryBylineId, ...customFields } = fields;
+ 			const hasFieldUpdates = Object.keys(fields).length > 0;
+ 			let contentMutated = false;
+ 			try {
+@@ -1562,7 +1563,15 @@ function createContentAccessWithWrite(db, beforeContentWrite, accessOptions, con
+ 					const trxContentRepo = new ContentRepository(trx);
+ 					const trxSeoRepo = new SeoRepository(trx);
+ 					const hasSeo = await assertSeoEnabled(trxSeoRepo, collection, seo);
+-					const item = hasFieldUpdates ? await trxContentRepo.updateDraftAware(collection, id, { data: fields }) : await (async () => {
++					const item = hasFieldUpdates ? await trxContentRepo.updateDraftAware(collection, id, {
++						slug,
++						status,
++						publishedAt,
++						scheduledAt,
++						authorId,
++						primaryBylineId,
++						data: customFields
++					}) : await (async () => {
+ 						const existing = await trxContentRepo.findById(collection, id);
+ 						if (!existing) throw new Error("Content not found");
+ 						return existing;
+diff --git a/src/plugins/context.ts b/src/plugins/context.ts
+index 48c4e30dbdbd246f67d701a3da12aa05f0a603fb..32324de886673854ba3dacee1de84a1de5dde0e5 100644
+--- a/src/plugins/context.ts
++++ b/src/plugins/context.ts
+@@ -858,6 +858,7 @@ export function createContentAccessWithWrite(
+ 		async update(collection: string, id: string, data: ContentWriteInput): Promise<ContentItem> {
+ 			const recordWrite = await beforeContentWrite?.();
+ 			const { fields, seo } = splitSeoFromInput(data);
++			const { slug, status, publishedAt, scheduledAt, authorId, primaryBylineId, ...customFields } = fields;
+ 			const hasFieldUpdates = Object.keys(fields).length > 0;
+ 			let contentMutated = false;
+ 
+@@ -874,7 +875,15 @@ export function createContentAccessWithWrite(
+ 					// only the SEO table. updateDraftAware delegates no-op writes to
+ 					// ContentRepository.update.
+ 					const item = hasFieldUpdates
+-						? await trxContentRepo.updateDraftAware(collection, id, { data: fields })
++						? await trxContentRepo.updateDraftAware(collection, id, {
++							slug,
++							status,
++							publishedAt,
++							scheduledAt,
++							authorId,
++							primaryBylineId,
++							data: customFields,
++						})
+ 						: await (async () => {
+ 								const existing = await trxContentRepo.findById(collection, id);
+ 								if (!existing) throw new Error("Content not found");
