@@ -2,3 +2,11 @@
 # cache aggressively so repeat visitors never re-download or re-validate it.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Agentic Resource Discovery manifest — agents/crawlers must be able to fetch it cross-origin.
+/.well-known/ard.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+/.well-known/ai-catalog.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
