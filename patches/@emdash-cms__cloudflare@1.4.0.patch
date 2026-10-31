@@ -1,5 +1,5 @@
 diff --git a/dist/sandbox/index.mjs b/dist/sandbox/index.mjs
-index 610d526914d7074d500145acd32f8cec72181d27..9600e3d016a8dd81d56bb3ee96acb92b186f4e5f 100644
+index 610d526914d7074d500145acd32f8cec72181d27..def7e75045f9717d5ea334da9d7a79138d4ee8a9 100644
 --- a/dist/sandbox/index.mjs
 +++ b/dist/sandbox/index.mjs
 @@ -663,7 +663,7 @@ function sanitizeComment(s) {
@@ -7,7 +7,7 @@ index 610d526914d7074d500145acd32f8cec72181d27..9600e3d016a8dd81d56bb3ee96acb92b
  	cpuMs: 50,
  	memoryMb: 128,
 -	subrequests: 10,
-+	subrequests: 50,
++	subrequests: 1000,
  	wallTimeMs: 3e4
  };
  /**
