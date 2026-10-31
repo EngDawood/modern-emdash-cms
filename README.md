@@ -91,8 +91,6 @@ The `/mcp` endpoint merges EmDash's built-in content tools with custom tools and
 | `EMDASH_TOKEN` | Yes | Bearer token for MCP auth |
 | `EMDASH_URL` | No | Override base URL (defaults to `https://Your-Domain.com`) |
 
-The jobs Worker API base URL is a `jobs-board` plugin setting (Admin → Jobs → Settings), not an environment variable.
-
 ## Deployment
 
 ```bash
