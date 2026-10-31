@@ -1,0 +1,13 @@
+diff --git a/dist/sandbox/index.mjs b/dist/sandbox/index.mjs
+index 610d526914d7074d500145acd32f8cec72181d27..9600e3d016a8dd81d56bb3ee96acb92b186f4e5f 100644
+--- a/dist/sandbox/index.mjs
++++ b/dist/sandbox/index.mjs
+@@ -663,7 +663,7 @@ function sanitizeComment(s) {
+ const DEFAULT_LIMITS = {
+ 	cpuMs: 50,
+ 	memoryMb: 128,
+-	subrequests: 10,
++	subrequests: 50,
+ 	wallTimeMs: 3e4
+ };
+ /**

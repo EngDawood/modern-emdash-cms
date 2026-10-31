@@ -168,10 +168,13 @@ See @CLAUDE.CLOUDFLARE.md for the dual-config setup, sandbox plugin behavior, an
 
 ## Patches
 
-One package is patched via `pnpm patch`:
+Two packages are patched via `pnpm patch` (plus two small transitive ones):
 - `emdash@1.4.0` — `patches/emdash@1.4.0.patch` (plugin `content.update` promotes `slug`/`status`/etc. out of `data`; create is handled upstream)
+- `@emdash-cms/cloudflare@1.4.0` — `patches/@emdash-cms__cloudflare@1.4.0.patch` (sandbox `DEFAULT_LIMITS.subrequests` 10 → 50; registry plugins' `/admin` routes made >10 bridge calls and failed with "Too many subrequests". EmDash exposes no option for this limit, and subrequests are not billed)
 
-Declared in `package.json` under `pnpm.patchedDependencies`. Applied automatically after `pnpm install`. If you upgrade emdash, re-apply or update the patch against the new version.
+Declared in `package.json` under `pnpm.patchedDependencies`. Applied automatically after `pnpm install`. If you upgrade emdash or the Cloudflare package, re-apply or update the patch against the new version. After `pnpm patch-commit`, run `pnpm install --lockfile-only` or frozen installs fail.
+
+`wrangler.prod.jsonc` sets `"keep_names": false`: wrangler's default esbuild `keepNames` injects `__name()` into the bundle, and the sandbox runner embeds a function's `toString()` into each plugin isolate where `__name` is undefined ("ROUTE_ERROR: __name is not defined").
 
 ## Dependency Pinning
 
