@@ -2,6 +2,11 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "dawood-emdash",
 	"main": "./dist/server/entry.mjs",
+	// Wrangler re-bundles entry.mjs with esbuild keepNames (default true), which
+	// injects __name() helpers. The sandbox runner embeds a function's toString()
+	// into each plugin isolate, where __name is undefined, so every registry plugin
+	// route fails with "__name is not defined".
+	"keep_names": false,
 	"assets": {
 		"binding": "ASSETS",
 		"directory": "./dist/client",
