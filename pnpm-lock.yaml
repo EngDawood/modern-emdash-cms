@@ -16,7 +16,7 @@ patchedDependencies:
     hash: 47c05ba5ce094edd948a2959894bc2c3e5a3cfe44dad2408e33515f10b875fc4
     path: patches/@astrojs__internal-helpers@0.10.0.patch
   '@emdash-cms/cloudflare@1.4.0':
-    hash: f262404c7089c14e82491e273b28b0b4f7010772a5e0bb451f64cf908c65a4db
+    hash: 9ee23671598ce462c1e8792cf953aa65a82aedf83f1ae47b6129e42274bba68c
     path: patches/@emdash-cms__cloudflare@1.4.0.patch
   '@rollup/pluginutils':
     hash: 3d57a2a5a8dd59d30030795047b4f0b7704c66d23c36fd98e21f3b1d2736e488
@@ -43,7 +43,7 @@ importers:
         version: 0.2.13(@atcute/identity@2.0.2(@atcute/lexicons@2.0.3)(typescript@5.9.3))(@atcute/lexicons@2.0.3)(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(emdash@1.4.0)(react@19.2.5)(typescript@5.9.3)
       '@emdash-cms/cloudflare':
         specifier: 1.4.0
-        version: 1.4.0(patch_hash=f262404c7089c14e82491e273b28b0b4f7010772a5e0bb451f64cf908c65a4db)(75f9bd691d59aa95aac4fc9c202d4487)
+        version: 1.4.0(patch_hash=9ee23671598ce462c1e8792cf953aa65a82aedf83f1ae47b6129e42274bba68c)(75f9bd691d59aa95aac4fc9c202d4487)
       '@emdash-cms/plugin-ai-moderation':
         specifier: ^0.2.0
         version: 0.2.0(@phosphor-icons/react@2.1.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(emdash@1.4.0)(react@19.2.5)
@@ -7231,7 +7231,7 @@ snapshots:
       - date-fns
       - zod
 
-  '@emdash-cms/cloudflare@1.4.0(patch_hash=f262404c7089c14e82491e273b28b0b4f7010772a5e0bb451f64cf908c65a4db)(75f9bd691d59aa95aac4fc9c202d4487)':
+  '@emdash-cms/cloudflare@1.4.0(patch_hash=9ee23671598ce462c1e8792cf953aa65a82aedf83f1ae47b6129e42274bba68c)(75f9bd691d59aa95aac4fc9c202d4487)':
     dependencies:
       '@astrojs/cloudflare': 13.1.8(@types/node@25.9.2)(astro@6.4.4(@types/node@25.9.2)(rollup@4.60.1)(yaml@2.8.3))(workerd@1.20260609.1)(wrangler@4.99.0(@cloudflare/workers-types@4.20260410.1))(yaml@2.8.3)
       '@cloudflare/ai-search-snippet': 0.0.42

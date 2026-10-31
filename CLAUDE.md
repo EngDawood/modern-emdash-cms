@@ -170,7 +170,7 @@ See @CLAUDE.CLOUDFLARE.md for the dual-config setup, sandbox plugin behavior, an
 
 Two packages are patched via `pnpm patch` (plus two small transitive ones):
 - `emdash@1.4.0` — `patches/emdash@1.4.0.patch` (plugin `content.update` promotes `slug`/`status`/etc. out of `data`; create is handled upstream)
-- `@emdash-cms/cloudflare@1.4.0` — `patches/@emdash-cms__cloudflare@1.4.0.patch` (sandbox `DEFAULT_LIMITS.subrequests` 10 → 50; registry plugins' `/admin` routes made >10 bridge calls and failed with "Too many subrequests". EmDash exposes no option for this limit, and subrequests are not billed)
+- `@emdash-cms/cloudflare@1.4.0` — `patches/@emdash-cms__cloudflare@1.4.0.patch` (sandbox `DEFAULT_LIMITS.subrequests` 10 → 1000; registry plugins' `/admin` routes (e.g. IndexNow `/submissions`, only ~8 plugin calls) failed with "Too many subrequests" even at 50, so the sandbox appears to count more than the plugin's own calls. If this does not fix it, revert the patch. EmDash exposes no option for this limit, and subrequests are not billed)
 
 Declared in `package.json` under `pnpm.patchedDependencies`. Applied automatically after `pnpm install`. If you upgrade emdash or the Cloudflare package, re-apply or update the patch against the new version. After `pnpm patch-commit`, run `pnpm install --lockfile-only` or frozen installs fail.
 
