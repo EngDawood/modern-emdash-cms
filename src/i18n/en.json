@@ -94,6 +94,18 @@
 			}
 		]
 	},
+	"skillLibrary": {
+		"kicker": "CLAUDE SKILLS LIBRARY",
+		"heading": "My skills",
+		"subheading": "An Arabic library of Claude skills — what each skill does, how it works, and how to build and use it.",
+		"viewAll": "View all skills"
+	},
+	"mcpCourse": {
+		"kicker": "MCP COURSE",
+		"heading": "MCP in Arabic",
+		"subheading": "A complete Arabic course on the Model Context Protocol, lesson by lesson — from the core concepts to building and shipping your own server.",
+		"viewAll": "View all lessons"
+	},
 	"skills": {
 		"section": "Skills",
 		"heading": "Tech stack",

@@ -7,6 +7,8 @@ import { submitContactForm } from "../utils/contact-form";
 import HeroSection from "./sections/HeroSection.astro";
 import WorkSection from "./sections/WorkSection.astro";
 import WritingSection from "./sections/WritingSection.astro";
+import SkillsSection from "./sections/SkillsSection.astro";
+import McpSection from "./sections/McpSection.astro";
 import AboutSection from "./sections/AboutSection.astro";
 import ContactSection from "./sections/ContactSection.astro";
 import FaqTeaserSection from "./sections/FaqTeaserSection.astro";
@@ -18,13 +20,17 @@ interface Props {
 
 const { locale } = Astro.props;
 
-const [settings, { entries: projects, cacheHint }, { entries: posts }, { entry: faqPage, cacheHint: faqCacheHint }] = await Promise.all([
+const [settings, { entries: projects, cacheHint }, { entries: posts }, { entries: skills, cacheHint: skillsCacheHint }, { entries: lessons, cacheHint: mcpCacheHint }, { entry: faqPage, cacheHint: faqCacheHint }] = await Promise.all([
 	getSiteSettings(),
 	getListingEntries("projects", locale, { limit: 3 }),
 	getEmDashCollection("posts", { locale, orderBy: { published_at: "desc" }, limit: 4 }),
+	getListingEntries("skills", locale, { limit: 3 }),
+	getListingEntries("mcp", locale, { limit: 3 }),
 	getEmDashEntry("pages", "faq", { locale }),
 ]);
 Astro.cache.set(cacheHint);
+Astro.cache.set(skillsCacheHint);
+Astro.cache.set(mcpCacheHint);
 Astro.cache.set(faqCacheHint);
 
 // Pull the FAQ items out of the marketing.faq block for the homepage teaser
@@ -36,6 +42,14 @@ const faqItems: { question: string; answer: string }[] = faqBlock?.items ?? [];
 // Projects and posts are already sorted and limited by the query
 const featuredProjects = projects;
 const recentPosts = posts;
+
+// The skills library and the MCP course read in their own order, not by publish date
+const featuredSkills = [...skills].sort(
+	(a, b) => (a.entry.data.order_number ?? 99) - (b.entry.data.order_number ?? 99),
+);
+const featuredLessons = [...lessons].sort(
+	(a, b) => (a.entry.data.lesson_number ?? 99) - (b.entry.data.lesson_number ?? 99),
+);
 
 const email = "eng.dawoodsaleh@gmail.com";
 const telegram = "https://t.me/Daw5d";
@@ -86,6 +100,16 @@ if (Astro.request.method === "POST") {
 
 	<WritingSection
 		recentPosts={recentPosts}
+		locale={locale}
+	/>
+
+	<SkillsSection
+		featuredSkills={featuredSkills}
+		locale={locale}
+	/>
+
+	<McpSection
+		featuredLessons={featuredLessons}
 		locale={locale}
 	/>
 
