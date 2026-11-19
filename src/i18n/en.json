@@ -28,6 +28,11 @@
 			"records": "research records",
 			"platforms": "platforms",
 			"years": "years experience"
+		},
+		"marquee": {
+			"label": "Tech stack",
+			"pause": "Pause",
+			"resume": "Resume"
 		}
 	},
 	"writing": {

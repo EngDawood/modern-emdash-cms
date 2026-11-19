@@ -28,6 +28,11 @@
 			"records": "سجل علمي",
 			"platforms": "منصة",
 			"years": "سنوات خبرة"
+		},
+		"marquee": {
+			"label": "التقنيات",
+			"pause": "إيقاف مؤقت",
+			"resume": "متابعة"
 		}
 	},
 	"writing": {
