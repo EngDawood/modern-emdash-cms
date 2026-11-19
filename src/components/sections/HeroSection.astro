@@ -79,7 +79,8 @@ const SETS_PER_HALF = 5;
 			</aside>
 		</div>
 	</div>
-	<div class="hero-ticker marquee" data-marquee data-rtl={locale === "ar" ? "" : undefined}>
+	<div class="hero-ticker">
+	<div class="marquee" data-marquee data-rtl={locale === "ar" ? "" : undefined}>
 		<div class="marquee-viewport" dir="ltr" role="group" aria-label={t("hero.marquee.label", locale)}>
 			<div class="marquee-track">
 				{[0, 1].map((half) => (
@@ -121,6 +122,7 @@ const SETS_PER_HALF = 5;
 			</svg>
 			<span data-marquee-label>{t("hero.marquee.pause", locale)}</span>
 		</button>
+	</div>
 	</div>
 </section>
 
@@ -412,6 +414,12 @@ const SETS_PER_HALF = 5;
 
 	/* Logo marquee. Default = static wrapping grid; [data-active] (set by JS) animates. */
 	.hero-ticker {
+		max-width: var(--wide-width);
+		margin: 0 auto;
+		padding: 0 var(--spacing-6) var(--spacing-8);
+	}
+
+	.marquee {
 		--marquee-duration: 100s;
 		background: var(--color-accent);
 		color: var(--color-on-accent);
@@ -529,7 +537,7 @@ const SETS_PER_HALF = 5;
 
 	/* Small screens: icon-only button so the logos keep the width. The label stays as its accessible name. */
 	@media (max-width: 640px) {
-		.hero-ticker { gap: var(--spacing-3); padding-inline: var(--spacing-4); }
+		.marquee { gap: var(--spacing-3); padding-inline: var(--spacing-4); }
 		.marquee-toggle {
 			position: relative;
 			width: 34px;
