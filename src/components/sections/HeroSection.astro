@@ -9,16 +9,14 @@ interface Props {
 
 const { locale, email } = Astro.props;
 
-const tickerItems: { label: string; brand?: string }[] = [
-	{ label: "MCP Server Live", brand: "mcp" },
-	{ label: "Arabic Research" },
-	{ label: "4,127,301 Records Indexed" },
-	{ label: "Node.js", brand: "node.js" },
+const marqueeItems: { label: string; brand?: string }[] = [
 	{ label: "TypeScript", brand: "typescript" },
 	{ label: "Cloudflare Workers", brand: "cloudflare workers" },
 	{ label: "Hono", brand: "hono" },
 	{ label: "Open to Work" },
 ];
+// Each loop half repeats the set so it is wider than any viewport.
+const SETS_PER_HALF = 5;
 ---
 
 <section id="hero" class="hero">
@@ -81,22 +79,82 @@ const tickerItems: { label: string; brand?: string }[] = [
 			</aside>
 		</div>
 	</div>
-	<div class="hero-ticker">
-		<div class:list={["ticker-track", { "ticker-rtl": locale === "ar" }]}>
-			{[0, 1, 2].map(() => (
-				<span class="ticker-group" dir="ltr">
-					{tickerItems.map((item) => (
-						<span class="ticker-item">
-							{item.brand && <BrandIcon name={item.brand} class="ticker-logo" />}
-							<span>{item.label}</span>
-							<span class="ticker-sep">·</span>
-						</span>
-					))}
-				</span>
-			))}
+	<div class="hero-ticker marquee" data-marquee data-rtl={locale === "ar" ? "" : undefined}>
+		<div class="marquee-viewport" dir="ltr" role="group" aria-label={t("hero.marquee.label", locale)}>
+			<div class="marquee-track">
+				{[0, 1].map((half) => (
+					<div class:list={["marquee-half", { "is-dup": half > 0 }]}>
+						{Array.from({ length: SETS_PER_HALF }, (_, set) => {
+							const dup = half > 0 || set > 0;
+							return (
+								<ul
+									class:list={["marquee-set", { "is-dup": dup }]}
+									role="list"
+									aria-hidden={dup ? "true" : undefined}
+									inert={dup}
+								>
+									{marqueeItems.map((item) => (
+										<li class="marquee-item">
+											{item.brand && <BrandIcon name={item.brand} class="marquee-logo" />}
+											<span>{item.label}</span>
+											<span class="marquee-sep" aria-hidden="true">·</span>
+										</li>
+									))}
+								</ul>
+							);
+						})}
+					</div>
+				))}
+			</div>
 		</div>
+		<button
+			type="button"
+			class="marquee-toggle"
+			data-marquee-toggle
+			data-pause={t("hero.marquee.pause", locale)}
+			data-resume={t("hero.marquee.resume", locale)}
+			hidden
+		>
+			<svg class="marquee-toggle-icon" viewBox="0 0 10 10" aria-hidden="true" focusable="false">
+				<g data-icon-pause fill="currentColor"><rect x="1.5" y="1" width="2.5" height="8" /><rect x="6" y="1" width="2.5" height="8" /></g>
+				<path data-icon-play fill="currentColor" d="M2 1 9 5 2 9Z" />
+			</svg>
+			<span data-marquee-label>{t("hero.marquee.pause", locale)}</span>
+		</button>
 	</div>
 </section>
+
+<script>
+	// Progressive enhancement: without JS, with reduced motion, or without CSS
+	// animation support the logos stay a static wrapping grid.
+	const root = document.querySelector<HTMLElement>("[data-marquee]");
+	const button = root?.querySelector<HTMLButtonElement>("[data-marquee-toggle]");
+	const label = root?.querySelector<HTMLElement>("[data-marquee-label]");
+
+	if (root && button && label) {
+		const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const canAnimate = !!window.CSS?.supports?.("animation-name", "none");
+		let paused = false;
+
+		const render = () => {
+			root.toggleAttribute("data-paused", paused);
+			label.textContent = (paused ? button.dataset.resume : button.dataset.pause) ?? "";
+		};
+		const sync = () => {
+			const active = canAnimate && !reduced.matches;
+			root.toggleAttribute("data-active", active);
+			button.hidden = !active;
+		};
+
+		button.addEventListener("click", () => {
+			paused = !paused;
+			render();
+		});
+		reduced.addEventListener("change", sync);
+		sync();
+		render();
+	}
+</script>
 
 <style>
 	/* ── Hero ── */
@@ -352,56 +410,145 @@ const tickerItems: { label: string; brand?: string }[] = [
 		color: var(--color-muted);
 	}
 
-	/* Ticker */
+	/* Logo marquee. Default = static wrapping grid; [data-active] (set by JS) animates. */
 	.hero-ticker {
+		--marquee-duration: 100s;
 		background: var(--color-accent);
-		overflow: hidden;
-		padding: 10px 0;
+		color: var(--color-on-accent);
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-4);
+		padding: 14px var(--spacing-6);
 	}
 
-	.ticker-track {
+	.marquee-viewport {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	.marquee-track {
 		display: flex;
 		width: max-content;
-		white-space: nowrap;
-		animation: ticker 28s linear infinite;
+		max-width: 100%;
 	}
 
-	.ticker-rtl {
-		animation-direction: reverse;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.ticker-track { animation: none; }
-	}
-
-	@keyframes ticker {
-		from { transform: translateX(0); }
-		to { transform: translateX(-33.333%); }
-	}
-
-	.ticker-group {
-		display: inline-flex;
-		align-items: center;
+	.marquee-half {
+		display: flex;
 		flex: none;
 	}
 
-	.ticker-item {
-		--brand-icon-size: 13px;
+	.marquee-set {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+		gap: 10px var(--spacing-8);
+	}
+
+	/* Loop duplicates exist only while animating. */
+	.is-dup { display: none; }
+
+	.marquee-item {
+		--brand-icon-size: 18px;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		height: 18px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		line-height: 1;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	.marquee-sep { display: none; }
+
+	/* Static grid fills the strip. */
+	.marquee:not([data-active]) .marquee-track,
+	.marquee:not([data-active]) .marquee-half,
+	.marquee:not([data-active]) .marquee-set { width: 100%; }
+
+	/* Animated */
+	.marquee[data-active] .marquee-viewport {
+		-webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+		mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+	}
+
+	.marquee[data-active] .marquee-track {
+		width: max-content;
+		max-width: none;
+		animation: marquee var(--marquee-duration) linear infinite;
+	}
+
+	.marquee[data-active] .is-dup { display: flex; }
+
+	.marquee[data-active] .marquee-set {
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		gap: 0;
+		flex: none;
+	}
+
+	.marquee[data-active] .marquee-item { padding-inline-end: var(--spacing-8); gap: 10px; }
+	.marquee[data-active] .marquee-sep { display: inline; opacity: 0.5; margin-inline-start: var(--spacing-8); }
+
+	.marquee[data-active][data-rtl] .marquee-track { animation-direction: reverse; }
+	.marquee[data-paused] .marquee-track { animation-play-state: paused; }
+
+	@keyframes marquee {
+		from { transform: translateX(0); }
+		to { transform: translateX(-50%); }
+	}
+
+	.marquee-toggle {
+		flex: none;
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
+		padding: 6px 12px;
 		font-family: var(--font-mono);
 		font-size: 10px;
-		letter-spacing: 0.18em;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: var(--color-on-accent);
-		opacity: 0.9;
-		padding-right: var(--spacing-6);
+		color: inherit;
+		background: transparent;
+		border: 1px solid color-mix(in srgb, var(--color-on-accent) 55%, transparent);
+		border-radius: 999px;
+		cursor: pointer;
 	}
 
-	.ticker-sep {
-		opacity: 0.5;
+	.marquee-toggle[hidden] { display: none; }
+	.marquee-toggle:hover { background: color-mix(in srgb, var(--color-on-accent) 14%, transparent); }
+	.marquee-toggle:focus-visible { outline: 2px solid var(--color-on-accent); outline-offset: 3px; }
+	.marquee-toggle-icon { width: 10px; height: 10px; }
+
+	/* Small screens: icon-only button so the logos keep the width. The label stays as its accessible name. */
+	@media (max-width: 640px) {
+		.hero-ticker { gap: var(--spacing-3); padding-inline: var(--spacing-4); }
+		.marquee-toggle {
+			position: relative;
+			width: 34px;
+			height: 34px;
+			padding: 0;
+			justify-content: center;
+		}
+		.marquee-toggle [data-marquee-label] {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
 	}
+	.marquee-toggle [data-icon-play],
+	.marquee[data-paused] .marquee-toggle [data-icon-pause] { display: none; }
+	.marquee[data-paused] .marquee-toggle [data-icon-play] { display: inline; }
 
 	/* ── Responsive ── */
 	@media (max-width: 768px) {
