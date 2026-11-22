@@ -207,7 +207,10 @@
 		"familySerifDisplay": "ثمانية سيريف ديسبلاي",
 		"familySerifText": "ثمانية سيريف تكست",
 		"license": "ترخيص خط ثمانية للاستخدام الشخصي فقط.",
-		"licenseLink": "اقرأ الشروط"
+		"licenseLink": "اقرأ الشروط",
+		"titleSingle": "خذ الخط معك",
+		"familyAlJazeera": "خط الجزيرة",
+		"licenseAlJazeera": "ترخيص خط الجزيرة يقيّد التعديل وإعادة التوزيع — للاستخدام الشخصي فقط."
 	},
 	"project": {
 		"viewWork": "عرض المشروع",

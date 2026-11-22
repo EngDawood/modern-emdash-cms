@@ -207,7 +207,10 @@
 		"familySerifDisplay": "Thmanyah Serif Display",
 		"familySerifText": "Thmanyah Serif Text",
 		"license": "The Thmanyah font license permits personal use only.",
-		"licenseLink": "Read the terms"
+		"licenseLink": "Read the terms",
+		"titleSingle": "Take the font with you",
+		"familyAlJazeera": "Al Jazeera",
+		"licenseAlJazeera": "The Al Jazeera font license restricts modification and redistribution — personal use only."
 	},
 	"project": {
 		"viewWork": "View Project",

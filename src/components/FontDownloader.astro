@@ -1,60 +1,102 @@
 ---
 /**
- * Live font-download panel for the thmanyah-font-web project page.
+ * Live font-download panel for the font project pages (thmanyah-font-web,
+ * al-jazeera-font-web).
  *
  * Ported from the repo's own demo (`examples/demo.html`): the binaries are
  * fetched from jsDelivr and, when more than one is picked, packed in the
- * browser by a small store-only ZIP writer -- woff2/otf are already
+ * browser by a small store-only ZIP writer -- woff2/otf/ttf are already
  * compressed, so deflate would buy nothing and a ZIP library would cost a
  * download.
  *
- * Rendered where the `{{font-downloader}}` marker sits in the entry body, so
- * the position stays editable from the EmDash admin.
+ * Rendered where the `{{font-downloader}}` (Thmanyah) or
+ * `{{font-downloader:al-jazeera}}` marker sits in the entry body, so the
+ * position stays editable from the EmDash admin.
  */
 import { t, type Locale } from "../i18n/utils";
 
+export type FontKit = "thmanyah" | "al-jazeera";
+
 interface Props {
 	locale: Locale;
+	kit?: FontKit;
 }
 
-const { locale } = Astro.props;
+const { locale, kit = "thmanyah" } = Astro.props;
 
-// Pinned to the commit that carries both formats (1b66bb7). Immutable and
-// cached forever at the edge -- never point this at a branch.
-const CDN =
+// Both CDN bases are pinned to a commit -- immutable and cached forever at the
+// edge. Never point these at a branch. `{slug}` and `{name}` (weight name) are
+// filled in by the client script.
+const THMANYAH_CDN =
 	"https://cdn.jsdelivr.net/gh/engdawood/thmanyah-font-web@1b66bb721f771d12ef36e61c128b7a5c668ccf89/fonts";
+const AL_JAZEERA_CDN =
+	"https://cdn.jsdelivr.net/gh/engdawood/al-jazeera-font-web@6c17c879db1120786fd33dc7ac1b972bdb76f326";
 
-const families = [
-	{ slug: "thmanyah-sans", label: t("fontDownload.familySans", locale) },
-	{
-		slug: "thmanyah-serif-display",
-		label: t("fontDownload.familySerifDisplay", locale),
+const KITS = {
+	thmanyah: {
+		templates: {
+			woff2: `${THMANYAH_CDN}/{slug}/woff2/{slug}-{name}.woff2`,
+			otf: `${THMANYAH_CDN}/{slug}/otf/{slug}-{name}.otf`,
+		},
+		families: [
+			{ slug: "thmanyah-sans", label: t("fontDownload.familySans", locale) },
+			{
+				slug: "thmanyah-serif-display",
+				label: t("fontDownload.familySerifDisplay", locale),
+			},
+			{
+				slug: "thmanyah-serif-text",
+				label: t("fontDownload.familySerifText", locale),
+			},
+		],
+		weights: [
+			{ value: "300", name: "Light" },
+			{ value: "400", name: "Regular" },
+			{ value: "500", name: "Medium" },
+			{ value: "700", name: "Bold" },
+			{ value: "900", name: "Black" },
+		],
+		formats: [
+			{ value: "woff2", label: "WOFF2", hint: t("fontDownload.hintWeb", locale) },
+			{ value: "otf", label: "OTF", hint: t("fontDownload.hintDesktop", locale) },
+			{ value: "both", label: t("fontDownload.both", locale), hint: "" },
+		],
+		title: t("fontDownload.title", locale),
+		license: t("fontDownload.license", locale),
+		licenseLink: t("fontDownload.licenseLink", locale),
+		licenseHref: "https://font.thmanyah.com/licenses",
 	},
-	{
-		slug: "thmanyah-serif-text",
-		label: t("fontDownload.familySerifText", locale),
+	"al-jazeera": {
+		templates: {
+			woff2: `${AL_JAZEERA_CDN}/fonts/al-jazeera/woff2/{slug}-{name}.woff2`,
+			ttf: `${AL_JAZEERA_CDN}/downloads/{slug}-{name}.ttf`,
+		},
+		families: [{ slug: "al-jazeera", label: t("fontDownload.familyAlJazeera", locale) }],
+		weights: [
+			{ value: "300", name: "Light" },
+			{ value: "400", name: "Regular" },
+			{ value: "700", name: "Bold" },
+		],
+		formats: [
+			{ value: "woff2", label: "WOFF2", hint: t("fontDownload.hintWeb", locale) },
+			{ value: "ttf", label: "TTF", hint: t("fontDownload.hintDesktop", locale) },
+			{ value: "both", label: t("fontDownload.both", locale), hint: "" },
+		],
+		title: t("fontDownload.titleSingle", locale),
+		license: t("fontDownload.licenseAlJazeera", locale),
+		licenseLink: t("fontDownload.licenseLink", locale),
+		licenseHref: "https://github.com/EngDawood/al-jazeera-font-web/blob/main/NOTICE.md",
 	},
-];
+} as const;
 
-const weights = [
-	{ value: "300", name: "Light" },
-	{ value: "400", name: "Regular" },
-	{ value: "500", name: "Medium" },
-	{ value: "700", name: "Bold" },
-	{ value: "900", name: "Black" },
-];
-
-const formats = [
-	{ value: "woff2", label: "WOFF2", hint: t("fontDownload.hintWeb", locale) },
-	{ value: "otf", label: "OTF", hint: t("fontDownload.hintDesktop", locale) },
-	{ value: "both", label: t("fontDownload.both", locale), hint: "" },
-];
+const { templates, families, weights, formats, title, license, licenseLink, licenseHref } =
+	KITS[kit];
 ---
 
 <section
 	class="fd"
 	data-font-downloader
-	data-cdn={CDN}
+	data-templates={JSON.stringify(templates)}
 	data-msg-empty={t("fontDownload.empty", locale)}
 	data-msg-failed={t("fontDownload.failed", locale)}
 	data-msg-files={t("fontDownload.files", locale)}
@@ -62,16 +104,26 @@ const formats = [
 >
 	<div class="fd-head">
 		<span class="fd-kicker">{t("fontDownload.kicker", locale)}</span>
-		<h3 class="fd-title" id="fd-title">{t("fontDownload.title", locale)}</h3>
+		<h3 class="fd-title" id="fd-title">{title}</h3>
 	</div>
 
 	<div class="fd-controls">
-		<div class="fd-field">
-			<label class="fd-label" for="fd-family">{t("fontDownload.family", locale)}</label>
-			<select class="fd-select" id="fd-family" data-family>
-				{families.map((f) => <option value={f.slug}>{f.label}</option>)}
-			</select>
-		</div>
+		{
+			families.length > 1 ? (
+				<div class="fd-field">
+					<label class="fd-label" for="fd-family">
+						{t("fontDownload.family", locale)}
+					</label>
+					<select class="fd-select" id="fd-family" data-family>
+						{families.map((f) => (
+							<option value={f.slug}>{f.label}</option>
+						))}
+					</select>
+				</div>
+			) : (
+				<input type="hidden" data-family value={families[0].slug} />
+			)
+		}
 
 		<div class="fd-field">
 			<span class="fd-label">{t("fontDownload.format", locale)}</span>
@@ -120,7 +172,7 @@ const formats = [
 		</div>
 	</div>
 
-	<div class="fd-readout" data-readout dir="ltr">thmanyah-sans-Regular.woff2</div>
+	<div class="fd-readout" data-readout dir="ltr">{families[0].slug}-Regular.woff2</div>
 
 	<div class="fd-actions">
 		<button type="button" class="fd-btn fd-btn--primary" data-download-selected>
@@ -133,9 +185,9 @@ const formats = [
 	</div>
 
 	<p class="fd-license">
-		{t("fontDownload.license", locale)}{" "}
-		<a href="https://font.thmanyah.com/licenses" target="_blank" rel="noopener noreferrer">
-			{t("fontDownload.licenseLink", locale)}
+		{license}{" "}
+		<a href={licenseHref} target="_blank" rel="noopener noreferrer">
+			{licenseLink}
 		</a>
 	</p>
 </section>
@@ -147,13 +199,14 @@ const formats = [
 	const root = document.querySelector("[data-font-downloader]") as HTMLElement | null;
 
 	if (root) {
-		const CDN = root.dataset.cdn ?? "";
+		const TEMPLATES = JSON.parse(root.dataset.templates ?? "{}") as Record<string, string>;
 		const MSG = {
 			empty: root.dataset.msgEmpty ?? "",
 			failed: root.dataset.msgFailed ?? "",
 			files: root.dataset.msgFiles ?? "",
 		};
 
+		// A <select> when the kit has several families, a hidden input when it has one.
 		const familySel = root.querySelector("[data-family]") as unknown as HTMLSelectElement;
 		const formatRadios = [...root.querySelectorAll("[data-format]")] as HTMLInputElement[];
 		const weightBoxes = [...root.querySelectorAll("[data-weight]")] as HTMLInputElement[];
@@ -165,7 +218,9 @@ const formats = [
 
 		const currentFormats = () => {
 			const picked = formatRadios.find((r) => r.checked)?.value ?? "woff2";
-			return picked === "both" ? ["woff2", "otf"] : [picked];
+			return picked === "both"
+				? formatRadios.map((r) => r.value).filter((v) => v !== "both")
+				: [picked];
 		};
 		const checkedWeights = () =>
 			weightBoxes.filter((b) => b.checked).map((b) => ({ value: b.value, name: b.dataset.name! }));
@@ -304,7 +359,7 @@ const formats = [
 			const jobs = fmts.flatMap((fmt) =>
 				weights.map((w) => ({
 					fmt,
-					url: `${CDN}/${slug}/${fmt}/${fileName(slug, fmt, w.name)}`,
+					url: TEMPLATES[fmt].replaceAll("{slug}", slug).replaceAll("{name}", w.name),
 					zipPath: `${slug}/${fmt}/${fileName(slug, fmt, w.name)}`,
 					name: fileName(slug, fmt, w.name),
 				}))
@@ -335,7 +390,7 @@ const formats = [
 					total += bytes.length;
 				}
 
-				const suffix = fmts.length === 2 ? "woff2-otf" : fmts[0];
+				const suffix = fmts.join("-");
 				const zipName =
 					weights.length === weightBoxes.length
 						? `${slug}-${suffix}.zip`
