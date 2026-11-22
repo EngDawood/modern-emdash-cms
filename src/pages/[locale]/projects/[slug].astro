@@ -64,9 +64,10 @@ function getImageSrc(img: unknown): string | undefined {
 const dateline = [project.data.year, project.data.client].filter(Boolean);
 const coverAlt = project.data.featured_image?.alt;
 
-// A paragraph holding just `{{font-downloader}}` is replaced by the live font
-// panel, so an editor can move it around the body from the EmDash admin.
-const FONT_DOWNLOADER_MARKER = "{{font-downloader}}";
+// A paragraph holding just `{{font-downloader}}` (Thmanyah) or
+// `{{font-downloader:al-jazeera}}` is replaced by the live font panel, so an
+// editor can move it around the body from the EmDash admin.
+const FONT_DOWNLOADER_MARKER = /^\{\{font-downloader(?::(al-jazeera))?\}\}$/;
 
 type PortableTextBlock = {
 	_type?: string;
@@ -84,8 +85,12 @@ function blockText(block: unknown): string {
 
 const contentBlocks = Array.isArray(project.data.content) ? project.data.content : null;
 const markerIndex = contentBlocks
-	? contentBlocks.findIndex((block) => blockText(block) === FONT_DOWNLOADER_MARKER)
+	? contentBlocks.findIndex((block) => FONT_DOWNLOADER_MARKER.test(blockText(block)))
 	: -1;
+const fontKit =
+	markerIndex >= 0 && FONT_DOWNLOADER_MARKER.exec(blockText(contentBlocks![markerIndex]))?.[1]
+		? ("al-jazeera" as const)
+		: ("thmanyah" as const);
 const contentBefore = markerIndex >= 0 ? contentBlocks!.slice(0, markerIndex) : project.data.content;
 const contentAfter = markerIndex >= 0 ? contentBlocks!.slice(markerIndex + 1) : null;
 ---
@@ -200,7 +205,7 @@ const contentAfter = markerIndex >= 0 ? contentBlocks!.slice(markerIndex + 1) : 
 						value={contentBefore}
 						components={{ type: { customBlock: CustomBlock, code: CodeBlock } }}
 					/>
-					{markerIndex >= 0 && <FontDownloader locale={locale} />}
+					{markerIndex >= 0 && <FontDownloader locale={locale} kit={fontKit} />}
 					{
 						contentAfter && (
 							<PortableText
